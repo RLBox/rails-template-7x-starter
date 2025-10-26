@@ -89,10 +89,10 @@ Do not recreate administrator functionality in User model. Administrator system 
 ## Some important tips when coding
 
 **CRITICAL: Demo File Management**
-- `app/views/shared/demo.html.erb` is ONLY for early development preview with fake data
-- Once ANY real homepage exists (like `app/views/home/index.html.erb`), you MUST delete demo.html.erb
-- NEVER reference or link to demo.html.erb in production features
-- Demo serves as temporary placeholder until real pages are developed
+- `app/views/shared/demo.html.erb` is ONLY for early development preview with fake data - NEVER copy its content to home/index.html.erb
+- Once ANY real homepage exists (like `app/views/home/index.html.erb`), you MUST delete demo.html.erb immediately
+- NEVER reference or link to demo.html.erb in production features - create real pages with real data from database instead
+- Demo serves as temporary placeholder until real pages are developed - copying demo code creates incomplete links and fake data issues
 
 Do not generate any fake data that should originally be in the database for users.
 

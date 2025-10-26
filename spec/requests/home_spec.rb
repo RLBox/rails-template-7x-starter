@@ -41,5 +41,24 @@ RSpec.describe "Home", type: :request do
         "Please customize your application name in config/application.rb. " \
         "Change config.x.appname from the default 'ClackyAPP' to your own app name."
     end
+
+    it "should not contain demo-style placeholder links or forms in view file" do
+      index_template_path = Rails.root.join('app', 'views', 'home', 'index.html.erb')
+
+      if File.exist?(index_template_path)
+        content = File.read(index_template_path)
+        doc = Nokogiri::HTML(content)
+
+        # Check for placeholder links
+        bad_links = doc.css('a[href="#"], a[href="#!"], a[href^="javascript:"]')
+        expect(bad_links).to be_empty,
+          "Found #{bad_links.size} demo placeholder link(s) in home/index.html.erb: #{bad_links.map { |l| l.to_html.truncate(80) }.join(', ')}. Use real Rails routes (like rooms_path) instead of copying from demo.html.erb."
+
+        # Check for forms with placeholder action
+        bad_forms = doc.css('form[action="#"], form[action=""], form[action^="javascript:"]')
+        expect(bad_forms).to be_empty,
+          "Found #{bad_forms.size} form(s) with placeholder action in home/index.html.erb: #{bad_forms.map { |f| f.to_html.truncate(80) }.join(', ')}. Use Rails form helpers (form_with) instead of copying from demo.html.erb."
+      end
+    end
   end
 end
