@@ -1575,14 +1575,15 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
   end
 
   describe 'Turbo Frame Prohibition Validation' do
-    it 'ensures Turbo Frames are not used (Turbo Streams are allowed)' do
+    it 'ensures Turbo Frames and turbo_stream_from are not used' do
       turbo_violations = []
 
       # Turbo Frame patterns to check in views (FORBIDDEN)
       view_turbo_patterns = {
         'turbo_frame_tag' => 'Turbo Frame helper',
         'data-turbo-frame' => 'Turbo Frame data attribute',
-        '<turbo-frame' => 'Turbo Frame HTML tag'
+        '<turbo-frame' => 'Turbo Frame HTML tag',
+        'turbo_stream_from' => 'turbo_stream_from helper'
       }
 
       # Turbo Frame patterns to check in controllers (FORBIDDEN)
@@ -1590,18 +1591,27 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
         'turbo_frame_request?' => 'Turbo Frame request check'
       }
 
+      # Files to skip from turbo_stream_from check
+      skip_files = ['application.html.erb', 'admin.html.erb']
+
       # Check view files
       view_files.each do |view_file|
         content = File.read(view_file)
         relative_path = view_file.sub(Rails.root.to_s + '/', '')
+        filename = File.basename(view_file)
 
         view_turbo_patterns.each do |pattern, description|
+          # Skip turbo_stream_from check for application.html.erb and admin.html.erb
+          if pattern == 'turbo_stream_from' && skip_files.include?(filename)
+            next
+          end
+
           if content.include?(pattern)
             turbo_violations << {
               file: relative_path,
               pattern: pattern,
               description: description,
-              suggestion: "Remove #{description} - use Turbo Streams instead (format.turbo_stream)"
+              suggestion: "Remove #{description} - create .turbo_stream.erb templates for partial updates instead"
             }
           end
         end
@@ -1626,7 +1636,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
       end
 
       if turbo_violations.any?
-        puts "\n🚫 Turbo Frame Usage Detected (#{turbo_violations.length}):"
+        puts "\n🚫 Turbo Frame/turbo_stream_from Usage Detected (#{turbo_violations.length}):"
         turbo_violations.each do |violation|
           puts "   • #{violation[:file]}: Found '#{violation[:pattern]}' (#{violation[:description]})"
         end
@@ -1635,9 +1645,9 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
           "#{v[:file]}: #{v[:pattern]} - #{v[:suggestion]}"
         end
 
-        expect(turbo_violations).to be_empty, "Turbo Frames are not allowed (Turbo Streams are OK):\n#{error_details.join("\n")}"
+        expect(turbo_violations).to be_empty, "Turbo Frames and turbo_stream_from are not allowed:\n#{error_details.join("\n")}"
       else
-        puts "\n✅ No Turbo Frame usage detected - Turbo Streams enabled!"
+        puts "\n✅ No Turbo Frame or turbo_stream_from usage detected!"
       end
     end
   end
@@ -2310,7 +2320,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
 
       if violations.any?
         puts "\n⚠️  Frontend-Backend Architecture Notice (#{violations.length} area(s) for improvement):"
-        puts "   📋 Architecture Principle: This project uses pure Turbo Stream architecture"
+        puts "   📋 Architecture: Prefer HTML, use Turbo Stream for partial DOM updates when needed"
         puts "   🎯 Goal: Reduce frontend complexity and avoid manual DOM manipulation errors\n"
 
         violations.group_by { |v| v[:file] }.each do |file, file_violations|
@@ -2324,11 +2334,11 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
 
         puts "   ℹ️  Why this matters:"
         puts "      • respond_to blocks add unnecessary complexity and branching logic"
-        puts "      • format.* methods (html, json, etc.) violate Turbo Stream architecture"
+        puts "      • format.* methods violate our simplified architecture (use direct rendering instead)"
         puts "      • head :ok only returns status code, frontend cannot determine what to update"
         puts "      • JSON responses require manual DOM updates, easy to miss related elements (e.g. counters)"
         puts "      • Manual form submission (requestSubmit) bypasses Turbo's automatic handling"
-        puts "      • Turbo Stream lets backend control UI updates, ensuring interaction completeness"
+        puts "      • Turbo Stream (action.turbo_stream.erb) lets backend control UI updates precisely"
         puts "      • API endpoints (app/controllers/api/) are exempt from this requirement\n"
 
         error_details = violations.map do |v|

@@ -8,7 +8,6 @@ declare global {
     ActionCable: any;
     Turbo: any;
     App: {
-      cable: any;
       adminSidebar?: any;
     };
     restoreButtonStates: () => void;
@@ -25,7 +24,6 @@ declare global {
   }
 
   var App: {
-    cable: any;
     adminSidebar?: any;
   };
 }

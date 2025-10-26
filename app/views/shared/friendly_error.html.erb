@@ -110,10 +110,19 @@
     <!-- Action Buttons -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center mb-4">
       <%= link_to "Back to Home", '/', class: "btn-primary" %>
-      <button type="button" 
+      <button type="button"
+              data-sdk-integration-target="refreshButton"
+              onclick="this.querySelector('svg').classList.add('animate-spin'); window.location.reload()"
+              class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 justify-center">
+        <svg class="w-5 h-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Refresh Page
+      </button>
+      <button type="button"
               data-sdk-integration-target="sdkButton"
               data-action="click->sdk-integration#sendErrorToChatbox"
-              class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition-colors duration-200" 
+              class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition-colors duration-200"
               style="display: none;">
         Fix in Chatbox
       </button>

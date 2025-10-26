@@ -1,5 +1,5 @@
 (function() {
-  window.App = window.App || { cable: null }
+  window.App = window.App || {}
   window.App.adminSidebar = {
     saveSidebarScrollPosition() {
       const adminPage = this.page()

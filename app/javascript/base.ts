@@ -6,7 +6,6 @@ import './form_data_patch'
 import * as ActiveStorage from '@rails/activestorage'
 import Alpine from 'alpinejs'
 import * as ActionCable from "@rails/actioncable"
-import { createConsumer } from "@rails/actioncable"
 // @ts-ignore - @hotwired/turbo-rails has no type definitions, uses @hotwired/turbo types
 import { Turbo } from "@hotwired/turbo-rails"
 import { StreamActions } from "@hotwired/turbo"
@@ -21,9 +20,6 @@ window.ActionCable = ActionCable
 
 Alpine.start()
 window.Alpine = Alpine
-
-window.App = window.App || { cable: null }
-window.App.cable = createConsumer()
 
 // Turbo configuration: Enable Drive for full SPA experience
 // Turbo Drive is now enabled by default (replaced Rails-UJS)

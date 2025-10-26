@@ -12,7 +12,7 @@ Active_Storage for upload file
 Kaminari
 Puma
 RSpec
-Stimulus + Turbo( TURBO STREAM ARCHITECTURE: no turo-frame )
+Stimulus + Turbo (Stream response, no Frame tags, no stream_from)
 ActionCable( solid_queue, no redis )
 FriendlyId
 
@@ -27,12 +27,11 @@ Restarting project is unnecessary because Rails automatically hot-reloads code c
 
 Use `touch tmp/restart.txt` quickly restart project After running `rails g authentication` or `rails g stripe_pay` or `rails g llm`.
 
-## ⚠️ MANDATORY PROJECT WORKFLOW - FOLLOW EXACTLY IN THIS ORDER
+## MANDATORY PROJECT WORKFLOW - FOLLOW EXACTLY IN THIS ORDER
 
 **STOP! Before creating ANY models or controllers, you MUST complete these steps first:**
 
 ### Step 1: REQUIRED - Update Application Name and Design System First
-#
 **ALWAYS start by updating the application name:** `echo "YourAppName" > config/appname.txt`
 
 **ALWAYS start by updating existing design system variables in `app/assets/stylesheets/application.css`** (using `npm run build:css` to keep it right). DO NOT create any models/controllers before this.
@@ -51,8 +50,6 @@ Pay attention to contrast, color, and typography.
 
 ### Step 2: REQUIRED - Develop demo view based Design System and user requirements
 Develop a demo view based on the new design system and user requirements, allowing users to quickly see a UI effect. The view should be located at `app/views/shared/demo.html.erb` (Only write body content, The system has already completed route configuration - when there's no home/index.html.erb, the homepage will automatically render this view)
-
-**IMPORTANT**: Once you create `app/views/home/index.html.erb` or any real homepage, you MUST delete `app/views/shared/demo.html.erb` immediately. Demo is only for early development preview and contains fake data that should not be used in production features.
 
 ### Step 3: REQUIRED - Testing visit '/'
 **ALWAYS run the project, then use `curl http://localhost:3000/` to ensure these is no error**
@@ -84,7 +81,7 @@ When developing features that require User or Order models, **DO NOT create them
    - **Order Creation**: Generator provides order viewing and payment flow only. Integrate order creation into your business workflow, then redirect to `order_path(order)` for payment. DO NOT create standalone order forms.
    - Should only need to support Stripe payments by default
 
-**LLM Integration:** Use `rails generate llm` to generate LLM service infrastructure. Always prefer streaming via ActionCable - use `LlmStreamJob.perform_later(channel_name:, prompt:, system:)` for real-time streaming responses. Auto-configures LLM_BASE_URL, LLM_API_KEY, LLM_MODEL in application.yml. When storing LLM messages, include `LlmMessageValidationConcern` - don't validate role & content yourself.
+3. **LLM Integration:**: Use `rails generate llm` to generate LLM service infrastructure. Always prefer streaming via ActionCable - use `LlmStreamJob.perform_later(channel_name:, prompt:, system:)` for real-time streaming responses. Auto-configures LLM_BASE_URL, LLM_API_KEY, LLM_MODEL in application.yml. When storing LLM messages, include `LlmMessageValidationConcern` - don't validate role & content yourself.
 
 Do not recreate administrator functionality in User model. Administrator system already exists. Adding admin page low priority.
 
@@ -107,8 +104,6 @@ Generate images using this placeholder website: https://images.unsplash.com/ and
 
 When installing any new gem or npm packages, always specify a version you are most familiar with and suitable for the project. Do not use the latest version directly.
 
-**⚠️ CRITICAL: Before Creating ANY Models - Generator Priority Check:**
-
 **ALWAYS prefer `rails generate models` for batch model generation:**
 - Syntax: `rails g models product name:string:default=Untitled price:decimal:default=0 + category name:string + tag name:string color:string:default=#000000`
 - Separator: `+` splits different models
@@ -129,20 +124,34 @@ Use `rails generate channel xxx [action1] [action2] [--auth]` to create ActionCa
 
 Use `rails generate pwa` to generate Progressive Web App setup with manifest, service worker, and install controller. Auto-detects app name from config.x.appname and theme color from application.css --color-primary.
 
-Use `rails generate stimulus_controller xxx` to create new Stimulus controller.
+Use `rails generate stimulus_controller xxx` to create new Stimulus controller, not generate by yourself.
 
 **⚠️ TURBO STREAM ARCHITECTURE - Mandatory Rules:**
 
+**What is Turbo Stream?**
+- Turbo Stream = Response format (render xxx.turbo_stream.erb) for partial DOM updates
+- ❌ NOT `turbo_stream_from` in views (we don't use this pattern)
+- ❌ NOT `<turbo-frame>` tags (we don't use Frame feature)
+
 **Frontend (Stimulus):**
-- ❌ NO `fetch()` - breaks Turbo Stream, requires manual DOM updates
-- ❌ NO `preventDefault() + requestSubmit()` - preventDefault blocks submission, causing failure
+- ❌ NO `fetch()` - breaks Turbo Drive, requires manual DOM updates
+- ❌ NO `preventDefault() + requestSubmit()` - preventDefault blocks submission
 - ✅ Stimulus for UI only (toggle, show/hide) - NOT for data submission
 
 **Backend (Controllers):**
+- ✅ Prefer HTML: Render normal HTML views by default
+- ✅ Use Turbo Stream when needed: For partial updates, create `action.turbo_stream.erb` templates
 - ❌ NO `respond_to` blocks - unnecessary branching
 - ❌ NO `format.html/json/xml` - violates architecture
-- ❌ NO `render json:` - JSON data passing is disabled for frontend-backend stability, use Turbo Stream instead (API namespace `app/controllers/api/` exempt)
+- ❌ NO `render json:` - JSON data passing is disabled (API namespace `app/controllers/api/` exempt)
 - ❌ NO `head :ok` - frontend cannot determine UI updates
+
+**ActionCable Channel Pattern:**
+- Frontend calls backend: `this.perform('methodName', {params})`
+- Backend receives: Define `def methodName(data)` in channel
+- Backend broadcasts: `ActionCable.server.broadcast(channel, {type: 'event-name', data: {}})`
+- Type-based routing: Frontend defines `handleEventName(data)` method, backend triggers it via `type: 'event-name'`
+- ❌ NO manual message parsing - the routing happens automatically
 
 **⚠️ STIMULUS TESTING - CRITICAL COMPLIANCE**:
 - ALWAYS run `bundle exec rspec spec/javascript/simple_stimulus_validator_spec.rb` after ANY Stimulus-related changes

@@ -38,7 +38,7 @@ class StimulusControllerGenerator < Rails::Generators::NamedBase
     say "✅ Stimulus controller '#{controller_name}' created successfully!", :green
     say "📁 Controller file: #{controller_path}", :blue
     say "📄 Added to: app/javascript/controllers/index.ts", :blue
-    say "\n⚠️  Follow Turbo Stream architecture: No JSON, No fetch(), No manual form submission", :yellow
+    say "\n⚠️  Architecture: Stimulus for UI only - NO fetch(), NO preventDefault on forms", :yellow
   end
 
   # def create_system_test
