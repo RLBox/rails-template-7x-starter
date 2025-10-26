@@ -21,7 +21,7 @@ class Admin::SessionsController < Admin::BaseController
       redirect_to admin_root_path
     else
       flash.now[:alert] = 'Username or password is wrong'
-      render 'new'
+      render 'new', status: :unprocessable_entity
     end
   end
 

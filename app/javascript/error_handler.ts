@@ -38,7 +38,6 @@ interface NetworkErrorInfo extends BaseErrorInfo {
   url?: string;
   method?: string;
   status?: number;
-  responseBody?: string;
   jsonError?: any;
 }
 
@@ -170,18 +169,6 @@ const ERROR_TYPE_CONFIGS: { [key: string]: ErrorTypeConfig } = {
           return `<div class="mb-3"><div class="mb-1"><strong>JSON Error Details:</strong></div><pre class="${preClass}">${JSON.stringify(value, null, 2)}</pre></div>`;
         },
         textFormatter: (value: any) => `JSON Error Details:\n${JSON.stringify(value, null, 2)}`
-      },
-      responseBody: {
-        label: 'Response Body',
-        priority: 4,
-        condition: (error) => {
-          return !!(error.responseBody && (!error.jsonError || error.responseBody !== JSON.stringify(error.jsonError, null, 2)));
-        },
-        htmlFormatter: (value: string) => {
-          const preClass = 'text-xs bg-gray-800 p-3 rounded overflow-x-auto whitespace-pre-wrap leading-relaxed';
-          return `<div class="mb-3"><div class="mb-1"><strong>Response Body:</strong></div><pre class="${preClass}">${value}</pre></div>`;
-        },
-        textFormatter: (value: string) => `Response Body:\n${value}`
       }
     }
   },
@@ -209,18 +196,6 @@ const ERROR_TYPE_CONFIGS: { [key: string]: ErrorTypeConfig } = {
           return `<div class="mb-3"><div class="mb-1"><strong>JSON Error Details:</strong></div><pre class="${preClass}">${JSON.stringify(value, null, 2)}</pre></div>`;
         },
         textFormatter: (value: any) => `JSON Error Details:\n${JSON.stringify(value, null, 2)}`
-      },
-      responseBody: {
-        label: 'Response Body',
-        priority: 4,
-        condition: (error) => {
-          return !!(error.responseBody && (!error.jsonError || error.responseBody !== JSON.stringify(error.jsonError, null, 2)));
-        },
-        htmlFormatter: (value: string) => {
-          const preClass = 'text-xs bg-gray-800 p-3 rounded overflow-x-auto whitespace-pre-wrap leading-relaxed';
-          return `<div class="mb-3"><div class="mb-1"><strong>Response Body:</strong></div><pre class="${preClass}">${value}</pre></div>`;
-        },
-        textFormatter: (value: string) => `Response Body:\n${value}`
       }
     }
   },
@@ -393,7 +368,6 @@ interface StoredError {
   url?: string;
   method?: string;
   status?: number;
-  responseBody?: string;
   jsonError?: any;
   channel?: string;
   action?: string;
@@ -482,7 +456,12 @@ class ErrorHandler {
   }
 
   initUI() {
-    console.log('Initializing UI...');
+    // Prevent re-initialization
+    if (this.uiReady) {
+      return;
+    }
+
+    console.log('[ErrorHandler] Initializing UI');
     this.createStatusBar();
     this.uiReady = true;
     this.updateStatusBar();
@@ -499,11 +478,9 @@ class ErrorHandler {
       //   this.autoExpandErrorDetails();
       // }
     }
-    console.log('UI initialization complete.');
   }
 
   createStatusBar() {
-    console.log('Creating status bar... document.body exists?', !!document.body);
     // Create persistent bottom status bar
     const statusBar = document.createElement('div');
     statusBar.id = 'js-error-status-bar';
@@ -550,7 +527,6 @@ class ErrorHandler {
     document.body.appendChild(statusBar);
     this.statusBar = statusBar;
     this.errorList = document.getElementById('error-list');
-    console.log('Status bar created and appended. ID:', statusBar.id);
 
     this.setupStatusBarEvents();
   }
@@ -778,54 +754,46 @@ class ErrorHandler {
       try {
         const response = await originalFetch(...args);
 
-        if (!response.ok) {
-          // Extract HTTP method from request options
-          const requestOptions = args[1] || {};
-          const method = (requestOptions.method || 'GET').toUpperCase();
+        // Only handle 500+ errors with JSON content-type
+        if (response.status >= 500) {
+          const contentType = response.headers.get('content-type');
 
-          // Try to extract response body for detailed error information
-          let responseBody = null;
-          let jsonError = null;
+          // Only report JSON API errors, ignore HTML/other responses
+          if (contentType && contentType.includes('application/json')) {
+            const requestOptions = args[1] || {};
+            const method = (requestOptions.method || 'GET').toUpperCase();
 
-          try {
-            // Clone the response to avoid consuming it
-            const responseClone = response.clone();
-            const contentType = response.headers.get('content-type');
+            let jsonError = null;
 
-            if (contentType && contentType.includes('application/json')) {
+            try {
+              const responseClone = response.clone();
               jsonError = await responseClone.json();
-              responseBody = JSON.stringify(jsonError, null, 2);
-            } else {
-              responseBody = await responseClone.text();
+            } catch (bodyError) {
+              jsonError = { error: 'Unable to read JSON response' };
             }
-          } catch (bodyError) {
-            // If we can't read the body, just note that
-            responseBody = 'Unable to read response body';
-          }
 
-          // Create detailed error message
-          let detailedMessage = `${method} ${args[0]} - HTTP ${response.status}`;
-          if (jsonError) {
-            // Extract meaningful error message from JSON
-            const errorMsg = jsonError.error || jsonError.message || jsonError.errors || 'Unknown error';
-            detailedMessage += ` - ${errorMsg}`;
-          }
+            // Create detailed error message
+            let detailedMessage = `${method} ${args[0]} - HTTP ${response.status}`;
+            if (jsonError) {
+              const errorMsg = jsonError.error || jsonError.message || jsonError.errors || 'Unknown error';
+              detailedMessage += ` - ${errorMsg}`;
+            }
 
-          this.handleError({
-            message: detailedMessage,
-            url: args[0].toString(),
-            method: method,
-            type: response.status >= 500 ? 'http' : 'network',
-            status: response.status,
-            responseBody: responseBody,
-            jsonError: jsonError,
-            timestamp: new Date().toISOString()
-          });
+            this.handleError({
+              message: detailedMessage,
+              url: args[0].toString(),
+              method: method,
+              type: 'http',
+              status: response.status,
+              jsonError: jsonError,
+              timestamp: new Date().toISOString()
+            });
+          }
         }
 
         return response;
       } catch (error) {
-        // Extract HTTP method for network errors too
+        // Network errors - always report as these are genuine connection failures
         const requestOptions = args[1] || {};
         const method = (requestOptions.method || 'GET').toUpperCase();
 
@@ -879,39 +847,37 @@ class ErrorHandler {
       });
 
       xhr.addEventListener('loadend', () => {
-        if (xhr.status >= 400) {
-          let responseBody = null;
-          let jsonError = null;
+        // Only handle 500+ errors with JSON content-type
+        if (xhr.status >= 500) {
+          const contentType = xhr.getResponseHeader('content-type');
 
-          try {
-            const contentType = xhr.getResponseHeader('content-type');
-            if (contentType && contentType.includes('application/json')) {
+          // Only report JSON API errors, ignore HTML/other responses
+          if (contentType && contentType.includes('application/json')) {
+            let jsonError = null;
+
+            try {
               jsonError = JSON.parse(xhr.responseText);
-              responseBody = JSON.stringify(jsonError, null, 2);
-            } else {
-              responseBody = xhr.responseText;
+            } catch (parseError) {
+              jsonError = { error: 'Unable to read JSON response' };
             }
-          } catch (parseError) {
-            responseBody = xhr.responseText || 'Unable to read response body';
-          }
 
-          // Create detailed error message
-          let detailedMessage = `${method} ${url} - HTTP ${xhr.status}`;
-          if (jsonError) {
-            const errorMsg = jsonError.error || jsonError.message || jsonError.errors || 'Unknown error';
-            detailedMessage += ` - ${errorMsg}`;
-          }
+            // Create detailed error message
+            let detailedMessage = `${method} ${url} - HTTP ${xhr.status}`;
+            if (jsonError) {
+              const errorMsg = jsonError.error || jsonError.message || jsonError.errors || 'Unknown error';
+              detailedMessage += ` - ${errorMsg}`;
+            }
 
-          window.errorHandler?.handleError({
-            message: detailedMessage,
-            url: url,
-            method: method,
-            type: xhr.status >= 500 ? 'http' : 'network',
-            status: xhr.status,
-            responseBody: responseBody,
-            jsonError: jsonError,
-            timestamp: new Date().toISOString()
-          });
+            window.errorHandler?.handleError({
+              message: detailedMessage,
+              url: url,
+              method: method,
+              type: 'http',
+              status: xhr.status,
+              jsonError: jsonError,
+              timestamp: new Date().toISOString()
+            });
+          }
         }
       });
 
@@ -936,7 +902,6 @@ class ErrorHandler {
   }
 
   private processError(errorInfo: ErrorInfo): void {
-
     // Create a debounce key for similar errors
     const debounceKey = `${errorInfo.type}_${errorInfo.message}_${errorInfo.filename}_${errorInfo.lineno}`;
 
@@ -996,7 +961,6 @@ class ErrorHandler {
       // Auto-expand logic disabled
       // this.checkAutoExpand(errorInfo);
     } else {
-      console.log('UI not ready, marking for later update');
       this.pendingUIUpdates = true;
     }
 
@@ -1256,7 +1220,7 @@ class ErrorHandler {
   }
 
   formatTechnicalDetails(error: StoredError): string {
-    const details = [`<div class='mb-1'><strong>Page URL:</strong> ${window.location.href}</div>`];
+    const details = [`<div class='mb-1'><strong>Page Path:</strong> ${window.location.pathname}</div>`];
 
     // Use the unified formatting system
     const typeSpecificDetails = this.formatErrorDetails(error, 'html');
@@ -1337,7 +1301,7 @@ class ErrorHandler {
     let report = `Frontend Error Report - Recent Errors
 ════════════════════════════════════
 Time: ${new Date().toLocaleString()}
-Page URL: ${window.location.href}
+Page Path: ${window.location.pathname}
 Total Errors: ${totalErrors} (showing latest ${recentErrors.length})
 
 `;
@@ -1389,7 +1353,7 @@ Technical Details:`;
     let report = `Frontend Error Report
 ─────────────
 Time: ${new Date(error.timestamp).toLocaleString()}
-Page URL: ${window.location.href}
+Page Path: ${window.location.pathname}
 
 Technical Details:
 ${error.message}`;
@@ -1445,9 +1409,6 @@ ${error.message}`;
   showStatusBar(): void {
     if (this.statusBar) {
       this.statusBar.style.display = 'block';
-      console.log('Status bar shown');
-    } else {
-      console.log('Cannot show status bar - not created yet');
     }
   }
 
@@ -1726,4 +1687,7 @@ ${error.message}`;
 }
 
 // Initialize error handler immediately (don't wait for DOM)
-window.errorHandler = new ErrorHandler();
+// Singleton pattern to prevent multiple instances
+if (!window.errorHandler) {
+  window.errorHandler = new ErrorHandler();
+}
