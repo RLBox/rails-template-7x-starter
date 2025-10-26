@@ -10,11 +10,11 @@
     <meta name="HandheldFriendly" content="True">
     <meta name="MobileOptimized" content="320">
     <title>
-    <% if content_for?(:title) %>
+    <%- if content_for?(:title) %>
       <%= yield(:title) + ' | ' + Rails.application.config.x.appname %>
-    <% else %>
+    <%- else %>
       <%= Rails.application.config.x.appname %>
-    <% end %>
+    <%- end %>
     </title>
     <%= csrf_meta_tags %>
     <%= action_cable_meta_tag %>
@@ -26,8 +26,8 @@
     <!-- Generate new favicon at `images/app-favicon.svg` at the first time, remove this line after generated  -->
     <%= favicon_link_tag asset_path("app-favicon.svg") unless Rails.env.test? %>
   </head>
-  <body class="<%= body_class %>">
-    <main class="min-h-screen" style="background-color: hsl(var(--color-surface));">
+  <body class="flex flex-col min-h-screen <%= body_class %>">
+    <main class="flex-1 flex flex-col" style="background-color: hsl(var(--color-surface));">
       <%= render 'shared/navbar' unless @full_render %>
       <%= render 'shared/flash_messages' %>
       <%= yield %>
