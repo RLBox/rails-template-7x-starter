@@ -4,30 +4,30 @@
   <!-- Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div>
-      <h1 class="text-3xl font-bold text-primary">Orders Management</h1>
-      <p class="text-secondary mt-1">Manage and track all customer orders</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Orders Management</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-1">Manage and track all customer orders</p>
     </div>
   </div>
 
   <!-- Statistics Cards -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div class="card">
+    <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       <div class="card-body">
         <div class="flex items-center">
           <div class="p-3 rounded-full bg-primary/20">
-            <svg class="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-6 h-6 text-gray-900 dark:text-gray-100" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-secondary">Total Orders</p>
-            <p class="text-2xl font-semibold text-primary"><%%= @stats[:total_orders] %></p>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Orders</p>
+            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100"><%%= @stats[:total_orders] %></p>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       <div class="card-body">
         <div class="flex items-center">
           <div class="p-3 rounded-full bg-success/20">
@@ -36,14 +36,14 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-secondary">Paid Orders</p>
-            <p class="text-2xl font-semibold text-primary"><%%= @stats[:paid_orders] %></p>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Paid Orders</p>
+            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100"><%%= @stats[:paid_orders] %></p>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       <div class="card-body">
         <div class="flex items-center">
           <div class="p-3 rounded-full bg-warning/20">
@@ -52,14 +52,14 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-secondary">Pending Orders</p>
-            <p class="text-2xl font-semibold text-primary"><%%= @stats[:pending_orders] %></p>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Orders</p>
+            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100"><%%= @stats[:pending_orders] %></p>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       <div class="card-body">
         <div class="flex items-center">
           <div class="p-3 rounded-full bg-success/20">
@@ -69,8 +69,8 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-secondary">Total Revenue</p>
-            <p class="text-2xl font-semibold text-primary"><%%= number_to_currency(@stats[:total_revenue]) %></p>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
+            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100"><%%= number_to_currency(@stats[:total_revenue]) %></p>
           </div>
         </div>
       </div>
@@ -79,7 +79,7 @@
 
 
   <!-- Orders Table -->
-  <div class="card">
+  <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
     <div class="overflow-hidden">
       <%% if @orders.any? %>
         <div class="overflow-x-auto">
@@ -102,7 +102,7 @@
               <%% @orders.each do |order| %>
                 <tr class="table-row">
                   <td class="table-cell">
-                    <div class="text-sm font-medium text-primary">#<%%= order.id %></div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">#<%%= order.id %></div>
                     <%% if order.stripe_payment_intent_id %>
                       <div class="text-sm text-muted">Has Payment Intent</div>
                     <%% end %>
@@ -110,7 +110,7 @@
 <% if @auth -%>
                   <td class="table-cell">
                     <%% if order.user %>
-                      <div class="text-sm font-medium text-primary"><%%= order.user.email %></div>
+                      <div class="text-sm font-medium text-gray-900 dark:text-gray-100"><%%= order.user.email %></div>
                       <div class="text-sm text-muted">#<%%= order.user.id %></div>
                     <%% else %>
                       <div class="text-sm text-muted">No user</div>
@@ -118,14 +118,14 @@
                   </td>
 <% end -%>
                   <td class="table-cell">
-                    <div class="text-sm font-medium text-primary"><%%= order.customer_name %></div>
-                    <div class="text-sm text-secondary"><%%= order.customer_email %></div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100"><%%= order.customer_name %></div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400"><%%= order.customer_email %></div>
                   </td>
                   <td class="table-cell">
-                    <div class="text-sm text-primary"><%%= order.product_name %></div>
+                    <div class="text-sm text-gray-900 dark:text-gray-100"><%%= order.product_name %></div>
                   </td>
                   <td class="table-cell">
-                    <div class="text-sm font-medium text-primary">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                       <%%= number_to_currency(order.amount, unit: order.currency.upcase + ' ') %>
                     </div>
                   </td>
@@ -139,11 +139,11 @@
                       <%%= order.display_status %>
                     </span>
                   </td>
-                  <td class="table-cell text-secondary">
+                  <td class="table-cell text-gray-600 dark:text-gray-400">
                     <%%= order.created_at.strftime("%m/%d/%Y") %>
                   </td>
                   <td class="table-cell text-right">
-                    <%%= link_to "View", admin_order_path(order), class: "text-primary hover:text-primary-dark" %>
+                    <%%= link_to "View", admin_order_path(order), class: "text-gray-900 dark:text-gray-100 hover:text-gray-900 dark:text-gray-100-dark" %>
                   </td>
                 </tr>
               <%% end %>
@@ -165,7 +165,7 @@
           <svg class="mx-auto h-12 w-12 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-primary">No orders found</h3>
+          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No orders found</h3>
           <p class="mt-1 text-sm text-muted">No orders have been created yet.</p>
         </div>
       <%% end %>

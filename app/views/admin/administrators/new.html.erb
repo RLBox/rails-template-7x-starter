@@ -10,10 +10,10 @@
     <% end %>
   </div>
 
-  <h1 class="text-3xl font-bold text-gray-900 dark:text-white mt-4 mb-8">Create New Administrator</h1>
+  <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50 mt-4 mb-8">Create New Administrator</h1>
 
   <!-- Form -->
-  <div class="card">
+  <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
     <div class="card-body">
       <%= form_with model: [:admin, @administrator], local: true, class: "space-y-6" do |form| %>
         <!-- Error Messages -->
@@ -26,7 +26,7 @@
           <% end %>
           <%= form.text_field :name, {
             placeholder: "Enter name...",
-            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white"
+            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50"
           }.merge(field_required?(@administrator, :name) ? { required: true } : {}) %>
           <% if @administrator.errors[:name].any? %>
             <p class="text-sm text-red-500 mt-1"><%= @administrator.errors[:name].first %></p>
@@ -40,7 +40,7 @@
           <% end %>
           <%= form.password_field :password, {
             placeholder: "Enter password...",
-            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white"
+            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50"
           }.merge(field_required?(@administrator, :password) ? { required: true } : {}) %>
           <% if @administrator.errors[:password].any? %>
             <p class="text-sm text-red-500 mt-1"><%= @administrator.errors[:password].first %></p>
@@ -54,7 +54,7 @@
           <% end %>
           <%= form.password_field :password_confirmation, {
             placeholder: "Confirm password...",
-            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white",
+            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50",
             required: true
           } %>
           <% if @administrator.errors[:password_confirmation].any? %>
@@ -69,7 +69,7 @@
               Role <span class="text-red-500">*</span>
             <% end %>
             <%= form.select :role, Administrator.role_options, { selected: @administrator.role || 'admin' }, {
-              class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white",
+              class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50",
               required: true
             } %>
             <% if @administrator.errors[:role].any? %>

@@ -1,16 +1,16 @@
 <% content_for :title, "Dashboard" %>
 
-<div class="container-lg">
+<div class="container-xl">
   <!-- Page Title -->
   <div class="mb-4">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50">Admin Dashboard</h1>
     <p class="text-gray-600 dark:text-gray-400 mt-2">System overview and quick actions</p>
   </div>
 
   <!-- Stats and Quick Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <!-- Administrators Count -->
-    <div class="card">
+    <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       <div class="card-body flex items-center justify-center min-h-[120px]">
         <div class="flex items-center w-full">
           <div class="flex-shrink-0">
@@ -22,7 +22,7 @@
           </div>
           <div class="ml-4">
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Administrators</div>
-            <div class="text-3xl font-bold text-gray-900 dark:text-white"><%= @admin_count %></div>
+            <div class="text-3xl font-bold text-gray-900 dark:text-gray-50"><%= @admin_count %></div>
           </div>
         </div>
       </div>
@@ -30,9 +30,9 @@
 
     <!-- Quick Actions -->
     <div class="lg:col-span-2">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
+      <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+        <div class="card-header bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">Quick Actions</h3>
         </div>
         <div class="card-body">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -63,10 +63,10 @@
   </div>
 
   <!-- Recent Admin Logs -->
-  <div class="card">
-    <div class="card-header">
+  <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+    <div class="card-header bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Admin Actions</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">Recent Admin Actions</h3>
         <%= link_to admin_admin_oplogs_path, class: "text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300" do %>
           View all →
         <% end %>
@@ -102,7 +102,7 @@
                   </div>
                 </div>
                 <div class="ml-3">
-                  <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  <div class="text-sm font-medium text-gray-900 dark:text-gray-50">
                     <%= log.administrator.name %>
                     <span class="text-gray-600 dark:text-gray-400">
                       <%= log.action_label %>

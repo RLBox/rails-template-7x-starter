@@ -9,11 +9,11 @@
       </svg>
       Back to <%= humanized_name %>
     <%% end %>
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Edit <%= humanized_name %></h1>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50">Edit <%= humanized_name %></h1>
   </div>
 
   <!-- Form -->
-  <div class="card">
+  <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
     <div class="card-body">
       <%%= form_with model: [:admin, @<%= singular_name %>], local: true, class: "space-y-6" do |form| %>
         <%%= render 'shared/form_error_message', model: @<%= singular_name %> %>
@@ -26,7 +26,7 @@
         <div class="mb-4">
           <label class="flex items-center cursor-pointer">
             <%%= form.<%= form_field_for(attribute) %> :<%= attribute.name %>,
-                  class: "mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700" %>
+                  class: "mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700" %>
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300"><%= attribute.name.humanize %></span>
           </label>
         </div>
@@ -40,7 +40,7 @@
             rows: 5,
 <% end -%>
             placeholder: "Enter <%= attribute.name.humanize.downcase %>...",
-            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white"
+            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50"
           }.merge(field_required?(@<%= singular_name %>, :<%= attribute.name %>) ? { required: true } : {}) %>
           <%% if @<%= singular_name %>.errors[:<%= attribute.name %>].any? %>
             <p class="text-sm text-red-500 mt-1"><%%= @<%= singular_name %>.errors[:<%= attribute.name %>].first %></p>
@@ -56,7 +56,7 @@
           <%%= form.select :<%= field[:enum_name] %>, 
               options_for_select([['Select <%= field[:enum_name].humanize %>', '']] + <%= enum_options_for_select(field[:enum_name], field[:enum_values]).inspect %>, @<%= singular_name %>.<%= field[:enum_name] %>),
               {},
-              { class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white" } %>
+              { class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50" } %>
           <%% if @<%= singular_name %>.errors[:<%= field[:enum_name] %>].any? %>
             <p class="text-sm text-red-500 mt-1"><%%= @<%= singular_name %>.errors[:<%= field[:enum_name] %>].first %></p>
           <%% end %>
@@ -71,7 +71,7 @@
           <%%= form.select :<%= association[:foreign_key] %>, 
               options_for_select([['Select <%= association[:name].to_s.humanize %>', '']] + <%= association_options_method(association) %>, @<%= singular_name %>.<%= association[:foreign_key] %>),
               {},
-              { class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white" } %>
+              { class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50" } %>
           <%% if @<%= singular_name %>.errors[:<%= association[:foreign_key] %>].any? %>
             <p class="text-sm text-red-500 mt-1"><%%= @<%= singular_name %>.errors[:<%= association[:foreign_key] %>].first %></p>
           <%% end %>
@@ -119,7 +119,7 @@
 <% if attachment[:type] == :has_many_attached -%>
             multiple: true,
 <% end -%>
-            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           } %>
 <% if attachment[:type] == :has_many_attached -%>
           <p class="text-sm text-gray-500 mt-1">Select new files to replace current ones, or leave empty to keep current files</p>

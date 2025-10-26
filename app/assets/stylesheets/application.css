@@ -5,15 +5,16 @@
 @layer components {
 
   /*
-   * Design System Variables - Semantic naming to guide AI color selection
+   * Design System Variables
    *
-   * Usage Guidelines:
-   * - Text colors: Use text-* series for high contrast and readability
-   * - Surface colors: Use surface-* series for backgrounds
-   * - Brand colors: Use primary/secondary for brand elements
-   * - Status colors: Use success/warning/danger/info for feedback
+   * Usage:
+   * - Text: text-primary/secondary/muted
+   * - Surface: surface/surface-elevated
+   * - Brand: primary/secondary
+   * - Status: success/warning/danger/info
    *
-   * ⚠️ Avoid direct use of neutral, prefer semantic variables
+   * ⚠️ NEVER use direct colors: text-white, bg-white, text-black, bg-black, etc.
+   * ⚠️ Use semantic variables only for maintainability and theme consistency.
    */
   :root {
     --color-primary: 217 91% 60%;
@@ -505,7 +506,7 @@
     @apply alert;
     background-color: hsl(var(--color-success-bg));
     border-color: hsl(var(--color-success));
-    color: hsl(var(--color-text-primary));
+    color: hsl(0 0% 15%);
   }
 
   .dark .alert-success {
@@ -518,7 +519,7 @@
     @apply alert;
     background-color: hsl(var(--color-warning-bg));
     border-color: hsl(var(--color-warning));
-    color: hsl(var(--color-text-primary));
+    color: hsl(0 0% 15%);
   }
 
   .dark .alert-warning {
@@ -531,7 +532,7 @@
     @apply alert;
     background-color: hsl(var(--color-danger-bg));
     border-color: hsl(var(--color-danger));
-    color: hsl(var(--color-text-primary));
+    color: hsl(0 0% 15%);
   }
 
   .dark .alert-danger {
@@ -544,7 +545,7 @@
     @apply alert;
     background-color: hsl(var(--color-info-bg));
     border-color: hsl(var(--color-info));
-    color: hsl(var(--color-text-primary));
+    color: hsl(0 0% 15%);
   }
 
   .dark .alert-info {

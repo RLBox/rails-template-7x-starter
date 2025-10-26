@@ -43,6 +43,7 @@ class Admin::BaseController < ActionController::Base
 
   def check_first_login_password_hint
     return unless current_admin
+    return unless Rails.env.production?
     return unless current_admin.first_login?
     return if controller_name == 'accounts' && action_name == 'edit'
     return if controller_name == 'accounts' && action_name == 'update'

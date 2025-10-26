@@ -13,7 +13,7 @@
   </div>
 
   <!-- Form -->
-  <div class="card">
+  <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
     <div class="card-body">
       <%= form_with model: [:admin, @administrator], local: true, class: "space-y-6" do |form| %>
         <!-- Error Messages -->
@@ -84,7 +84,7 @@
               Role <span class="text-red-500">*</span>
             <% end %>
             <%= form.select :role, Administrator.role_options, { selected: @administrator.role }, {
-              class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white",
+              class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500",
               required: true
             } %>
             <% if @administrator.errors[:role].any? %>

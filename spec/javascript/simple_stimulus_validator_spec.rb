@@ -956,10 +956,41 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
       registration_errors = []
       value_errors = []
       outlet_errors = []
+      color_errors = []
 
       view_files.each do |view_file|
         content = File.read(view_file)
         relative_path = view_file.sub(Rails.root.to_s + '/', '')
+
+        # Check for direct color usage (should use semantic tokens)
+        forbidden_colors = {
+          'text-white' => 'text color from design system (e.g., style="color: hsl(var(--color-text-primary))")',
+          'text-black' => 'text color from design system (e.g., style="color: hsl(var(--color-text-primary))")',
+          'bg-white' => 'background color from design system (e.g., style="background-color: hsl(var(--color-surface))")',
+          'bg-black' => 'background color from design system (e.g., style="background-color: hsl(var(--color-primary))")',
+          'border-white' => 'border color from design system (e.g., style="border-color: hsl(var(--color-border))")',
+          'border-black' => 'border color from design system (e.g., style="border-color: hsl(var(--color-border))")'
+        }
+
+        file_colors = []
+        forbidden_colors.each do |color_class, suggestion|
+          if content.match?(/\b#{Regexp.escape(color_class)}\b/)
+            count = content.scan(/\b#{Regexp.escape(color_class)}\b/).size
+            file_colors << {
+              color: color_class,
+              count: count,
+              suggestion: suggestion
+            }
+          end
+        end
+
+        # One error per file, not per color
+        if file_colors.any?
+          color_errors << {
+            file: relative_path,
+            colors: file_colors
+          }
+        end
 
         doc = Nokogiri::HTML::DocumentFragment.parse(content)
 
@@ -1342,7 +1373,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
       # Remove duplicates from registration errors
       registration_errors = registration_errors.uniq { |error| [error[:controller], error[:file]] }
 
-      total_errors = target_errors.length + target_scope_errors.length + action_errors.length + scope_errors.length + registration_errors.length + value_errors.length + outlet_errors.length
+      total_errors = target_errors.length + target_scope_errors.length + action_errors.length + scope_errors.length + registration_errors.length + value_errors.length + outlet_errors.length + color_errors.length
 
       puts "\n🔍 Simple Stimulus Validation Results:"
       puts "   📁 Scanned: #{view_files.length} views, #{controller_data.keys.length} controllers"
@@ -1434,6 +1465,16 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
           end
         end
 
+        if color_errors.any?
+          puts "\n   🎨 Direct Color Usage (#{color_errors.length} files):"
+          color_errors.each do |error|
+            puts "     • #{error[:file]}:"
+            error[:colors].each do |color_info|
+              puts "       - #{color_info[:color]} (#{color_info[:count]}x) → use #{color_info[:suggestion]}"
+            end
+          end
+        end
+
         error_details = []
 
         registration_errors.each do |error|
@@ -1466,6 +1507,11 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
 
         action_errors.each do |error|
           error_details << "Method error: #{error[:controller]}##{error[:method]} in #{error[:file]} - #{error[:suggestion]}"
+        end
+
+        color_errors.each do |error|
+          colors_list = error[:colors].map { |c| c[:color] }.join(', ')
+          error_details << "Direct color usage in #{error[:file]}: #{colors_list} - use semantic tokens from design system"
         end
 
         expect(total_errors).to eq(0), "Stimulus validation failed:\n#{error_details.join("\n")}"
@@ -2279,6 +2325,26 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
               suggestion: 'Remove format blocks - render Turbo Streams directly or HTML templates only'
             }
           end
+
+          # Detect implicit redirect_to @model (must use explicit path helpers)
+          if stripped.match?(/\bredirect_to\s+@\w+/)
+            # Exclude if already using path helper: redirect_to xxx_path(@model)
+            unless stripped.match?(/\bredirect_to\s+\w+_(path|url)\(/)
+              # Extract the instance variable name for better suggestion
+              var_match = stripped.match(/\bredirect_to\s+(@\w+)/)
+              var_name = var_match ? var_match[1] : '@resource'
+              resource_name = var_name.gsub('@', '')
+
+              violations << {
+                file: relative_path,
+                line: line_number,
+                code: stripped,
+                type: 'redirect_to @model',
+                issue: 'Implicit route for redirect_to makes code less readable and harder to refactor',
+                suggestion: "Use explicit route helper: redirect_to #{resource_name}_path(#{var_name}) instead of redirect_to #{var_name}"
+              }
+            end
+          end
         end
       end
 
@@ -2338,6 +2404,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
         puts "      • head :ok only returns status code, frontend cannot determine what to update"
         puts "      • JSON responses require manual DOM updates, easy to miss related elements (e.g. counters)"
         puts "      • Manual form submission (requestSubmit) bypasses Turbo's automatic handling"
+        puts "      • Implicit redirect_to @model makes code less searchable and harder to refactor routes"
         puts "      • Turbo Stream (action.turbo_stream.erb) lets backend control UI updates precisely"
         puts "      • API endpoints (app/controllers/api/) are exempt from this requirement\n"
 
