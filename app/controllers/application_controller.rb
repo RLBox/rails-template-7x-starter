@@ -4,5 +4,6 @@ class ApplicationController < ActionController::Base
 
   include FriendlyErrorHandlingConcern
   include DevelopmentCsrfBypassConcern
+  include TurboCompatibleRenderConcern
 
 end

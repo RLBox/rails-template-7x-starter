@@ -16,19 +16,6 @@ module ApplicationHelper
     body_class_page
   end
 
-  # Admin active for helper
-  def admin_active_for(controller_name, navbar_name)
-    if controller_name.to_s == admin_root_path
-      return controller_name.to_s == navbar_name.to_s ? "active" : ""
-    end
-    navbar_name.to_s.include?(controller_name.to_s) ? 'active' : ''
-  end
-
-  def current_path
-    request.env['PATH_INFO']
-  end
-
-
   # Flash message class helper
   def flash_alert_class(level)
     case level.to_sym
@@ -52,9 +39,12 @@ module ApplicationHelper
     model.class.validators_on(field_name.to_sym).any? { |v| v.is_a?(ActiveModel::Validations::PresenceValidator) }
   end
 
-  # This prevents AI from trying to add non-existent themes
+  # This prevents AI from trying to add non-existent themes and rescue total_pages errors
   def paginate(scope, **options)
     super(scope, **options.except(:theme))
+  rescue => e
+    Rails.logger.error("Pagination error, ignored : #{e.message}")
+    ''
   end
 
   # Action badge class for operation logs
@@ -72,6 +62,47 @@ module ApplicationHelper
       'badge-danger dark:badge-danger'
     else
       'badge-neutral dark:badge-neutral'
+    end
+  end
+
+  # Override button_to to fix AI's common mistake
+  # AI often writes: button_to 'Text', url, options do ... end
+  # But correct syntax is: button_to url, options do ... end
+  def button_to(name = nil, options = nil, html_options = nil, &block)
+    if block_given?
+      # When block is given, first param should be URL, not text
+      # If name looks like text and options looks like URL, fix it
+      if name.is_a?(String) && !name.start_with?('/', 'http') && options.is_a?(String)
+        # AI mistake detected: button_to 'Text', '/', options do...
+        # Ignore the text, use options as URL
+        super(options, html_options, &block)
+      else
+        # Correct usage: button_to '/', options do...
+        super(name, options, html_options, &block)
+      end
+    else
+      # Normal button_to without block
+      super
+    end
+  end
+
+  # Override link_to to fix AI's common mistake
+  # Similar issue: AI might pass redundant parameters with blocks
+  def link_to(name = nil, options = nil, html_options = nil, &block)
+    if block_given?
+      # When block is given, first param should be URL
+      # If name looks like text and options looks like URL, fix it
+      if name.is_a?(String) && !name.start_with?('/', 'http', '#') && options.is_a?(String)
+        # AI mistake: link_to 'Text', '/', options do...
+        # Ignore the text, use options as URL
+        super(options, html_options, &block)
+      else
+        # Correct usage: link_to '/', options do...
+        super(name, options, html_options, &block)
+      end
+    else
+      # Normal link_to without block
+      super
     end
   end
 end

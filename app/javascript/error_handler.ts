@@ -4,7 +4,7 @@
 import { SourceMapConsumer } from 'source-map-js'
 
 // Error type definitions
-type ErrorType = 'javascript' | 'interaction' | 'network' | 'promise' | 'http' | 'actioncable' | 'manual' | 'stimulus' | 'asyncjob';
+type ErrorType = 'javascript' | 'interaction' | 'promise' | 'http' | 'actioncable' | 'manual' | 'stimulus' | 'asyncjob';
 
 // Base error info interface
 interface BaseErrorInfo {
@@ -32,9 +32,9 @@ interface PromiseErrorInfo extends BaseErrorInfo {
   error?: any;
 }
 
-// Network/HTTP error info
-interface NetworkErrorInfo extends BaseErrorInfo {
-  type: 'network' | 'http';
+// HTTP error info
+interface HttpErrorInfo extends BaseErrorInfo {
+  type: 'http';
   url?: string;
   method?: string;
   status?: number;
@@ -83,7 +83,7 @@ interface StimulusErrorInfo extends BaseErrorInfo {
 }
 
 // Union type for all possible error info types
-type ErrorInfo = JavaScriptErrorInfo | PromiseErrorInfo | NetworkErrorInfo | ActionCableErrorInfo | AsyncJobErrorInfo | ManualErrorInfo | StimulusErrorInfo;
+type ErrorInfo = JavaScriptErrorInfo | PromiseErrorInfo | HttpErrorInfo | ActionCableErrorInfo | AsyncJobErrorInfo | ManualErrorInfo | StimulusErrorInfo;
 
 // Unified error detail configuration system
 interface ErrorDetailConfig {
@@ -142,33 +142,6 @@ const ERROR_TYPE_CONFIGS: { [key: string]: ErrorTypeConfig } = {
         priority: 9,
         htmlFormatter: (value: number) => `<div class="mb-1"><strong>Line:</strong> ${value}</div>`,
         textFormatter: (value: number) => `Line: ${value}`
-      }
-    }
-  },
-  network: {
-    icon: '📡',
-    fields: {
-      method: {
-        label: 'Method',
-        priority: 10,
-        htmlFormatter: (value: string) => `<div class="mb-1"><strong>Method:</strong> ${value}</div>`,
-        textFormatter: (value: string) => `Method: ${value}`
-      },
-      status: {
-        label: 'Status Code',
-        priority: 9,
-        htmlFormatter: (value: number) => `<div class="mb-1"><strong>Status Code:</strong> ${value}</div>`,
-        textFormatter: (value: number) => `Status Code: ${value}`
-      },
-      jsonError: {
-        label: 'JSON Error Details',
-        priority: 5,
-        condition: (error) => !!error.jsonError,
-        htmlFormatter: (value: any) => {
-          const preClass = 'text-xs bg-gray-800 p-3 rounded overflow-x-auto whitespace-pre-wrap leading-relaxed';
-          return `<div class="mb-3"><div class="mb-1"><strong>JSON Error Details:</strong></div><pre class="${preClass}">${JSON.stringify(value, null, 2)}</pre></div>`;
-        },
-        textFormatter: (value: any) => `JSON Error Details:\n${JSON.stringify(value, null, 2)}`
       }
     }
   },
@@ -381,7 +354,6 @@ interface StoredError {
 interface ErrorCounts {
   javascript: number;
   interaction: number;
-  network: number;
   promise: number;
   http: number;
   actioncable: number;
@@ -400,7 +372,6 @@ class ErrorHandler {
   private errorCounts: ErrorCounts = {
     javascript: 0,
     interaction: 0,
-    network: 0,
     promise: 0,
     http: 0,
     actioncable: 0,
@@ -751,62 +722,46 @@ class ErrorHandler {
   interceptFetch() {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-      try {
-        const response = await originalFetch(...args);
+      const response = await originalFetch(...args);
 
-        // Only handle 500+ errors with JSON content-type
-        if (response.status >= 500) {
-          const contentType = response.headers.get('content-type');
+      // Only handle 500+ errors with JSON content-type
+      if (response.status >= 500) {
+        const contentType = response.headers.get('content-type');
 
-          // Only report JSON API errors, ignore HTML/other responses
-          if (contentType && contentType.includes('application/json')) {
-            const requestOptions = args[1] || {};
-            const method = (requestOptions.method || 'GET').toUpperCase();
+        // Only report JSON API errors, ignore HTML/other responses
+        if (contentType && contentType.includes('application/json')) {
+          const requestOptions = args[1] || {};
+          const method = (requestOptions.method || 'GET').toUpperCase();
 
-            let jsonError = null;
+          let jsonError = null;
 
-            try {
-              const responseClone = response.clone();
-              jsonError = await responseClone.json();
-            } catch (bodyError) {
-              jsonError = { error: 'Unable to read JSON response' };
-            }
-
-            // Create detailed error message
-            let detailedMessage = `${method} ${args[0]} - HTTP ${response.status}`;
-            if (jsonError) {
-              const errorMsg = jsonError.error || jsonError.message || jsonError.errors || 'Unknown error';
-              detailedMessage += ` - ${errorMsg}`;
-            }
-
-            this.handleError({
-              message: detailedMessage,
-              url: args[0].toString(),
-              method: method,
-              type: 'http',
-              status: response.status,
-              jsonError: jsonError,
-              timestamp: new Date().toISOString()
-            });
+          try {
+            const responseClone = response.clone();
+            jsonError = await responseClone.json();
+          } catch (bodyError) {
+            jsonError = { error: 'Unable to read JSON response' };
           }
+
+          // Create detailed error message
+          let detailedMessage = `${method} ${args[0]} - HTTP ${response.status}`;
+          if (jsonError) {
+            const errorMsg = jsonError.error || jsonError.message || jsonError.errors || 'Unknown error';
+            detailedMessage += ` - ${errorMsg}`;
+          }
+
+          this.handleError({
+            message: detailedMessage,
+            url: args[0].toString(),
+            method: method,
+            type: 'http',
+            status: response.status,
+            jsonError: jsonError,
+            timestamp: new Date().toISOString()
+          });
         }
-
-        return response;
-      } catch (error) {
-        // Network errors - always report as these are genuine connection failures
-        const requestOptions = args[1] || {};
-        const method = (requestOptions.method || 'GET').toUpperCase();
-
-        this.handleError({
-          message: `${method} ${args[0]} - Network Error: ${(error as Error).message}`,
-          url: args[0].toString(),
-          method: method,
-          error: error as Error,
-          type: 'network',
-          timestamp: new Date().toISOString()
-        });
-        throw error;
       }
+
+      return response;
     };
   }
 
@@ -825,26 +780,7 @@ class ErrorHandler {
       const method = xhr._errorHandler_method || 'GET';
       const url = xhr._errorHandler_url || 'unknown';
 
-      // Set up error event listeners
-      xhr.addEventListener('error', (event: Event) => {
-        window.errorHandler?.handleError({
-          message: `${method} ${url} - Network Error: Request failed`,
-          url: url,
-          method: method,
-          type: 'network',
-          timestamp: new Date().toISOString()
-        });
-      });
-
-      xhr.addEventListener('timeout', () => {
-        window.errorHandler?.handleError({
-          message: `${method} ${url} - Network Error: Request timeout`,
-          url: url,
-          method: method,
-          type: 'network',
-          timestamp: new Date().toISOString()
-        });
-      });
+      // Skip network error and timeout listeners (not actionable frontend errors)
 
       xhr.addEventListener('loadend', () => {
         // Only handle 500+ errors with JSON content-type
@@ -1392,7 +1328,6 @@ ${error.message}`;
     this.errorCounts = {
       javascript: 0,
       interaction: 0,
-      network: 0,
       promise: 0,
       http: 0,
       actioncable: 0,
@@ -1474,8 +1409,12 @@ ${error.message}`;
     if (!message) return 'Unknown error';
 
     const cleanMessage = message
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
-      .replace(/\n/g, ' ') // Replace newlines with spaces
+      .replace(/&/g, '&amp;')   // Escape & first
+      .replace(/</g, '&lt;')    // Escape <
+      .replace(/>/g, '&gt;')    // Escape >
+      .replace(/"/g, '&quot;')  // Escape "
+      .replace(/'/g, '&#39;')   // Escape '
+      .replace(/\n/g, ' ')      // Replace newlines with spaces
       .trim();
 
     return cleanMessage.length > 100
