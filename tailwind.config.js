@@ -48,6 +48,17 @@ module.exports = {
           bg: 'hsl(var(--color-info-bg) / <alpha-value>)',
         },
       },
+      backgroundColor: {
+        // Aliases for AI's common mistake: bg-bg-primary -> bg-primary
+        'bg-primary': 'hsl(var(--color-primary) / <alpha-value>)',
+        'bg-secondary': 'hsl(var(--color-secondary) / <alpha-value>)',
+        'bg-surface': 'hsl(var(--color-surface) / <alpha-value>)',
+        'bg-surface-elevated': 'hsl(var(--color-surface-elevated) / <alpha-value>)',
+        'bg-danger': 'hsl(var(--color-danger) / <alpha-value>)',
+        'bg-warning': 'hsl(var(--color-warning) / <alpha-value>)',
+        'bg-success': 'hsl(var(--color-success) / <alpha-value>)',
+        'bg-info': 'hsl(var(--color-info) / <alpha-value>)',
+      },
       textColor: {
         primary: {
           DEFAULT: 'hsl(var(--color-text-primary) / <alpha-value>)',
@@ -62,6 +73,10 @@ module.exports = {
         muted: {
           DEFAULT: 'hsl(var(--color-text-muted) / <alpha-value>)',
         },
+        // Aliases for AI's common mistake: text-text-primary -> text-text-primary
+        'text-primary': 'hsl(var(--color-text-primary) / <alpha-value>)',
+        'text-secondary': 'hsl(var(--color-text-secondary) / <alpha-value>)',
+        'text-muted': 'hsl(var(--color-text-muted) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['var(--font-family-sans)', 'ui-sans-serif', 'system-ui'],

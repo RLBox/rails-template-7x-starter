@@ -16,6 +16,10 @@ module ApplicationHelper
     body_class_page
   end
 
+  def current_path
+    request.env['PATH_INFO']
+  end
+
   # Flash message class helper
   def flash_alert_class(level)
     case level.to_sym
