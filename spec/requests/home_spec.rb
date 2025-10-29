@@ -54,10 +54,10 @@ RSpec.describe "Home", type: :request do
         expect(bad_links).to be_empty,
           "Found #{bad_links.size} demo placeholder link(s) in home/index.html.erb: #{bad_links.map { |l| l.to_html.truncate(80) }.join(', ')}. Use real Rails routes (like rooms_path) instead of copying from demo.html.erb."
 
-        # Check for forms with placeholder action
-        bad_forms = doc.css('form[action="#"], form[action=""], form[action^="javascript:"]')
+        # Check for forms without action or with placeholder action
+        bad_forms = doc.css('form:not([action]), form[action="#"], form[action=""], form[action^="javascript:"]')
         expect(bad_forms).to be_empty,
-          "Found #{bad_forms.size} form(s) with placeholder action in home/index.html.erb: #{bad_forms.map { |f| f.to_html.truncate(80) }.join(', ')}. Use Rails form helpers (form_with) instead of copying from demo.html.erb."
+          "Found #{bad_forms.size} demo placeholder form(s) in home/index.html.erb. Please implement real business logic using Rails form helpers (form_with). WARNING: Never nest button_to inside a form element."
       end
     end
   end

@@ -1,5 +1,15 @@
 #!/usr/bin/env sh
 
+# Clean up stale server PID
+if [ -f tmp/pids/server.pid ]; then
+  pid=$(cat tmp/pids/server.pid)
+  if kill -0 "$pid" 2>/dev/null; then
+    echo "Stopping existing server (PID: $pid)..."
+    kill "$pid" && sleep 1
+  fi
+  rm -f tmp/pids/server.pid
+fi
+
 if gem list --no-installed --exact --silent foreman; then
   echo "Installing foreman..."
   gem install foreman

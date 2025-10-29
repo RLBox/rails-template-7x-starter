@@ -9,3 +9,10 @@ if Rails.env.development?
     end
   end
 end
+
+# Enhance db:seed task to create a marker file after execution
+Rake::Task['db:seed'].enhance do
+  marker_file = Rails.root.join('tmp/seeds_executed')
+  File.write(marker_file, Time.now.to_s)
+  puts "✓ Seeds executed at #{Time.now}"
+end

@@ -175,23 +175,27 @@
     box-shadow: none;
   }
 
-  .btn-secondary {
+  .btn-secondary,
+  .btn-info {
     @apply btn px-4 py-2 text-sm text-white;
     background-color: hsl(var(--color-secondary));
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-secondary:hover:not(:disabled) {
+  .btn-secondary:hover:not(:disabled),
+  .btn-info:hover:not(:disabled) {
     background-color: hsl(var(--color-secondary-dark));
     box-shadow: var(--shadow);
   }
 
-  .btn-secondary:focus {
+  .btn-secondary:focus,
+  .btn-info:focus {
     outline: none;
     box-shadow: 0 0 0 3px hsl(var(--color-secondary) / 0.3);
   }
 
-  .btn-secondary:disabled {
+  .btn-secondary:disabled,
+  .btn-info:disabled {
     background-color: hsl(var(--color-secondary) / 0.5);
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
@@ -267,23 +271,27 @@
     box-shadow: none;
   }
 
-  .btn-danger {
+  .btn-danger,
+  .btn-error {
     @apply btn px-4 py-2 text-sm text-white;
     background-color: hsl(var(--color-danger));
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-danger:hover:not(:disabled) {
+  .btn-danger:hover:not(:disabled),
+  .btn-error:hover:not(:disabled) {
     opacity: 0.9;
     box-shadow: var(--shadow);
   }
 
-  .btn-danger:focus {
+  .btn-danger:focus,
+  .btn-error:focus {
     outline: none;
     box-shadow: 0 0 0 3px hsl(var(--color-danger) / 0.3);
   }
 
-  .btn-danger:disabled {
+  .btn-danger:disabled,
+  .btn-error:disabled {
     background-color: hsl(var(--color-danger) / 0.5);
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
@@ -313,23 +321,31 @@
     box-shadow: none;
   }
 
-  .btn-ghost {
+  .btn-ghost,
+  .btn-default,
+  .btn-light {
     @apply btn px-4 py-2 text-sm text-secondary;
     background-color: transparent;
     border: 1px solid hsl(var(--color-border));
   }
 
-  .btn-ghost:hover:not(:disabled) {
+  .btn-ghost:hover:not(:disabled),
+  .btn-default:hover:not(:disabled),
+  .btn-light:hover:not(:disabled) {
     background-color: hsl(var(--color-surface-elevated));
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-ghost:focus {
+  .btn-ghost:focus,
+  .btn-default:focus,
+  .btn-light:focus {
     outline: none;
     box-shadow: 0 0 0 3px hsl(var(--color-text-secondary) / 0.3);
   }
 
-  .btn-ghost:disabled {
+  .btn-ghost:disabled,
+  .btn-default:disabled,
+  .btn-light:disabled {
     border-color: hsl(var(--color-border) / 0.5);
     opacity: 0.5;
     background-color: transparent;
@@ -337,15 +353,21 @@
     box-shadow: none;
   }
 
-  .dark .btn-ghost {
+  .dark .btn-ghost,
+  .dark .btn-default,
+  .dark .btn-light {
     border-color: hsl(var(--color-border));
   }
 
-  .dark .btn-ghost:hover:not(:disabled) {
+  .dark .btn-ghost:hover:not(:disabled),
+  .dark .btn-default:hover:not(:disabled),
+  .dark .btn-light:hover:not(:disabled) {
     background-color: hsl(var(--color-surface-elevated));
   }
 
-  .dark .btn-ghost:disabled {
+  .dark .btn-ghost:disabled,
+  .dark .btn-default:disabled,
+  .dark .btn-light:disabled {
     border-color: hsl(var(--color-border) / 0.3);
     background-color: transparent;
   }
