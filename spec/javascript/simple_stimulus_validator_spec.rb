@@ -962,14 +962,14 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
         content = File.read(view_file)
         relative_path = view_file.sub(Rails.root.to_s + '/', '')
 
-        # Check for direct color usage (should use semantic tokens)
+        # Check for direct color usage (may cause contrast issues)
         forbidden_colors = {
-          'text-white' => 'text color from design system (e.g., style="color: hsl(var(--color-text-primary))")',
-          'text-black' => 'text color from design system (e.g., style="color: hsl(var(--color-text-primary))")',
-          'bg-white' => 'background color from design system (e.g., style="background-color: hsl(var(--color-surface))")',
-          'bg-black' => 'background color from design system (e.g., style="background-color: hsl(var(--color-primary))")',
-          'border-white' => 'border color from design system (e.g., style="border-color: hsl(var(--color-border))")',
-          'border-black' => 'border color from design system (e.g., style="border-color: hsl(var(--color-border))")'
+          'text-white' => 'design system text colors first; if unavailable and contrast confirmed OK, use text-gray-50/100',
+          'text-black' => 'design system text colors first; if unavailable and contrast confirmed OK, use text-gray-900/800',
+          'bg-white' => 'design system background colors first; if unavailable and contrast confirmed OK, use bg-gray-50/100',
+          'bg-black' => 'design system background colors first; if unavailable and contrast confirmed OK, use bg-gray-900/800',
+          'border-white' => 'design system border colors first; if unavailable and contrast confirmed OK, use border-gray-200/300',
+          'border-black' => 'design system border colors first; if unavailable and contrast confirmed OK, use border-gray-700/800'
         }
 
         file_colors = []
@@ -1466,13 +1466,15 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
         end
 
         if color_errors.any?
-          puts "\n   🎨 Direct Color Usage (#{color_errors.length} files):"
+          puts "\n   🎨 Potential Contrast Issues (#{color_errors.length} files):"
           color_errors.each do |error|
             puts "     • #{error[:file]}:"
             error[:colors].each do |color_info|
               puts "       - #{color_info[:color]} (#{color_info[:count]}x) → use #{color_info[:suggestion]}"
             end
           end
+          puts "\n   💡 Warning: These colors may cause contrast issues (e.g., white text on white background)."
+          puts "      Solution: 1) Use design system colors first  2) If unavailable, confirm contrast is OK, then use gray shades as fallback."
         end
 
         error_details = []
@@ -1511,7 +1513,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
 
         color_errors.each do |error|
           colors_list = error[:colors].map { |c| c[:color] }.join(', ')
-          error_details << "Direct color usage in #{error[:file]}: #{colors_list} - use semantic tokens from design system"
+          error_details << "Potential contrast issues in #{error[:file]}: #{colors_list} - Use design system colors first; if unavailable, confirm contrast is OK, then use gray shades as fallback"
         end
 
         expect(total_errors).to eq(0), "Stimulus validation failed:\n#{error_details.join("\n")}"

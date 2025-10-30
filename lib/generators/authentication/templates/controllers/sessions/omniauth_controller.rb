@@ -16,7 +16,20 @@ class Sessions::OmniauthController < ApplicationController
   end
 
   def failure
-    flash[:alert] = "Authentication failed: #{params[:message]&.humanize || 'Unknown error'}"
+    error_type = params[:message] || request.env['omniauth.error.type']
+
+    error_message = case error_type.to_s
+    when 'access_denied'
+      "Authorization was cancelled. Please try again if you'd like to sign in."
+    when 'invalid_credentials'
+      "Invalid credentials provided. Please check your information and try again."
+    when 'timeout'
+      "Authentication timed out. Please try again."
+    else
+      "Authentication failed: #{error_type&.to_s&.humanize || 'Unknown error'}"
+    end
+
+    flash[:alert] = error_message
     redirect_to sign_in_path
   end
 

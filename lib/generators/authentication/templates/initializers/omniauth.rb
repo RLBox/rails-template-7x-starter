@@ -1,3 +1,11 @@
+# Configure OmniAuth to handle failures gracefully
+OmniAuth.config.on_failure = proc { |env|
+  Sessions::OmniauthController.action(:failure).call(env)
+}
+
+# Allow both GET and POST for OAuth callbacks
+OmniAuth.config.allowed_request_methods = [:get, :post]
+
 Rails.application.config.middleware.use OmniAuth::Builder do
   # OAuth providers - only enabled if OAUTH_ENABLED is true
 
