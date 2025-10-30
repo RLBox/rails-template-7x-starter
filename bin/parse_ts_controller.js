@@ -117,6 +117,33 @@ function checkAntiPatterns(methodBody, methodName) {
   }
 }
 
+// Helper function to check if a node has skip validation comment
+function checkSkipComment(node) {
+  // Get the statement or expression statement that contains this call
+  let statement = node;
+  while (statement.parent && !ts.isExpressionStatement(statement.parent) && !ts.isVariableStatement(statement.parent)) {
+    statement = statement.parent;
+  }
+
+  if (statement.parent) {
+    statement = statement.parent;
+  }
+
+  // Get the full text range including trivia (comments)
+  const fullStart = statement.getFullStart();
+  const start = statement.getStart(sourceFile);
+
+  // Get the text between fullStart and start (this contains leading trivia/comments)
+  const triviaText = sourceCode.substring(fullStart, start);
+
+  // Check for stimulus-validator: disable-next-line comment
+  if (triviaText.includes('stimulus-validator: disable-next-line')) {
+    return true;
+  }
+
+  return false;
+}
+
 // Helper function to extract querySelector calls
 function extractQuerySelectors(node, methodName = null) {
   if (ts.isCallExpression(node)) {
@@ -135,12 +162,15 @@ function extractQuerySelectors(node, methodName = null) {
             // Extract the selector argument
             if (node.arguments.length > 0) {
               const selectorArg = node.arguments[0];
+              const skipValidation = checkSkipComment(node);
+
               if (ts.isStringLiteral(selectorArg)) {
                 result.querySelectors.push({
                   selector: selectorArg.text,
                   method: methodCall,
                   inMethod: methodName,
-                  line: sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1
+                  line: sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1,
+                  skipValidation: skipValidation
                 });
               } else if (ts.isTemplateExpression(selectorArg) || ts.isNoSubstitutionTemplateLiteral(selectorArg)) {
                 // Handle template literals
@@ -150,7 +180,8 @@ function extractQuerySelectors(node, methodName = null) {
                   method: methodCall,
                   inMethod: methodName,
                   line: sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1,
-                  isTemplate: true
+                  isTemplate: true,
+                  skipValidation: skipValidation
                 });
               }
             }

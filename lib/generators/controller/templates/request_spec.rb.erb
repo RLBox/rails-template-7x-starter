@@ -31,13 +31,13 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
     <%- else -%>
   describe "GET /<%= plural_name %>/:id" do
     <%- if requires_authentication? -%>
-    let(:<%= singular_name %>) { create(:<%= singular_name %>, user: user) }
+    let(:<%= singular_name %>_record) { create(:<%= singular_name %>, user: user) }
     <%- else -%>
-    let(:<%= singular_name %>) { create(:<%= singular_name %>) }
+    let(:<%= singular_name %>_record) { create(:<%= singular_name %>) }
     <%- end %>
 
     it "returns http success" do
-      get <%= singular_name %>_path(<%= singular_name %>)
+      get <%= singular_name %>_path(<%= singular_name %>_record)
       expect(response).to be_success_with_view_check('show')
     end
   end
@@ -64,13 +64,13 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
     <%- else -%>
   describe "GET /<%= plural_name %>/:id/edit" do
     <%- if requires_authentication? -%>
-    let(:<%= singular_name %>) { create(:<%= singular_name %>, user: user) }
+    let(:<%= singular_name %>_record) { create(:<%= singular_name %>, user: user) }
     <%- else -%>
-    let(:<%= singular_name %>) { create(:<%= singular_name %>) }
+    let(:<%= singular_name %>_record) { create(:<%= singular_name %>) }
     <%- end %>
 
     it "returns http success" do
-      get edit_<%= singular_name %>_path(<%= singular_name %>)
+      get edit_<%= singular_name %>_path(<%= singular_name %>_record)
       expect(response).to be_success_with_view_check('edit')
     end
   end

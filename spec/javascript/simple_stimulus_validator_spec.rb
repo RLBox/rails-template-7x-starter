@@ -1727,9 +1727,15 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
             in_method = qs['inMethod']
             line = qs['line']
             is_template = qs['isTemplate']
+            skip_validation = qs['skipValidation']
 
             # Skip template literals for now (they're dynamic)
             if is_template
+              next
+            end
+
+            # Skip if marked with stimulus-validator: disable-next-line comment
+            if skip_validation
               next
             end
 
@@ -1785,7 +1791,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
                   line: line,
                   controller_file: controller_file,
                   view_file: relative_path,
-                  suggestion: "Selector '#{selector}' exists in #{relative_path} but is outside the '#{controller_name}' controller scope. Move the element(s) inside <div data-controller=\"#{controller_name}\">...</div> or adjust the selector."
+                  suggestion: "Selector '#{selector}' exists in #{relative_path} but is outside the '#{controller_name}' controller scope. Move the element(s) inside <div data-controller=\"#{controller_name}\">...</div>. If you've confirmed this is correct, add '// stimulus-validator: disable-next-line' before the querySelector call to skip validation."
                 }
               else
                 # Selector doesn't exist at all
@@ -1796,7 +1802,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
                   line: line,
                   controller_file: controller_file,
                   view_file: relative_path,
-                  suggestion: "Selector '#{selector}' not found in #{relative_path}. Add an element with this selector within the '#{controller_name}' controller scope, or the querySelector call in #{in_method}() may fail at runtime."
+                  suggestion: "Selector '#{selector}' not found in #{relative_path}. Add an element with this selector within the '#{controller_name}' controller scope. If you've confirmed this is correct, add '// stimulus-validator: disable-next-line' before the querySelector call to skip validation."
                 }
               end
             end
@@ -1805,6 +1811,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
       end
 
       total_errors = selector_errors.length + selector_scope_errors.length
+      MAX_DISPLAY_ERRORS = 5
 
       puts "\n🔍 QuerySelector Validation Results:"
       total_selectors = controller_data.values.map { |d| (d[:querySelectors] || []).length }.sum
@@ -1815,30 +1822,54 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
       else
         puts "\n   ❌ Found #{total_errors} issue(s):"
 
+        displayed_count = 0
+
         if selector_errors.any?
+          display_count = [selector_errors.length, MAX_DISPLAY_ERRORS - displayed_count].min
           puts "\n   🔍 Missing Selectors (#{selector_errors.length}):"
-          selector_errors.each do |error|
+          selector_errors.take(display_count).each do |error|
             puts "     • #{error[:controller]}##{error[:method]}() at #{error[:controller_file]}:#{error[:line]}"
             puts "       Selector '#{error[:selector]}' not found in #{error[:view_file]}"
           end
+          displayed_count += display_count
+
+          if selector_errors.length > display_count
+            remaining = selector_errors.length - display_count
+            puts "       ... and #{remaining} more. Fix these first, then re-run to see remaining errors."
+          end
         end
 
-        if selector_scope_errors.any?
+        if selector_scope_errors.any? && displayed_count < MAX_DISPLAY_ERRORS
+          display_count = [selector_scope_errors.length, MAX_DISPLAY_ERRORS - displayed_count].min
           puts "\n   🔍 Selector Out of Scope Errors (#{selector_scope_errors.length}):"
-          selector_scope_errors.each do |error|
+          selector_scope_errors.take(display_count).each do |error|
             puts "     • #{error[:controller]}##{error[:method]}() at #{error[:controller_file]}:#{error[:line]}"
             puts "       Selector '#{error[:selector]}' exists but is out of scope in #{error[:view_file]}"
+          end
+          displayed_count += display_count
+
+          if selector_scope_errors.length > display_count
+            remaining = selector_scope_errors.length - display_count
+            puts "       ... and #{remaining} more. Fix these first, then re-run to see remaining errors."
           end
         end
 
         error_details = []
 
-        selector_errors.each do |error|
-          error_details << "Missing selector: #{error[:controller]}##{error[:method]}() uses '#{error[:selector]}' at #{error[:controller_file]}:#{error[:line]} - #{error[:suggestion]}"
+        # Only include first MAX_DISPLAY_ERRORS in error details
+        all_errors = selector_errors + selector_scope_errors
+        all_errors.take(MAX_DISPLAY_ERRORS).each do |error|
+          if error.key?(:view_file)
+            if selector_errors.include?(error)
+              error_details << "Missing selector: #{error[:controller]}##{error[:method]}() uses '#{error[:selector]}' at #{error[:controller_file]}:#{error[:line]} - #{error[:suggestion]}"
+            else
+              error_details << "Selector out of scope: #{error[:controller]}##{error[:method]}() uses '#{error[:selector]}' at #{error[:controller_file]}:#{error[:line]} - #{error[:suggestion]}"
+            end
+          end
         end
 
-        selector_scope_errors.each do |error|
-          error_details << "Selector out of scope: #{error[:controller]}##{error[:method]}() uses '#{error[:selector]}' at #{error[:controller_file]}:#{error[:line]} - #{error[:suggestion]}"
+        if total_errors > MAX_DISPLAY_ERRORS
+          error_details << "\n... and #{total_errors - MAX_DISPLAY_ERRORS} more errors. Fix the above first, then re-run to see remaining errors."
         end
 
         expect(total_errors).to eq(0), "QuerySelector validation failed:\n#{error_details.join("\n")}"
