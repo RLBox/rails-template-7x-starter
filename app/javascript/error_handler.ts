@@ -717,6 +717,34 @@ class ErrorHandler {
         }, 2000); // 2 second window for interaction errors
       });
     });
+
+    // Check for placeholder links on click
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (!target) return;
+
+      const link = target.closest('a');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+
+      // Check for placeholder/invalid href values
+      if (!href || href === '#' || href === '#!' || href.startsWith('javascript:')) {
+        // Check if this link has a data-action (Stimulus action), if so, it's OK
+        if (link.hasAttribute('data-action')) {
+          return;
+        }
+
+        // Report placeholder link error
+        this.handleError({
+          message: `Clicked placeholder link with href="${href || '(empty)'}" - Use real Rails routes instead`,
+          type: 'interaction',
+          timestamp: new Date().toISOString(),
+          filename: window.location.pathname,
+          error: new Error(`Placeholder link detected: ${link.outerHTML.substring(0, 100)}`)
+        });
+      }
+    }, true); // Use capture phase to catch before other handlers
   }
 
   interceptFetch() {

@@ -9,6 +9,15 @@
 
         <%= render 'shared/flash_messages' %>
 
+        <!-- First Login Hint -->
+        <% if @first_login %>
+          <div class="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
+            <p class="font-semibold mb-2">First time login credentials:</p>
+            <p>Username: <span class="font-mono bg-yellow-100 px-2 py-1 rounded">admin</span></p>
+            <p>Password: <span class="font-mono bg-yellow-100 px-2 py-1 rounded">admin</span></p>
+          </div>
+        <% end %>
+
         <%= form_tag admin_login_path do %>
           <div class="space-y-4">
             <!-- Username field -->

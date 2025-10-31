@@ -49,10 +49,25 @@ RSpec.describe "Home", type: :request do
         content = File.read(index_template_path)
         doc = Nokogiri::HTML(content)
 
-        # Check for placeholder links
+        # Check for placeholder links in HTML
         bad_links = doc.css('a[href="#"], a[href="#!"], a[href^="javascript:"]')
         expect(bad_links).to be_empty,
           "Found #{bad_links.size} demo placeholder link(s) in home/index.html.erb: #{bad_links.map { |l| l.to_html.truncate(80) }.join(', ')}. Use real Rails routes (like rooms_path) instead of copying from demo.html.erb."
+
+        # Check for placeholder links in ERB code (link_to or link helpers)
+        erb_bad_links = []
+        content.each_line.with_index do |line, index|
+          line_number = index + 1
+          # Match link_to 'text', '#' or link 'text', '#'
+          if line.match?(/<%=?\s*(link_to|link)\s+['"][^'"]*['"]\s*,\s*['"]#['"]\s*/)
+            erb_bad_links << { line: line_number, content: line.strip }
+          end
+        end
+
+        expect(erb_bad_links).to be_empty,
+          "Found #{erb_bad_links.size} ERB link helper(s) with placeholder href '#' in home/index.html.erb:\n" +
+          erb_bad_links.map { |l| "  Line #{l[:line]}: #{l[:content]}" }.join("\n") +
+          "\nUse real Rails routes (like rooms_path) instead of '#'."
 
         # Check for forms without action or with placeholder action
         bad_forms = doc.css('form:not([action]), form[action="#"], form[action=""], form[action^="javascript:"]')
