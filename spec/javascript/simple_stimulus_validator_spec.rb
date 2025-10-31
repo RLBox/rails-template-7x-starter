@@ -605,6 +605,8 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
           methods: parsed_data['methods'] || [],
           querySelectors: parsed_data['querySelectors'] || [],
           anti_patterns: parsed_data['antiPatterns'] || [],
+          targets_with_skip: parsed_data['targetsWithSkip'] || [],
+          values_with_skip: parsed_data['valuesWithSkip'] || [],
           file: file
         }
       else
@@ -1014,6 +1016,9 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
               # Skip optional targets (those with hasXXXTarget declaration)
               next if controller_data[controller_name][:optional_targets].include?(target)
 
+              # Skip targets with stimulus-validator: disable-next-line comment
+              next if controller_data[controller_name][:targets_with_skip].include?(target)
+
               target_found_in_scope = false
 
               # 1. Check if controller element itself has the target (HTML attribute)
@@ -1096,6 +1101,9 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
               # Skip values with default values
               next if controller_data[controller_name][:values_with_defaults].include?(value_name)
 
+              # Skip values with stimulus-validator: disable-next-line comment
+              next if controller_data[controller_name][:values_with_skip].include?(value_name)
+
               kebab_value_name = value_name.gsub(/([a-z])([A-Z])/, '\1-\2').downcase
               expected_attr = "data-#{controller_name}-#{kebab_value_name}-value"
               value_found = false
@@ -1141,7 +1149,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
                     file: relative_path,
                     expected: expected_attr,
                     found: found_mistakes.first,
-                    suggestion: "Change '#{found_mistakes.first}' to '#{expected_attr}'}"
+                    suggestion: "Change '#{found_mistakes.first}' to '#{expected_attr}'"
                   }
                 else
                   value_errors << {
@@ -1150,7 +1158,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
                     file: relative_path,
                     expected: expected_attr,
                     found: nil,
-                    suggestion: "Add #{expected_attr}=\"...\" to controller element}"
+                    suggestion: "Add #{expected_attr}=\"...\" to controller element"
                   }
                 end
               end
@@ -1404,6 +1412,10 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
           end
         end
 
+        if target_errors.any? || target_scope_errors.any?
+          puts "   💡 If you've confirmed the target is handled dynamically or in another way, add '// stimulus-validator: disable-next-line' before the target declaration."
+        end
+
         if value_errors.any?
           puts "\n   📋 Value Errors (#{value_errors.length}):"
           value_errors.each do |error|
@@ -1413,6 +1425,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
               puts "     • #{error[:controller]}:#{error[:value]} missing in #{error[:file]}"
             end
           end
+          puts "   💡 If you've confirmed the value is handled dynamically or has a default, add '// stimulus-validator: disable-next-line' before the value declaration."
         end
 
         if outlet_errors.any?
@@ -1793,7 +1806,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
                   line: line,
                   controller_file: controller_file,
                   view_file: relative_path,
-                  suggestion: "Selector '#{selector}' exists in #{relative_path} but is outside the '#{controller_name}' controller scope. Move the element(s) inside <div data-controller=\"#{controller_name}\">...</div>. If you've confirmed this is correct, add '// stimulus-validator: disable-next-line' before the querySelector call to skip validation."
+                  suggestion: "Selector '#{selector}' exists in #{relative_path} but is outside the '#{controller_name}' controller scope. Move the element(s) inside <div data-controller=\"#{controller_name}\">...</div>."
                 }
               else
                 # Selector doesn't exist at all
@@ -1804,7 +1817,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
                   line: line,
                   controller_file: controller_file,
                   view_file: relative_path,
-                  suggestion: "Selector '#{selector}' not found in #{relative_path}. Add an element with this selector within the '#{controller_name}' controller scope. If you've confirmed this is correct, add '// stimulus-validator: disable-next-line' before the querySelector call to skip validation."
+                  suggestion: "Selector '#{selector}' not found in #{relative_path}. Add an element with this selector within the '#{controller_name}' controller scope."
                 }
               end
             end
@@ -1854,6 +1867,10 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
             remaining = selector_scope_errors.length - display_count
             puts "       ... and #{remaining} more. Fix these first, then re-run to see remaining errors."
           end
+        end
+
+        if selector_errors.any? || selector_scope_errors.any?
+          puts "\n   💡 If you've confirmed the selector is used dynamically or elsewhere, add '// stimulus-validator: disable-next-line' before the querySelector call."
         end
 
         error_details = []

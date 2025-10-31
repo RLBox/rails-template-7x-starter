@@ -30,7 +30,9 @@ const result = {
   valuesWithDefaults: [],
   methods: [],
   querySelectors: [],
-  antiPatterns: []
+  antiPatterns: [],
+  targetsWithSkip: [],
+  valuesWithSkip: []
 };
 
 // Helper function to extract string literals from array
@@ -144,6 +146,23 @@ function checkSkipComment(node) {
   return false;
 }
 
+// Helper function to check if a property declaration has skip validation comment
+function checkPropertySkipComment(node) {
+  // For property declarations, we can directly check the node's leading trivia
+  const fullStart = node.getFullStart();
+  const start = node.getStart(sourceFile);
+
+  // Get the text between fullStart and start (this contains leading trivia/comments)
+  const triviaText = sourceCode.substring(fullStart, start);
+
+  // Check for stimulus-validator: disable-next-line comment
+  if (triviaText.includes('stimulus-validator: disable-next-line')) {
+    return true;
+  }
+
+  return false;
+}
+
 // Helper function to extract querySelector calls
 function extractQuerySelectors(node, methodName = null) {
   if (ts.isCallExpression(node)) {
@@ -224,11 +243,12 @@ function visitNode(node) {
         }
       }
 
-      // Check for readonly property declarations to find optional targets
+      // Check for readonly property declarations to find optional targets and values with skip
       if (ts.isPropertyDeclaration(member) &&
           member.modifiers?.some(m => m.kind === ts.SyntaxKind.ReadonlyKeyword)) {
 
         const propertyName = member.name.getText(sourceFile);
+        const hasSkipComment = checkPropertySkipComment(member);
 
         // Check if it's a hasXXXTarget property
         const hasTargetMatch = propertyName.match(/^has(\w+)Target$/);
@@ -236,6 +256,20 @@ function visitNode(node) {
           // Convert hasMenuTarget -> menu
           const targetName = hasTargetMatch[1].charAt(0).toLowerCase() + hasTargetMatch[1].slice(1);
           result.optionalTargets.push(targetName);
+        }
+
+        // Check if it's a declare readonly xxxTarget property
+        const targetMatch = propertyName.match(/^(\w+)Target$/);
+        if (targetMatch && hasSkipComment) {
+          const targetName = targetMatch[1];
+          result.targetsWithSkip.push(targetName);
+        }
+
+        // Check if it's a declare readonly xxxValue property
+        const valueMatch = propertyName.match(/^(\w+)Value$/);
+        if (valueMatch && hasSkipComment) {
+          const valueName = valueMatch[1];
+          result.valuesWithSkip.push(valueName);
         }
       }
 
