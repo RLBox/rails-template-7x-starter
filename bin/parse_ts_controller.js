@@ -32,7 +32,8 @@ const result = {
   querySelectors: [],
   antiPatterns: [],
   targetsWithSkip: [],
-  valuesWithSkip: []
+  valuesWithSkip: [],
+  isSystemController: false
 };
 
 // Helper function to extract string literals from array
@@ -218,6 +219,14 @@ function extractQuerySelectors(node, methodName = null) {
 function visitNode(node) {
   // Look for class declaration
   if (ts.isClassDeclaration(node)) {
+    // Check for system-controller comment on class
+    const fullStart = node.getFullStart();
+    const start = node.getStart(sourceFile);
+    const triviaText = sourceCode.substring(fullStart, start);
+    if (triviaText.includes('stimulus-validator: system-controller')) {
+      result.isSystemController = true;
+    }
+
     node.members.forEach(member => {
       // Check for static properties
       if (ts.isPropertyDeclaration(member) &&

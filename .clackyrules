@@ -211,6 +211,4 @@ Temporary files should be written in the `tmp` directory.
 
 ## Some files never edit
 
-Never edit `application.html.erb`, update `app/views/shared/_navbar.html.erb` instead if need add navbar.
-
-Never edit `admin/base_controller.rb`
+Never edit `application.html.erb`, `admin/base_controller.rb`, `clipboard_controller.ts`, `dropdown_controller.ts`, `theme_controller.ts`.

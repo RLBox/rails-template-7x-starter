@@ -9,6 +9,7 @@ import { Controller } from "@hotwired/stimulus"
  *   <button data-action="click->clipboard#copy">Copy</button>
  * </div>
  */
+// stimulus-validator: system-controller
 export default class extends Controller<HTMLElement> {
   static targets = ["source"]
 

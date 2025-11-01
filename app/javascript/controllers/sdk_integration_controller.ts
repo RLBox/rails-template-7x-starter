@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 // SDK Integration Controller
 // Handles SDK availability detection and communication with external development tools
+// stimulus-validator: system-controller
 export default class extends Controller<HTMLElement> {
   static targets = [
     "sdkButton"

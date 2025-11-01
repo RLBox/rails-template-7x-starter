@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
+// stimulus-validator: system-controller
 export default class extends Controller<HTMLElement> {
   static targets = ["lightIcon", "darkIcon"]
   static values = { storageKey: String }

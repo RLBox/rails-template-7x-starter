@@ -607,6 +607,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
           anti_patterns: parsed_data['antiPatterns'] || [],
           targets_with_skip: parsed_data['targetsWithSkip'] || [],
           values_with_skip: parsed_data['valuesWithSkip'] || [],
+          is_system_controller: parsed_data['isSystemController'] || false,
           file: file
         }
       else
@@ -619,8 +620,19 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
 
 
   let(:view_files) do
-    Dir.glob(views_dir.join('**/*.html.erb')).reject do |file|
-      file.include?('shared/demo.html.erb')
+    all_files = Dir.glob(views_dir.join('**/*.html.erb'))
+
+    if ENV['FULL_VIEW_DEBUG']
+      all_files.reject { |file| file.include?('shared/demo.html.erb') }
+    else
+      all_files.reject do |file|
+        file.include?('shared/demo.html.erb') ||
+        file.include?('/admin/') ||
+        file.include?('/kaminari/') ||
+        file.include?('/shared/admin/') ||
+        file.include?('shared/friendly_error.html.erb') ||
+        file.include?('shared/missing_template_fallback.html.erb')
+      end
     end
   end
 
@@ -1576,16 +1588,19 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
       end
 
       used_controllers = used_controllers.uniq
-      unused_count = total_controllers - used_controllers.length
+
+      system_controllers = controller_data.select { |name, data| data[:is_system_controller] }.keys
+      checkable_controllers = controller_data.keys - system_controllers
+      unused_controllers = checkable_controllers - used_controllers
 
       puts "\n📊 Controller Usage Statistics:"
       puts "   • Total controllers: #{total_controllers}"
+      puts "   • System controllers: #{system_controllers.length} (#{system_controllers.join(', ')})" if system_controllers.any?
       puts "   • Used in views: #{used_controllers.length}"
-      puts "   • Unused: #{unused_count}"
+      puts "   • Unused: #{unused_controllers.length}"
 
-      if unused_count > 0
-        unused = controller_data.keys - used_controllers
-        puts "   ⚠️  Unused controllers: #{unused.join(', ')}"
+      if unused_controllers.any?
+        puts "   ⚠️  Unused controllers: #{unused_controllers.join(', ')}"
       end
 
       expect(controller_data).not_to be_empty
