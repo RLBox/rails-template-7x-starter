@@ -16,3 +16,12 @@ Rake::Task['db:seed'].enhance do
   File.write(marker_file, Time.now.to_s)
   puts "✓ Seeds executed at #{Time.now}"
 end
+
+# Map action_text:install to custom generator
+Rake::Task['action_text:install'].clear
+namespace :action_text do
+  desc "Install ActionText with Tailwind CSS and TypeScript support"
+  task install: :environment do
+    system('rails g action_text')
+  end
+end

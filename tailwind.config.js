@@ -5,7 +5,17 @@ module.exports = {
     './app/helpers/**/*.rb',
     './app/javascript/**/*.js',
     './app/javascript/**/*.ts',
-    './app/views/**/*.erb'
+    './app/views/**/*.{erb,html}'
+  ],
+  safelist: [
+    { pattern: /^btn-/ },
+    { pattern: /^badge-/ },
+    { pattern: /^alert-/ },
+    { pattern: /^card-/ },
+    { pattern: /^trix-/ },
+    { pattern: /^attachment/ },
+    { pattern: /^form-/ },  // Trix dialogs use form inputs
+    'dark',  // Dark mode class
   ],
   darkMode: 'class',
   theme: {
