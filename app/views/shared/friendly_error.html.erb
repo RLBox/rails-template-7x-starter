@@ -14,23 +14,28 @@
     <h1 class="text-5xl font-bold mb-4 text-gray-900"><%= @error_title %></h1>
     <p class="text-lg mb-8 text-gray-600"><%= @error_description %></p>
 
-    <% if Rails.env.development? && @original_exception %>
+    <% if Rails.env.development? && (@original_exception || @error_url) %>
       <!-- Development Info -->
       <%
         # Prepare formatted error text for clipboard
         error_text = []
         error_text << "URL: #{@error_url}"
-        error_text << "Message: #{@original_exception.message}"
+        error_text << "Title: #{@error_title}"
+        error_text << "Description: #{@error_description}"
         
-        if @filtered_backtrace&.any?
-          error_text << "User Code Stack Trace:"
-          @filtered_backtrace.each_with_index do |line, index|
-            error_text << "#{index + 1}: #{line}"
-          end
-        elsif @original_exception&.backtrace
-          error_text << "Stack Trace (First 3 lines):"
-          @original_exception.backtrace.first(3).each_with_index do |line, index|
-            error_text << "#{index + 1}: #{line}"
+        if @original_exception
+          error_text << "Message: #{@original_exception.message}"
+          
+          if @filtered_backtrace&.any?
+            error_text << "User Code Stack Trace:"
+            @filtered_backtrace.each_with_index do |line, index|
+              error_text << "#{index + 1}: #{line}"
+            end
+          elsif @original_exception&.backtrace
+            error_text << "Stack Trace (First 3 lines):"
+            @original_exception.backtrace.first(3).each_with_index do |line, index|
+              error_text << "#{index + 1}: #{line}"
+            end
           end
         end
         
@@ -66,37 +71,49 @@
                     <div class="mb-2">
                       <span class="font-semibold text-blue-400">URL:</span> <%= @error_url %>
                     </div>
+                    <div class="mb-2">
+                      <span class="font-semibold text-blue-400">Title:</span> <%= @error_title %>
+                    </div>
                     <div class="mb-4">
-                      <span class="font-semibold text-red-400">Message:</span>
+                      <span class="font-semibold text-blue-400">Description:</span>
                       <div class="mt-1 bg-gray-900 p-2 rounded text-xs break-all">
-                        <%= @original_exception.message %>
+                        <%= @error_description %>
                       </div>
                     </div>
 
-                    <% if @filtered_backtrace&.any? %>
-                      <div class="mb-2">
-                        <span class="font-semibold text-yellow-400">User Code Stack Trace:</span>
+                    <% if @original_exception %>
+                      <div class="mb-4">
+                        <span class="font-semibold text-red-400">Message:</span>
+                        <div class="mt-1 bg-gray-900 p-2 rounded text-xs break-all">
+                          <%= @original_exception.message %>
+                        </div>
                       </div>
-                      <div class="bg-gray-900 rounded p-2 text-xs overflow-x-auto">
-                        <% @filtered_backtrace.each_with_index do |line, index| %>
-                          <div class="mb-1">
-                            <span class="text-blue-400 font-semibold"><%= index + 1 %>:</span>
-                            <span class="text-gray-300"><%= line %></span>
-                          </div>
-                        <% end %>
-                      </div>
-                    <% elsif @original_exception&.backtrace %>
-                      <div class="mb-2">
-                        <span class="font-semibold text-yellow-400">Stack Trace (First 3 lines):</span>
-                      </div>
-                      <div class="bg-gray-900 rounded p-2 text-xs overflow-x-auto">
-                        <% @original_exception.backtrace.first(3).each_with_index do |line, index| %>
-                          <div class="mb-1">
-                            <span class="text-blue-400 font-semibold"><%= index + 1 %>:</span>
-                            <span class="text-gray-300"><%= line %></span>
-                          </div>
-                        <% end %>
-                      </div>
+
+                      <% if @filtered_backtrace&.any? %>
+                        <div class="mb-2">
+                          <span class="font-semibold text-yellow-400">User Code Stack Trace:</span>
+                        </div>
+                        <div class="bg-gray-900 rounded p-2 text-xs overflow-x-auto">
+                          <% @filtered_backtrace.each_with_index do |line, index| %>
+                            <div class="mb-1">
+                              <span class="text-blue-400 font-semibold"><%= index + 1 %>:</span>
+                              <span class="text-gray-300"><%= line %></span>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% elsif @original_exception&.backtrace %>
+                        <div class="mb-2">
+                          <span class="font-semibold text-yellow-400">Stack Trace (First 3 lines):</span>
+                        </div>
+                        <div class="bg-gray-900 rounded p-2 text-xs overflow-x-auto">
+                          <% @original_exception.backtrace.first(3).each_with_index do |line, index| %>
+                            <div class="mb-1">
+                              <span class="text-blue-400 font-semibold"><%= index + 1 %>:</span>
+                              <span class="text-gray-300"><%= line %></span>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
                     <% end %>
                   </div>
                 </div>

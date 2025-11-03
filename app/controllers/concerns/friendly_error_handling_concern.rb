@@ -19,7 +19,7 @@ module FriendlyErrorHandlingConcern
     Rails.logger.error("404 - Path not found: #{request.path}")
     @error_url = request.path
     @error_title = "Page Not Found"
-    @error_description = "The page you're looking for doesn't exist. Please check the URL or go back to the homepage."
+    @error_description = "If you confirm this is missing implementation, please copy error details and send to chatbox."
     render "shared/friendly_error", status: :not_found
   end
 
