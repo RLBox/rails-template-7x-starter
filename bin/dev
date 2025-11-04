@@ -15,8 +15,17 @@ if gem list --no-installed --exact --silent foreman; then
   gem install foreman
 fi
 
-# Override default port for foreman
-export PORT="${PORT:-3000}"
-export APP_PORT="${PORT}"
+# Read APP_PORT from config/application.yml (figaro managed)
+# Supports: APP_PORT: '3001' or "3001" or 3001
+if [ -f config/application.yml ]; then
+  APP_PORT_VALUE=$(grep "^APP_PORT:" config/application.yml | sed "s/^APP_PORT:[[:space:]]*//; s/['\"]//g" | xargs)
+  if [ -n "$APP_PORT_VALUE" ]; then
+    export APP_PORT="$APP_PORT_VALUE"
+    echo "Using APP_PORT=$APP_PORT from config/application.yml"
+  fi
+fi
 
-exec foreman start -f Procfile.dev --env /dev/null "$@"
+# Set PORT for foreman (fallback to APP_PORT, then default 3000)
+export PORT="${PORT:-${APP_PORT:-3000}}"
+
+exec foreman start -f Procfile.dev "$@"

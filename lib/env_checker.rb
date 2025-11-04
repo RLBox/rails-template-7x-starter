@@ -16,23 +16,23 @@ module EnvChecker
     end
 
     def get_public_host_and_port_and_protocol
-      default_port = 3000
+      # Use APP_PORT or PORT, fallback to 3000
+      local_port = ENV['APP_PORT'].presence || ENV['PORT'].presence || 3000
 
       if ENV['PUBLIC_HOST'].present?
         return { host: ENV.fetch('PUBLIC_HOST'), port: 443, protocol: 'https' }
       end
 
       # If CLACKY_PUBLIC_HOST is blank and CLACKY_PREVIEW_DOMAIN_BASE is present,
-      # use APP_PORT (default 3000) + CLACKY_PREVIEW_DOMAIN_BASE
+      # use APP_PORT (or PORT, default 3000) + CLACKY_PREVIEW_DOMAIN_BASE
       if ENV['CLACKY_PREVIEW_DOMAIN_BASE'].present?
-        port = ENV.fetch('APP_PORT', default_port)
         domain_base = ENV.fetch('CLACKY_PREVIEW_DOMAIN_BASE')
-        return { host: "#{port}#{domain_base}", port: 443, protocol: 'https' }
+        return { host: "#{local_port}#{domain_base}", port: 443, protocol: 'https' }
       end
 
       # Rails.logger is not ready here, use puts instead.
       # puts "EnvChecker: public host fallback to localhost..."
-      return { host: 'localhost', port: default_port, protocol: 'http' }
+      return { host: 'localhost', port: local_port, protocol: 'http' }
     end
 
     # Load environment variable names from application.yml.example
