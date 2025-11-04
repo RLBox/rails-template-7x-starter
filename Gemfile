@@ -4,6 +4,7 @@ gem "puma", ">= 5.0"
 gem "jbuilder"
 gem "tzinfo-data", platforms: %i[ mswin mswin64 mingw x64_mingw jruby ]
 gem "bootsnap", require: false
+gem "rack-cors"
 
 gem "pg", ">= 1.1"
 gem "figaro"

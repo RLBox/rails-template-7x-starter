@@ -1,4 +1,4 @@
-class Api::V1::SessionsController < ApplicationController
+class Api::V1::SessionsController < Api::BaseController
   # API login endpoint specifically for curl/API usage
   def login
     if user = User.authenticate_by(email: params[:email], password: params[:password])

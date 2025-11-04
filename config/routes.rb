@@ -10,6 +10,13 @@ end
 Rails.application.routes.draw do
   # write your business logic routes here
 
+  # API routes
+  namespace :api do
+    namespace :v1 do
+      get 'health', to: 'health#index'
+    end
+  end
+
   root 'home#index'
 
   # Do not write business logic at admin dashboard
