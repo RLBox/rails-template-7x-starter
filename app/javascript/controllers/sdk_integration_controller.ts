@@ -68,8 +68,8 @@ export default class extends Controller<HTMLElement> {
     if (!checkAndShow()) {
       // Retry after 1 second (in case SDK is loading)
       setTimeout(checkAndShow, 1000)
-      // Final retry after 3 seconds
-      setTimeout(checkAndShow, 3000)
+      // Final retry after 2.8 seconds
+      setTimeout(checkAndShow, 2800)
     }
   }
 

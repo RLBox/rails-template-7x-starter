@@ -442,12 +442,6 @@ class ErrorHandler {
       this.updateErrorList();
       this.showStatusBar();
       this.pendingUIUpdates = false;
-
-      // Auto-expand logic disabled
-      // if (!this.hasShownFirstError && this.errors.length > 0) {
-      //   this.hasShownFirstError = true;
-      //   this.autoExpandErrorDetails();
-      // }
     }
   }
 
@@ -921,9 +915,6 @@ class ErrorHandler {
       this.updateErrorList();
       this.showStatusBar();
       this.flashNewError();
-
-      // Auto-expand logic disabled
-      // this.checkAutoExpand(errorInfo);
     } else {
       this.pendingUIUpdates = true;
     }
@@ -1404,35 +1395,6 @@ ${error.message}`;
     }
   }
 
-  checkAutoExpand(errorInfo: ErrorInfo): void {
-    // Auto-expand logic disabled
-    // Auto-expand if this is the first error ever
-    // if (!this.hasShownFirstError) {
-    //   this.hasShownFirstError = true;
-    //   this.autoExpandErrorDetails();
-    //   return;
-    // }
-
-    // Auto-expand if this is an interaction error (user just performed an action)
-    // if (errorInfo.type === 'interaction' ||
-    //     (this.lastInteractionTime && Date.now() - this.lastInteractionTime < 3000)) {
-    //   this.autoExpandErrorDetails();
-    //   return;
-    // }
-  }
-
-  autoExpandErrorDetails() {
-    // Auto-expand logic disabled
-    // if (!this.isExpanded) {
-    //   setTimeout(() => {
-    //     const toggleButton = document.getElementById('toggle-errors');
-    //     if (toggleButton) {
-    //       toggleButton.click();
-    //     }
-    //   }, 100); // Small delay to ensure UI is ready
-    // }
-  }
-
   sanitizeMessage(message: string): string {
     if (!message) return 'Unknown error';
 
@@ -1571,8 +1533,8 @@ ${error.message}`;
     const lines = stack.split('\n');
     const mappedLines = await Promise.all(lines.map(async (line) => {
       // Parse stack trace line - handle multiple formats
-      // Format 1: "at functionName (http://localhost:3000/assets/application.js:123:45)"
-      // Format 2: "at http://localhost:3000/assets/application.js:123:45"
+      // Format 1: "at functionName (http://localhost:port/assets/application.js:123:45)"
+      // Format 2: "at http://localhost:port/assets/application.js:123:45"
       const match = line.match(/^\s*at\s+(?:(.+?)\s+\()?(.+?):(\d+):(\d+)\)?$/);
       if (!match) return line;
 

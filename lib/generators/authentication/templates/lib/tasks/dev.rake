@@ -4,11 +4,14 @@ if Rails.env.development? || Rails.env.test?
     task :token, [:email] => :environment do |t, args|
       email = args[:email] || "test@example.com"
 
+      # Use centralized port detection
+      port = EnvChecker.get_app_port
+
       # Find existing user (skip password check in dev environment)
       if user = User.find_by(email: email)
         session = user.sessions.create!
         STDERR.puts "Token: #{session.id} (reused user: #{user.email})"
-        STDERR.puts "curl -H 'Authorization: Bearer #{session.id}' http://localhost:3000/endpoint"
+        STDERR.puts "curl -H 'Authorization: Bearer #{session.id}' http://localhost:#{port}/endpoint"
         puts session.id
         next
       end
@@ -24,7 +27,7 @@ if Rails.env.development? || Rails.env.test?
       if user.save
         session = user.sessions.create!
         STDERR.puts "Token: #{session.id} (created new user: #{user.email})"
-        STDERR.puts "curl -H 'Authorization: Bearer #{session.id}' http://localhost:3000/endpoint"
+        STDERR.puts "curl -H 'Authorization: Bearer #{session.id}' http://localhost:#{port}/endpoint"
         puts session.id
       else
         STDERR.puts "❌ Failed to create test user:"

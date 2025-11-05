@@ -1,6 +1,9 @@
 require 'selenium/webdriver'
+require_relative '../../lib/env_checker'
 
-Capybara.asset_host = 'http://localhost:3000'
+# Use centralized port detection (same logic as bin/dev)
+test_port = EnvChecker.get_app_port
+Capybara.asset_host = "http://localhost:#{test_port}"
 
 # Configure Selenium WebDriver for Chrome
 Capybara.register_driver :selenium_chrome_headless do |app|

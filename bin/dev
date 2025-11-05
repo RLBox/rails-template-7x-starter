@@ -1,31 +1,36 @@
-#!/usr/bin/env sh
+#!/usr/bin/env ruby
+# frozen_string_literal: true
 
 # Clean up stale server PID
-if [ -f tmp/pids/server.pid ]; then
-  pid=$(cat tmp/pids/server.pid)
-  if kill -0 "$pid" 2>/dev/null; then
-    echo "Stopping existing server (PID: $pid)..."
-    kill "$pid" && sleep 1
-  fi
-  rm -f tmp/pids/server.pid
-fi
+pid_file = 'tmp/pids/server.pid'
+if File.exist?(pid_file)
+  pid = File.read(pid_file).to_i
+  begin
+    Process.kill(0, pid)
+    puts "Stopping existing server (PID: #{pid})..."
+    Process.kill('TERM', pid)
+    sleep 1
+  rescue Errno::ESRCH, Errno::EPERM
+    # Process doesn't exist or no permission
+  end
+  File.delete(pid_file)
+end
 
-if gem list --no-installed --exact --silent foreman; then
-  echo "Installing foreman..."
-  gem install foreman
-fi
+# Install foreman if needed
+unless system('gem list --installed --exact --silent foreman')
+  puts "Installing foreman..."
+  system('gem install foreman') || exit(1)
+end
 
-# Read APP_PORT from config/application.yml (figaro managed)
-# Supports: APP_PORT: '3001' or "3001" or 3001
-if [ -f config/application.yml ]; then
-  APP_PORT_VALUE=$(grep "^APP_PORT:" config/application.yml | sed "s/^APP_PORT:[[:space:]]*//; s/['\"]//g" | xargs)
-  if [ -n "$APP_PORT_VALUE" ]; then
-    export APP_PORT="$APP_PORT_VALUE"
-    echo "Using APP_PORT=$APP_PORT from config/application.yml"
-  fi
-fi
+# Load EnvChecker for centralized port detection
+require_relative '../lib/env_checker'
 
-# Set PORT for foreman (fallback to APP_PORT, then default 3000)
-export PORT="${PORT:-${APP_PORT:-3000}}"
+# Get port using centralized logic (handles submodule detection, application.yml, env vars)
+app_port = EnvChecker.get_app_port
+ENV['APP_PORT'] = app_port
+ENV['PORT'] ||= app_port
 
-exec foreman start -f Procfile.dev "$@"
+puts "Starting server on port #{ENV['PORT']}"
+
+# Execute foreman
+exec 'foreman', 'start', '-f', 'Procfile.dev', *ARGV
