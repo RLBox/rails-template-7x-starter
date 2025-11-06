@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Change to script's parent directory (backend/)
+Dir.chdir(File.expand_path('..', __dir__))
+
 # Clean up stale server PID
 pid_file = 'tmp/pids/server.pid'
 if File.exist?(pid_file)
