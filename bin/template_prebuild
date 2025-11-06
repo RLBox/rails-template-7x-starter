@@ -14,6 +14,13 @@ def git_clean?
   system('git diff-index --quiet HEAD --', out: File::NULL, err: File::NULL)
 end
 
+def in_submodule?
+  # Check if we're in a git submodule
+  # In submodule, .git is a file (not directory) pointing to parent's .git/modules
+  git_path = File.join(APP_ROOT, '.git')
+  File.exist?(git_path) && File.file?(git_path)
+end
+
 def files_identical?(file1, file2)
   system("diff -q #{file1} #{file2}", out: File::NULL, err: File::NULL)
 end
@@ -22,21 +29,33 @@ FileUtils.chdir APP_ROOT do
   puts '== Template Prebuild Check =='
   puts ''
 
-  # 0. Check if git status is clean
-  puts '📋 Checking git status...'
-  unless git_clean?
-    abort "\n❌ Git working directory is not clean!\n" +
-          "Please commit or stash your changes before running this script.\n" +
-          `git status`
+  # Detect if we're in a submodule
+  is_submodule = in_submodule?
+  if is_submodule
+    puts '🔍 Detected git submodule environment'
+    puts '⚠️  Skipping git clean check and git pull (managed by parent project)'
+    puts ''
   end
-  puts '✅ Git working directory is clean'
-  puts ''
 
-  # 1. Pull latest changes
-  puts '📥 Pulling latest changes...'
-  system! 'git pull --rebase'
-  puts '✅ Successfully pulled latest changes'
-  puts ''
+  # 0. Check if git status is clean (skip for submodules)
+  unless is_submodule
+    puts '📋 Checking git status...'
+    unless git_clean?
+      abort "\n❌ Git working directory is not clean!\n" +
+            "Please commit or stash your changes before running this script.\n" +
+            `git status`
+    end
+    puts '✅ Git working directory is clean'
+    puts ''
+  end
+
+  # 1. Pull latest changes (skip for submodules)
+  unless is_submodule
+    puts '📥 Pulling latest changes...'
+    system! 'git pull --rebase'
+    puts '✅ Successfully pulled latest changes'
+    puts ''
+  end
 
   # 2. Bundle install
   puts '💎 Running bundle install...'
@@ -60,15 +79,17 @@ FileUtils.chdir APP_ROOT do
   puts '✅ application.yml matches application.yml.example'
   puts ''
 
-  # 5. Check if git status is still clean
-  puts '📋 Final git status check...'
-  unless git_clean?
-    abort "\n❌ Git working directory is not clean after updates!\n" +
-          "Please review the changes:\n" +
-          `git status`
+  # 5. Check if git status is still clean (skip for submodules)
+  unless is_submodule
+    puts '📋 Final git status check...'
+    unless git_clean?
+      abort "\n❌ Git working directory is not clean after updates!\n" +
+            "Please review the changes:\n" +
+            `git status`
+    end
+    puts '✅ Git working directory is still clean'
+    puts ''
   end
-  puts '✅ Git working directory is still clean'
-  puts ''
 
   # 6. All checks passed
   puts '🎉 ========================================'
