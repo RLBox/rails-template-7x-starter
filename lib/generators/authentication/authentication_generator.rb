@@ -362,15 +362,11 @@ class AuthenticationGenerator < Rails::Generators::Base
   end
 
   def find_session_record
-    # Try Authorization header authentication first (preferred for API)
+    # API authentication via Authorization header only
+    # ActionController::API does not support cookies
     if request.headers['Authorization'].present?
       token = request.headers['Authorization'].gsub(/Bearer\\s+/, '')
       return Session.find_by_id(token)
-    end
-
-    # Fallback to cookie-based authentication (for compatibility)
-    if cookies.signed[:session_token].present?
-      return Session.find_by_id(cookies.signed[:session_token])
     end
 
     nil
