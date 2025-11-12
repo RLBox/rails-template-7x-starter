@@ -16,7 +16,7 @@ if File.exist?(pid_file)
   rescue Errno::ESRCH, Errno::EPERM
     # Process doesn't exist or no permission
   end
-  File.delete(pid_file)
+  File.delete(pid_file) if File.exist?(pid_file)
 end
 
 # Install foreman if needed
