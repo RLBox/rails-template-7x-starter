@@ -70,6 +70,8 @@ class AuthenticationGenerator < Rails::Generators::Base
 
     # API controllers
     copy_file 'controllers/api/v1/sessions_controller.rb', 'app/controllers/api/v1/sessions_controller.rb'
+    copy_file 'controllers/api/v1/registrations_controller.rb', 'app/controllers/api/v1/registrations_controller.rb'
+    copy_file 'controllers/api/v1/profiles_controller.rb', 'app/controllers/api/v1/profiles_controller.rb'
   end
 
   def create_actioncable_authentication
@@ -537,6 +539,9 @@ class AuthenticationGenerator < Rails::Generators::Base
     namespace :v1 do
       post 'login', to: 'sessions#login'
       delete 'logout', to: 'sessions#destroy'
+      post 'sign_up', to: 'registrations#create'
+      resource :profile, only: [:show, :update], controller: 'profiles'
+      put 'password', to: 'profiles#update_password'
     end
   end
 
@@ -589,6 +594,9 @@ class AuthenticationGenerator < Rails::Generators::Base
       # API authentication routes
       post 'login', to: 'sessions#login'
       delete 'logout', to: 'sessions#destroy'
+      post 'sign_up', to: 'registrations#create'
+      resource :profile, only: [:show, :update], controller: 'profiles'
+      put 'password', to: 'profiles#update_password'
 
     RUBY
   end

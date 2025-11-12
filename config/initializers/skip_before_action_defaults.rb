@@ -2,9 +2,11 @@
 # This prevents exceptions when trying to skip non-existent before_actions
 
 Rails.application.config.to_prepare do
-  # Only apply the patch once to avoid multiple aliasing
-  unless ActionController::Base.respond_to?(:original_skip_before_action)
-    ActionController::Base.class_eval do
+  # Patch method to add skip_action overrides
+  def patch_skip_actions(controller_class)
+    return if controller_class.respond_to?(:original_skip_before_action)
+
+    controller_class.class_eval do
       class << self
         # Store original methods
         alias_method :original_skip_before_action, :skip_before_action
@@ -31,4 +33,8 @@ Rails.application.config.to_prepare do
       end
     end
   end
+
+  # Apply patches to both ActionController::Base and ActionController::API
+  patch_skip_actions(ActionController::Base)
+  patch_skip_actions(ActionController::API)
 end
