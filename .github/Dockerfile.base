@@ -1,11 +1,13 @@
 ARG RUBY_VERSION=3.3.5
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
+# Optimized base image for faster builds
 WORKDIR /app
 
 ARG UID=1000
 ARG GID=1000
 
+# Install build dependencies and setup user
 RUN bash -c "set -o pipefail && apt-get update \
   && apt-get install -y --no-install-recommends build-essential curl git libpq-dev libyaml-dev libvips \
   && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /etc/apt/keyrings/nodesource.asc \
@@ -16,39 +18,37 @@ RUN bash -c "set -o pipefail && apt-get update \
   && apt-get clean \
   && groupadd -g \"${GID}\" ruby \
   && useradd --create-home --no-log-init -u \"${UID}\" -g \"${GID}\" ruby \
-  && mkdir /node_modules && chown ruby:ruby -R /node_modules /app"
+  && mkdir -p /node_modules /usr/local/bundle \
+  && chown -R ruby:ruby /node_modules /app /usr/local/bundle"
 
 USER ruby
 
+# Install bundler
 RUN gem install bundler -v 2.6.3
-COPY --chown=ruby:ruby Gemfile* ./
 
-# Set production environment
+# Configure bundle to use system-wide path for caching
+RUN bundle config set --local path '/usr/local/bundle' && \
+    bundle config set --local without 'development:test'
+
+# Copy and install gems (these will be cached in base image)
+COPY --chown=ruby:ruby .github/Gemfile.base ./Gemfile
+COPY --chown=ruby:ruby .github/Gemfile.base.lock ./Gemfile.lock
+RUN bundle install --jobs=4 --retry=3 && \
+    rm -rf /usr/local/bundle/cache/*.gem && \
+    find /usr/local/bundle/gems/ -name "*.c" -delete && \
+    find /usr/local/bundle/gems/ -name "*.o" -delete
+
+# Copy and install npm packages (these will be cached in base image)
+COPY --chown=ruby:ruby .github/package.base.json ./package.json
+COPY --chown=ruby:ruby .github/package-lock.base.json ./package-lock.json
+RUN npm ci && \
+    npm cache clean --force
+
+# Set default environment
 ENV RAILS_ENV="production" \
-    BUNDLE_DEPLOYMENT="1" \
+    NODE_ENV="production" \
+    BUNDLE_DEPLOYMENT="true" \
     BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development"
-RUN bundle install
-
-COPY --chown=ruby:ruby package.json package-lock.json ./
-
-RUN npm install
-
-ARG RAILS_ENV="production"
-ARG NODE_ENV="production"
-ENV RAILS_ENV="${RAILS_ENV}" \
-  NODE_ENV="${NODE_ENV}" \
-  PATH="${PATH}:/home/ruby/.local/bin:/node_modules/.bin:/usr/local/bundle/bin" \
-  USER="ruby" \
-  PORT="3000"
-
-COPY --chown=ruby:ruby . .
-
-RUN SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
-
-# Entrypoint prepares the database.
-ENTRYPOINT ["/app/bin/docker-entrypoint"]
-
-# Start the server by default, this can be overwritten at runtime
-EXPOSE ${PORT}
-CMD ["./bin/rails", "server"]
+    BUNDLE_WITHOUT="development:test" \
+    PATH="${PATH}:/home/ruby/.local/bin:/node_modules/.bin:/usr/local/bundle/bin" \
+    USER="ruby"

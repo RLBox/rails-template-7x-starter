@@ -1,28 +1,28 @@
 FROM ghcr.io/clacky-ai/rails-base-template:latest
 
-COPY --chown=ruby:ruby Gemfile* ./
+WORKDIR /app
+
 # Set production environment
 ENV RAILS_ENV="production" \
-    BUNDLE_DEPLOYMENT="1" \
-    BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development"
-RUN bundle install
+    NODE_ENV="production" \
+    PORT="3000"
 
+# Check and install only missing gems (if Gemfile changed)
+# bundle check returns 0 if all gems are satisfied, otherwise install
+COPY --chown=ruby:ruby Gemfile Gemfile.lock ./
+RUN bundle check || bundle install --jobs=4 --retry=3
+
+# Check and install only missing npm packages (if package.json changed)
 COPY --chown=ruby:ruby package.json package-lock.json ./
-RUN npm install
+RUN npm ci --production=false
 
-ENV NODE_ENV="production" \
-  PATH="${PATH}:/home/ruby/.local/bin:/node_modules/.bin:/usr/local/bundle/bin" \
-  USER="ruby" \
-  PORT="3000"
-
-WORKDIR /rails
 # Copy application code
 COPY --chown=ruby:ruby . .
 
+# Precompile assets
 RUN SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
 
-ENTRYPOINT ["/rails/bin/docker-entrypoint"]
+ENTRYPOINT ["/app/bin/docker-entrypoint"]
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE ${PORT}
