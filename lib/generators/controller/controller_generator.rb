@@ -6,6 +6,29 @@ class ControllerGenerator < Rails::Generators::NamedBase
   class_option :auth, type: :boolean, default: false, desc: "Generate controller with authentication required"
   class_option :single, type: :boolean, default: false, desc: "Generate singular resource (resource instead of resources)"
 
+  # Check if controller has namespace (e.g., admin::posts, api::v1::posts)
+  def has_namespace?
+    name.include?('::')
+  end
+
+  # Detect if this is an API controller (e.g., api::v1::posts, Api::V1::Posts, API::v1::posts)
+  def is_api_controller?
+    name.downcase.start_with?('api::')
+  end
+
+  # Parse namespace from name (e.g., "api::v1::posts" => ["api", "v1"], "admin::posts" => ["admin"])
+  def namespaces
+    return [] unless has_namespace?
+    parts = name.split('::')
+    parts[0..-2].map(&:underscore)
+  end
+
+  # Get the resource name without namespace (e.g., "api::v1::posts" => "posts", "admin::posts" => "posts")
+  def resource_name_without_namespace
+    return name unless has_namespace?
+    name.split('::').last
+  end
+
   def check_user_model
     return unless options[:auth]
 
@@ -88,16 +111,16 @@ class ControllerGenerator < Rails::Generators::NamedBase
   def generate_controller
     check_controller_conflicts
     check_single_resource_actions
-    template "controller.rb.erb", "app/controllers/#{plural_name}_controller.rb"
+    template "controller.rb.erb", controller_file_path
   end
 
   def generate_request_spec
-    template "request_spec.rb.erb", "spec/requests/#{plural_name}_spec.rb"
+    template "request_spec.rb.erb", spec_file_path
   end
 
   def create_view_directories
-    # Create the view directory for the controller
-    empty_directory "app/views/#{plural_name}"
+    # Create the view directory for the controller (skip for API controllers)
+    empty_directory view_path unless is_api_controller?
   end
 
   def add_routes
@@ -127,23 +150,21 @@ class ControllerGenerator < Rails::Generators::NamedBase
   def show_completion_message
     # Display generated controller file content (only when creating)
     if behavior != :revoke
-      controller_file = "app/controllers/#{plural_name}_controller.rb"
       say "\n"
-      say "📄 Generated controller (#{controller_file}):", :green
+      say "📄 Generated controller (#{controller_file_path}):", :green
       say "━" * 60, :green
-      File.readlines(controller_file).each_with_index do |line, index|
+      File.readlines(controller_file_path).each_with_index do |line, index|
         puts "#{(index + 1).to_s.rjust(4)} │ #{line.chomp}"
       end
       say "━" * 60, :green
 
       # Display added routes
-      if @added_routes_content && @added_routes_start_line
+      if @added_routes_content
         say "\n"
         say "📄 Added routes (config/routes.rb):", :green
         say "━" * 60, :green
-        @added_routes_content.each_with_index do |line, index|
-          line_number = @added_routes_start_line + index
-          puts "#{line_number.to_s.rjust(4)} │ #{line}"
+        @added_routes_content.each do |line|
+          puts "       │ #{line}"
         end
         say "━" * 60, :green
       end
@@ -151,26 +172,27 @@ class ControllerGenerator < Rails::Generators::NamedBase
       say "\n"
       say "✅ Above is the latest content - no need to read files again", :cyan
       say "\n"
-      say "Controller, tests and view directory generated successfully!", :green
-      say "📁 View directory created: app/views/#{plural_name}/", :green
-      say "📄 Please create and edit view files manually as needed:", :yellow
-      say "\n"
+      say "Controller and tests generated successfully!", :green
 
-      selected_actions.each do |action|
-        case action
-        when 'index'
-          say "  app/views/#{plural_name}/index.html.erb", :blue unless options[:single]
-        when 'show'
-          if options[:single]
-            say "  app/views/#{plural_name}/show.html.erb", :blue
-          else
-            say "  app/views/#{plural_name}/show.html.erb", :blue
+      unless is_api_controller?
+        say "📁 View directory created: #{view_path}/", :green
+        say "📄 Please create and edit view files manually as needed:", :yellow
+        say "\n"
+
+        selected_actions.each do |action|
+          case action
+          when 'index'
+            say "  #{view_path}/index.html.erb", :blue unless options[:single]
+          when 'show'
+            say "  #{view_path}/show.html.erb", :blue
+          when 'new'
+            say "  #{view_path}/new.html.erb", :blue
+          when 'edit'
+            say "  #{view_path}/edit.html.erb", :blue
           end
-        when 'new'
-          say "  app/views/#{plural_name}/new.html.erb", :blue
-        when 'edit'
-          say "  app/views/#{plural_name}/edit.html.erb", :blue
         end
+      else
+        say "API controller generated - no views needed", :cyan
       end
 
       say "\n"
@@ -184,7 +206,11 @@ class ControllerGenerator < Rails::Generators::NamedBase
 
   def base_name_without_controller
     # Remove '_controller' or '_controllers' suffix if present (case insensitive)
-    name.gsub(/_?controllers?$/i, '')
+    if has_namespace?
+      resource_name_without_namespace.gsub(/_?controllers?$/i, '')
+    else
+      name.gsub(/_?controllers?$/i, '')
+    end
   end
 
   def singular_name
@@ -196,7 +222,77 @@ class ControllerGenerator < Rails::Generators::NamedBase
   end
 
   def class_name
-    base_name_without_controller.classify
+    if has_namespace?
+      # Build proper class name: api::v1::posts => Api::V1::Posts, admin::posts => Admin::Posts
+      parts = name.split('::')
+      # Keep the last part pluralized for controller name
+      namespace_parts = parts[0..-2].map { |part| part.classify }
+      controller_part = parts.last.gsub(/_?controllers?$/i, '').classify.pluralize
+      (namespace_parts + [controller_part]).join('::')
+    else
+      base_name_without_controller.classify.pluralize
+    end
+  end
+
+  def controller_file_path
+    if has_namespace?
+      "app/controllers/#{namespaces.join('/')}/#{plural_name}_controller.rb"
+    else
+      "app/controllers/#{plural_name}_controller.rb"
+    end
+  end
+
+  def spec_file_path
+    if has_namespace?
+      "spec/requests/#{namespaces.join('/')}/#{plural_name}_spec.rb"
+    else
+      "spec/requests/#{plural_name}_spec.rb"
+    end
+  end
+
+  def view_path
+    if has_namespace?
+      "app/views/#{namespaces.join('/')}/#{plural_name}"
+    else
+      "app/views/#{plural_name}"
+    end
+  end
+
+  def parent_controller_class
+    if is_api_controller?
+      "Api::BaseController"
+    else
+      "ApplicationController"
+    end
+  end
+
+  # Generate route path helper prefix (e.g., api_v1_posts_path for api::v1::posts)
+  def route_path_prefix
+    if has_namespace?
+      namespaces.join('_') + '_'
+    else
+      ''
+    end
+  end
+
+  # Generate full path helper name (e.g., api_v1_posts_path)
+  def plural_route_path
+    "#{route_path_prefix}#{plural_name}_path"
+  end
+
+  # Generate singular path helper name (e.g., api_v1_post_path)
+  def singular_route_path
+    "#{route_path_prefix}#{singular_name}_path"
+  end
+
+  # Generate new path helper name (e.g., new_api_v1_post_path)
+  def new_route_path
+    "new_#{route_path_prefix}#{singular_name}_path"
+  end
+
+  # Generate edit path helper name (e.g., edit_api_v1_post_path)
+  def edit_route_path
+    "edit_#{route_path_prefix}#{singular_name}_path"
   end
 
   def selected_actions
@@ -414,6 +510,15 @@ class ControllerGenerator < Rails::Generators::NamedBase
 
   def route_with_custom_actions(base_route)
     controller_name = options[:single] ? singular_name : plural_name
+
+    if has_namespace?
+      add_namespaced_route_with_custom_actions(base_route, controller_name)
+    else
+      add_root_route_with_custom_actions(base_route, controller_name)
+    end
+  end
+
+  def add_root_route_with_custom_actions(base_route, controller_name)
     route_lines = []
 
     # Add comment marker for identification
@@ -448,9 +553,49 @@ class ControllerGenerator < Rails::Generators::NamedBase
     end
   end
 
+  def add_namespaced_route_with_custom_actions(base_route, controller_name)
+    routes_content = File.read('config/routes.rb')
+
+    # Find or create the namespace blocks
+    insertion_point = find_or_create_namespace_blocks(routes_content)
+
+    route_lines = []
+    indent = "  " * (namespaces.length + 1)  # 2 spaces per namespace level
+
+    # Add route with custom actions
+    if route_actions.any? && !has_full_crud?
+      route_lines << "#{indent}#{base_route}, only: [:#{route_actions.join(', :')}] do"
+    else
+      route_lines << "#{indent}#{base_route} do"
+    end
+
+    # Add custom actions
+    if non_crud_actions.any?
+      non_crud_actions.each do |action|
+        route_lines << "#{indent}  get :#{action}"
+      end
+    end
+
+    route_lines << "#{indent}end"
+
+    @added_routes_content = route_lines
+
+    inject_into_file 'config/routes.rb', after: insertion_point do
+      route_lines.join("\n") + "\n"
+    end
+  end
+
   def add_simple_route(route_line)
     controller_name = options[:single] ? singular_name : plural_name
 
+    if has_namespace?
+      add_namespaced_simple_route(route_line, controller_name)
+    else
+      add_root_simple_route(route_line, controller_name)
+    end
+  end
+
+  def add_root_simple_route(route_line, controller_name)
     route_lines = [
       "  # Routes for #{controller_name} generated by controller generator",
       "  #{route_line}",
@@ -465,6 +610,79 @@ class ControllerGenerator < Rails::Generators::NamedBase
 
     inject_into_file 'config/routes.rb', after: "Rails.application.routes.draw do\n" do
       route_lines.join("\n") + "\n\n"
+    end
+  end
+
+  def add_namespaced_simple_route(route_line, controller_name)
+    routes_content = File.read('config/routes.rb')
+
+    # Find or create the namespace blocks
+    insertion_point = find_or_create_namespace_blocks(routes_content)
+
+    indent = "  " * (namespaces.length + 1)  # 2 spaces per namespace level
+    route_lines = ["#{indent}#{route_line}"]
+
+    @added_routes_content = route_lines
+
+    inject_into_file 'config/routes.rb', after: insertion_point do
+      route_lines.join("\n") + "\n"
+    end
+  end
+
+  # Find or create nested namespace blocks and return the insertion point
+  def find_or_create_namespace_blocks(routes_content)
+    # Check if all necessary namespace blocks exist
+    current_namespaces = []
+    insertion_point = nil
+
+    namespaces.each_with_index do |ns, index|
+      current_namespaces << ns
+      indent = "  " * (index + 1)
+      namespace_pattern = /^#{Regexp.escape(indent)}namespace :#{ns} do\s*$/
+
+      if routes_content.match(namespace_pattern)
+        # Namespace exists, find the line after "namespace :xxx do"
+        insertion_point = "#{indent}namespace :#{ns} do\n"
+      else
+        # Need to create this namespace
+        if index == 0
+          # Top-level namespace, add after draw do
+          create_namespace_block_at_root(ns)
+        else
+          # Nested namespace, add inside parent
+          parent_ns = current_namespaces[0..-2].join('/')
+          create_nested_namespace_block(parent_ns, ns, index)
+        end
+        routes_content = File.read('config/routes.rb')  # Reload after modification
+        insertion_point = "#{indent}namespace :#{ns} do\n"
+      end
+    end
+
+    insertion_point
+  end
+
+  def create_namespace_block_at_root(namespace_name)
+    namespace_block = [
+      "  # API routes",
+      "  namespace :#{namespace_name} do",
+      "  end",
+      ""
+    ]
+
+    inject_into_file 'config/routes.rb', after: "Rails.application.routes.draw do\n" do
+      namespace_block.join("\n") + "\n"
+    end
+  end
+
+  def create_nested_namespace_block(parent_namespace, namespace_name, depth)
+    indent = "  " * (depth + 1)
+    parent_indent = "  " * depth
+    insertion_point = "#{parent_indent}namespace :#{parent_namespace.split('/').last} do\n"
+
+    namespace_block = "#{indent}namespace :#{namespace_name} do\n#{indent}end\n"
+
+    inject_into_file 'config/routes.rb', after: insertion_point do
+      namespace_block
     end
   end
 
