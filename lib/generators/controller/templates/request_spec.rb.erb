@@ -4,21 +4,30 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
 
   <%- if requires_authentication? -%>
   let(:user) { create(:user) }
+    <%- if is_api_controller? -%>
+  before { api_sign_in_as(user) }
+    <%- else -%>
   before { sign_in_as(user) }
+    <%- end -%>
   <%- else -%>
   # Uncomment this if controller need authentication
   # let(:user) { create(:user) }
+    <%- if is_api_controller? -%>
+  # before { api_sign_in_as(user) }
+    <%- else -%>
   # before { sign_in_as(user) }
+    <%- end -%>
   <%- end -%>
 
   <%- if selected_actions.include?('index') -%>
   describe "GET /<%= plural_name %>" do
     it "returns http success" do
-      get <%= plural_route_path %>
       <%- if is_api_controller? -%>
+      get <%= plural_route_path %>, headers: api_auth_headers
       expect(response).to have_http_status(:success)
       expect(response.content_type).to match(/json/)
       <%- else -%>
+      get <%= plural_route_path %>
       expect(response).to be_success_with_view_check('index')
       <%- end -%>
     end
@@ -29,11 +38,12 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
     <%- if single_resource? -%>
   describe "GET /<%= singular_name %>" do
     it "returns http success" do
-      get <%= singular_route_path %>
       <%- if is_api_controller? -%>
+      get <%= singular_route_path %>, headers: api_auth_headers
       expect(response).to have_http_status(:success)
       expect(response.content_type).to match(/json/)
       <%- else -%>
+      get <%= singular_route_path %>
       expect(response).to be_success_with_view_check('show')
       <%- end -%>
     end
@@ -47,11 +57,12 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
     <%- end %>
 
     it "returns http success" do
-      get <%= singular_route_path %>(<%= singular_name %>_record)
       <%- if is_api_controller? -%>
+      get <%= singular_route_path %>(<%= singular_name %>_record), headers: api_auth_headers
       expect(response).to have_http_status(:success)
       expect(response.content_type).to match(/json/)
       <%- else -%>
+      get <%= singular_route_path %>(<%= singular_name %>_record)
       expect(response).to be_success_with_view_check('show')
       <%- end -%>
     end
@@ -62,10 +73,11 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
   <%- if selected_actions.include?('new') -%>
   describe "GET /<%= single_resource? ? singular_name : plural_name %>/new" do
     it "returns http success" do
-      get <%= new_route_path %>
       <%- if is_api_controller? -%>
+      get <%= new_route_path %>, headers: api_auth_headers
       expect(response).to have_http_status(:success)
       <%- else -%>
+      get <%= new_route_path %>
       expect(response).to be_success_with_view_check('new')
       <%- end -%>
     end
@@ -76,10 +88,11 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
     <%- if single_resource? -%>
   describe "GET /<%= singular_name %>/edit" do
     it "returns http success" do
-      get <%= edit_route_path %>
       <%- if is_api_controller? -%>
+      get <%= edit_route_path %>, headers: api_auth_headers
       expect(response).to have_http_status(:success)
       <%- else -%>
+      get <%= edit_route_path %>
       expect(response).to be_success_with_view_check('edit')
       <%- end -%>
     end
@@ -93,10 +106,11 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
     <%- end %>
 
     it "returns http success" do
-      get <%= edit_route_path %>(<%= singular_name %>_record)
       <%- if is_api_controller? -%>
+      get <%= edit_route_path %>(<%= singular_name %>_record), headers: api_auth_headers
       expect(response).to have_http_status(:success)
       <%- else -%>
+      get <%= edit_route_path %>(<%= singular_name %>_record)
       expect(response).to be_success_with_view_check('edit')
       <%- end -%>
     end

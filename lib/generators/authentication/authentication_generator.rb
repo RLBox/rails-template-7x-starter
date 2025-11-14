@@ -353,6 +353,7 @@ class AuthenticationGenerator < Rails::Generators::Base
   end
 
   alias_method :authenticate, :authenticate_user!
+  alias_method :require_authentication, :authenticate_user!
 
   def set_current_request_details
     Current.user_agent = request.user_agent

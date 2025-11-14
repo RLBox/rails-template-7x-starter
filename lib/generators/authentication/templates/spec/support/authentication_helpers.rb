@@ -8,6 +8,18 @@ module AuthenticationHelpers
     }
   end
 
+  # API authentication - sets Authorization header with session token
+  def api_sign_in_as(user)
+    session = user.sessions.create!
+    @api_session = session
+    @api_auth_headers = { 'Authorization' => "Bearer #{session.id}" }
+  end
+
+  # Get API auth headers (for use in API request specs)
+  def api_auth_headers
+    @api_auth_headers || {}
+  end
+
   def sign_in_system(user)
     # For system tests - finds submit button regardless of text/translation
     visit sign_in_path
