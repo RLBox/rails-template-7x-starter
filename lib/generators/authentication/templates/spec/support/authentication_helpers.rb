@@ -41,8 +41,24 @@ module AuthenticationHelpers
 
 end
 
+module ApiRequestHelpers
+  # Override RSpec request methods to automatically include API auth headers
+  %i[get post put patch delete].each do |method|
+    define_method(method) do |path, **args|
+      # Merge api_auth_headers if they exist
+      if respond_to?(:api_auth_headers) && api_auth_headers.present?
+        args[:headers] = (args[:headers] || {}).merge(api_auth_headers)
+      end
+      super(path, **args)
+    end
+  end
+end
+
 RSpec.configure do |config|
   config.include AuthenticationHelpers, type: :request
   config.include AuthenticationHelpers, type: :feature
   config.include AuthenticationHelpers, type: :system
+
+  # Auto-inject API auth headers in request specs
+  config.include ApiRequestHelpers, type: :request
 end
