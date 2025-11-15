@@ -35,5 +35,10 @@ Rails.application.routes.draw do
   end
 
   mount ActionCable.server => '/cable'
-  match '*path', to: 'application#handle_routing_error', via: :get, constraints: lambda { |request| request.format.html? || request.format == :html }
+
+  # Catch-all route for all 404 errors - MUST be last
+  match '*path', to: 'application#handle_routing_error', via: :all,
+    constraints: lambda { |request|
+      !request.path.start_with?('/rails/active_storage')
+    }
 end

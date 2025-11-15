@@ -2,13 +2,20 @@ module FriendlyErrorHandlingConcern
   extend ActiveSupport::Concern
 
   included do
-    # Only handle errors in development environment, test environment should raise error
+    # Force JSON format for API requests
+    before_action :set_default_format_for_api
+
+    # Global error handling for both API and HTML controllers
+    rescue_from StandardError, with: :handle_friendly_error
+    rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found_error
+    rescue_from ActiveRecord::RecordInvalid, with: :handle_validation_error
+    rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing_error
+
+    # Additional rescues for development HTML
     if Rails.env.development?
       rescue_from NameError, with: :handle_friendly_error
-      rescue_from StandardError, with: :handle_friendly_error
       rescue_from ActionView::SyntaxErrorInTemplate, with: :handle_friendly_error
       rescue_from ActiveRecord::StatementInvalid, with: :handle_friendly_error
-      rescue_from ActiveRecord::RecordNotFound, with: :handle_friendly_error
       rescue_from ActionController::MissingExactTemplate, with: :render_missing_template_fallback
 
       before_action :check_pending_migrations
@@ -17,13 +24,89 @@ module FriendlyErrorHandlingConcern
 
   def handle_routing_error
     Rails.logger.error("404 - Path not found: #{request.path}")
-    @error_url = request.path
-    @error_title = "Page Not Found"
-    @error_description = "If you confirm this is missing implementation, please copy error details and send to chatbox."
-    render "shared/friendly_error", status: :not_found
+
+    if request.format.json?
+      render json: {
+        error: 'Not found',
+        message: 'The requested endpoint does not exist'
+      }, status: :not_found
+    else
+      @error_url = request.path
+      @error_title = "Page Not Found"
+      @error_description = "If you confirm this is missing implementation, please copy error details and send to chatbox."
+      render "shared/friendly_error", status: :not_found
+    end
   end
 
   private
+
+  # Force JSON format for API requests
+  def set_default_format_for_api
+    request.format = :json if request.path.start_with?('/api/')
+  end
+
+  # Handle 404 Not Found errors (from ActiveRecord)
+  def handle_not_found_error(exception)
+    Rails.logger.error("Record not found: #{exception.message}")
+
+    if request.format.json?
+      render json: {
+        error: 'Resource not found',
+        message: exception.message
+      }, status: :not_found
+    elsif Rails.env.development?
+      @error_url = request.path
+      @original_exception = exception
+      @filtered_backtrace = filter_user_backtrace(exception.backtrace)
+      @error_title = "Record Not Found"
+      @error_description = exception.message
+      render "shared/friendly_error", status: :not_found
+    else
+      raise exception
+    end
+  end
+
+  # Handle validation errors (422 Unprocessable Entity)
+  def handle_validation_error(exception)
+    Rails.logger.error("Validation failed: #{exception.record.errors.full_messages.join(', ')}")
+
+    if request.format.json?
+      render json: {
+        error: 'Validation failed',
+        errors: exception.record.errors.full_messages
+      }, status: :unprocessable_entity
+    elsif Rails.env.development?
+      @error_url = request.path
+      @original_exception = exception
+      @filtered_backtrace = filter_user_backtrace(exception.backtrace)
+      @error_title = "Validation Error"
+      @error_description = exception.record.errors.full_messages.join(', ')
+      render "shared/friendly_error", status: :unprocessable_entity
+    else
+      raise exception
+    end
+  end
+
+  # Handle missing parameters (400 Bad Request)
+  def handle_parameter_missing_error(exception)
+    Rails.logger.error("Parameter missing: #{exception.message}")
+
+    if request.format.json?
+      render json: {
+        error: 'Parameter missing',
+        message: exception.message
+      }, status: :bad_request
+    elsif Rails.env.development?
+      @error_url = request.path
+      @original_exception = exception
+      @filtered_backtrace = filter_user_backtrace(exception.backtrace)
+      @error_title = "Parameter Missing"
+      @error_description = exception.message
+      render "shared/friendly_error", status: :bad_request
+    else
+      raise exception
+    end
+  end
 
   def check_pending_migrations
     ActiveRecord::Migration.check_all_pending!
@@ -61,7 +144,7 @@ module FriendlyErrorHandlingConcern
 
   def handle_friendly_error(exception)
     # Skip friendly error handling for curl requests - let them see raw errors for debugging
-    if curl_request?
+    if curl_request? && !request.format.json?
       raise exception
     end
 
@@ -74,7 +157,22 @@ module FriendlyErrorHandlingConcern
     Rails.logger.error("Message: #{exception.message}")
     Rails.logger.error(filter_user_backtrace(exception.backtrace).join("\n"))
 
-    if request.format.html?
+    if request.format.json?
+      # JSON/API responses
+      if Rails.env.production?
+        render json: {
+          error: 'Internal server error',
+          message: 'An unexpected error occurred'
+        }, status: :internal_server_error
+      else
+        render json: {
+          error: exception.class.name,
+          message: exception.message,
+          backtrace: filter_user_backtrace(exception.backtrace)
+        }, status: :internal_server_error
+      end
+    elsif request.format.html?
+      # HTML responses - friendly error page
       @error_url = request.path
       @original_exception = exception
       @filtered_backtrace = filter_user_backtrace(exception.backtrace)
@@ -82,6 +180,7 @@ module FriendlyErrorHandlingConcern
       @error_description = "Please copy error details and send it to chatbox"
       render "shared/friendly_error", status: :internal_server_error
     else
+      # Other formats - simple JSON fallback
       render json: {
         error: 'An error occurred',
         message: Rails.env.development? ? exception.message : 'Please try again later'
@@ -92,7 +191,7 @@ module FriendlyErrorHandlingConcern
   # Check if the request is from curl
   def curl_request?
     user_agent = request.headers['User-Agent'].to_s.downcase
-    user_agent.include?('curl') || 
+    user_agent.include?('curl') ||
     user_agent.include?('httpie') ||
     user_agent.include?('wget')
   end
