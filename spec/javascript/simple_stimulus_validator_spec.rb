@@ -2311,6 +2311,53 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
     end
   end
 
+  describe 'Payment Button Validation' do
+    it 'ensures pay_order_path uses POST method (not GET via link_to)' do
+      payment_violations = []
+
+      view_files.each do |view_file|
+        content = File.read(view_file)
+        relative_path = view_file.sub(Rails.root.to_s + '/', '')
+        lines = content.split("\n")
+
+        lines.each_with_index do |line, index|
+          line_number = index + 1
+          next if line.strip.start_with?('#')
+
+          # Check for link_to with pay_order_path (WRONG - uses GET)
+          if line.match?(/link_to.*pay_order_path/)
+            payment_violations << {
+              file: relative_path,
+              line: line_number,
+              code: line.strip
+            }
+          end
+        end
+      end
+
+      if payment_violations.any?
+        puts "\n⚠️  Payment Button Errors (#{payment_violations.length}):"
+        payment_violations.each do |v|
+          puts "   #{v[:file]}:#{v[:line]}"
+          puts "   ❌ #{v[:code]}"
+        end
+
+        puts "\n   💡 Why this is wrong:"
+        puts "      • link_to uses GET by default, but payment processing requires POST"
+        puts "      • pay_order_path has both GET and POST routes, but only POST processes payment"
+        puts "\n   ✅ Correct usage:"
+        puts "      button_to 'Pay', pay_order_path(@order), method: :post"
+        puts "      render 'orders/pay_button', order: @order\n"
+
+        error_details = payment_violations.map { |v| "#{v[:file]}:#{v[:line]} - Use button_to with method: :post" }
+        expect(payment_violations).to be_empty,
+          "Payment button validation failed:\n#{error_details.join("\n")}"
+      else
+        puts "\n✅ Payment button validation passed!"
+      end
+    end
+  end
+
   describe 'Turbo Stream Architecture Enforcement' do
     it 'validates frontend-backend interactions use Turbo Streams exclusively' do
       violations = []

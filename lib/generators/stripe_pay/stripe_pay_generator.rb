@@ -264,6 +264,13 @@ class StripePayGenerator < Rails::Generators::Base
     say "   - Implement order creation in your business workflow"
     say "   - Implement process_order_paid() in app/services/stripe_payment_service.rb"
     say "   - Remove CLACKY_TODO comments after implementing"
-    say "\n" + "="*60, :green
+    say "\n" + "="*60, :red
+    say "⚠️  CRITICAL: Payment Button Usage", :red
+    say "="*60, :red
+    say "✅ CORRECT: button_to 'Pay', pay_order_path(@order), method: :post", :green
+    say "✅ CORRECT: render 'orders/pay_button', order: @order", :green
+    say "❌ WRONG:   link_to 'Pay', pay_order_path(@order)  # Uses GET!", :red
+    say "\nPayment requires POST method. link_to defaults to GET and will FAIL.", :yellow
+    say "="*60, :green
   end
 end
