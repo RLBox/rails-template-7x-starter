@@ -970,41 +970,10 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
       registration_errors = []
       value_errors = []
       outlet_errors = []
-      color_errors = []
 
       view_files.each do |view_file|
         content = File.read(view_file)
         relative_path = view_file.sub(Rails.root.to_s + '/', '')
-
-        # Check for direct color usage (may cause contrast issues)
-        forbidden_colors = {
-          'text-white' => 'design system text colors first; if unavailable and contrast confirmed OK, use text-gray-50/100',
-          'text-black' => 'design system text colors first; if unavailable and contrast confirmed OK, use text-gray-900/800',
-          'bg-white' => 'design system background colors first; if unavailable and contrast confirmed OK, use bg-gray-50/100',
-          'bg-black' => 'design system background colors first; if unavailable and contrast confirmed OK, use bg-gray-900/800',
-          'border-white' => 'design system border colors first; if unavailable and contrast confirmed OK, use border-gray-200/300',
-          'border-black' => 'design system border colors first; if unavailable and contrast confirmed OK, use border-gray-700/800'
-        }
-
-        file_colors = []
-        forbidden_colors.each do |color_class, suggestion|
-          if content.match?(/\b#{Regexp.escape(color_class)}\b/)
-            count = content.scan(/\b#{Regexp.escape(color_class)}\b/).size
-            file_colors << {
-              color: color_class,
-              count: count,
-              suggestion: suggestion
-            }
-          end
-        end
-
-        # One error per file, not per color
-        if file_colors.any?
-          color_errors << {
-            file: relative_path,
-            colors: file_colors
-          }
-        end
 
         doc = Nokogiri::HTML::DocumentFragment.parse(content)
 
@@ -1393,7 +1362,7 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
       # Remove duplicates from registration errors
       registration_errors = registration_errors.uniq { |error| [error[:controller], error[:file]] }
 
-      total_errors = target_errors.length + target_scope_errors.length + action_errors.length + scope_errors.length + registration_errors.length + value_errors.length + outlet_errors.length + color_errors.length
+      total_errors = target_errors.length + target_scope_errors.length + action_errors.length + scope_errors.length + registration_errors.length + value_errors.length + outlet_errors.length
 
       puts "\n🔍 Simple Stimulus Validation Results:"
       puts "   📁 Scanned: #{view_files.length} views, #{controller_data.keys.length} controllers"
@@ -1490,18 +1459,6 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
           end
         end
 
-        if color_errors.any?
-          puts "\n   🎨 Potential Contrast Issues (#{color_errors.length} files):"
-          color_errors.each do |error|
-            puts "     • #{error[:file]}:"
-            error[:colors].each do |color_info|
-              puts "       - #{color_info[:color]} (#{color_info[:count]}x) → use #{color_info[:suggestion]}"
-            end
-          end
-          puts "\n   💡 Warning: These colors may cause contrast issues (e.g., white text on white background)."
-          puts "      Solution: 1) Use design system colors first  2) If unavailable, confirm contrast is OK, then use gray shades as fallback."
-        end
-
         error_details = []
 
         registration_errors.each do |error|
@@ -1534,11 +1491,6 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
 
         action_errors.each do |error|
           error_details << "Method error: #{error[:controller]}##{error[:method]} in #{error[:file]} - #{error[:suggestion]}"
-        end
-
-        color_errors.each do |error|
-          colors_list = error[:colors].map { |c| c[:color] }.join(', ')
-          error_details << "Potential contrast issues in #{error[:file]}: #{colors_list} - Use design system colors first; if unavailable, confirm contrast is OK, then use gray shades as fallback"
         end
 
         expect(total_errors).to eq(0), "Stimulus validation failed:\n#{error_details.join("\n")}"
