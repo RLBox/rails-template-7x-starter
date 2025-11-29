@@ -1,13 +1,10 @@
 class StripePayGenerator < Rails::Generators::Base
   source_root File.expand_path('templates', __dir__)
 
-  desc "Generate Stripe payment integration with Order model - creates order first, then processes payment"
-
-  class_option :for_test, type: :boolean, default: false,
-               desc: "Generate order new/create functionality for testing (includes new order form and controller actions)"
+  desc "Generate Stripe payment integration with polymorphic Payment model"
 
   class_option :auth, type: :boolean, default: false,
-               desc: "Add user association to orders (requires User model)"
+               desc: "Add user association to payments (requires User model)"
 
   def check_user_model
     return unless options[:auth]
@@ -22,25 +19,31 @@ class StripePayGenerator < Rails::Generators::Base
 
   def generate_migration
     if options[:auth]
-      # With auth: only need user reference, get customer info from user
-      fields = "user:references product_name:string amount:decimal currency:string status:string stripe_payment_intent_id:string"
+      # With auth: user reference + minimal customer info
+      fields = "payable:references:index user:references amount:decimal currency:string status:string stripe_payment_intent_id:string stripe_checkout_session_id:string payment_method:string metadata:jsonb"
     else
-      # Without auth: need customer fields
-      fields = "customer_name:string customer_email:string product_name:string amount:decimal currency:string status:string stripe_payment_intent_id:string"
+      # Without auth: need customer email for Stripe
+      fields = "payable:references:index amount:decimal currency:string status:string stripe_payment_intent_id:string stripe_checkout_session_id:string payment_method:string customer_email:string metadata:jsonb"
     end
 
-    generate "migration", "CreateOrders #{fields}"
+    generate "migration", "CreatePayments #{fields}"
 
-    # Add custom migration content for defaults
-    migration_file = Dir.glob("db/migrate/*_create_orders.rb").last
+    # Post-process the generated migration to add polymorphic option and defaults
+    migration_file = Dir.glob("db/migrate/*_create_payments.rb").last
     if migration_file
       content = File.read(migration_file)
       updated_content = content.gsub(
+        /t\.references :payable/,
+        't.references :payable, polymorphic: true, null: false'
+      ).gsub(
         /t\.string :currency/,
         't.string :currency, default: "usd"'
       ).gsub(
         /t\.string :status/,
         't.string :status, default: "pending"'
+      ).gsub(
+        /add_index :payments, :payable/,
+        '# Polymorphic index is automatically created by t.references'
       )
       File.write(migration_file, updated_content)
     end
@@ -48,7 +51,7 @@ class StripePayGenerator < Rails::Generators::Base
 
   def generate_model
     @auth = options[:auth]
-    template "order.rb.erb", "app/models/order.rb"
+    template "payment.rb.erb", "app/models/payment.rb"
   end
 
   def add_user_association
@@ -59,47 +62,42 @@ class StripePayGenerator < Rails::Generators::Base
 
     user_content = File.read(user_model_path)
 
-    # Check if has_many :orders already exists
-    if user_content.include?("has_many :orders")
-      say "User model already has has_many :orders, skipping...", :yellow
+    # Check if has_many :payments already exists
+    if user_content.include?("has_many :payments")
+      say "User model already has has_many :payments, skipping...", :yellow
       return
     end
 
-    # Insert has_many :orders after has_many :sessions
+    # Insert has_many :payments after has_many :sessions
     if user_content.match(/has_many :sessions.*\n/)
       updated_content = user_content.sub(
         /(has_many :sessions.*\n)/,
-        "\\1  has_many :orders, dependent: :destroy\n"
+        "\\1  has_many :payments, dependent: :destroy\n"
       )
       File.write(user_model_path, updated_content)
-      say "Added has_many :orders to User model (after has_many :sessions)", :green
+      say "Added has_many :payments to User model (after has_many :sessions)", :green
     else
       say "Warning: Could not find 'has_many :sessions' in User model", :yellow
-      say "Please manually add 'has_many :orders' to your User model", :yellow
+      say "Please manually add 'has_many :payments' to your User model", :yellow
     end
   end
 
   def generate_controller
     @auth = options[:auth]
-    @for_test = options[:for_test]
-    template "orders_controller.rb.erb", "app/controllers/orders_controller.rb"
+    template "payments_controller.rb.erb", "app/controllers/payments_controller.rb"
   end
 
   def generate_service
+    @auth = options[:auth]
     template "stripe_payment_service.rb.erb", "app/services/stripe_payment_service.rb"
   end
 
   def generate_views
     @auth = options[:auth]
-    @for_test = options[:for_test]
-    template "views/index.html.erb", "app/views/orders/index.html.erb"
-    if options[:for_test]
-      template "views/new.html.erb", "app/views/orders/new.html.erb"
-    end
-    template "views/show.html.erb", "app/views/orders/show.html.erb"
-    template "views/success.html.erb", "app/views/orders/success.html.erb"
-    template "views/_pay_button.html.erb", "app/views/orders/_pay_button.html.erb"
-    template "views/pay.turbo_stream.erb", "app/views/orders/pay.turbo_stream.erb"
+    # Only generate partial components, NO full page views
+    template "views/_pay_button.html.erb", "app/views/payments/_pay_button.html.erb"
+    template "views/_payment_card.html.erb", "app/views/payments/_payment_card.html.erb"
+    template "views/pay.turbo_stream.erb", "app/views/payments/pay.turbo_stream.erb"
   end
 
   def generate_initializer
@@ -107,47 +105,37 @@ class StripePayGenerator < Rails::Generators::Base
   end
 
   def add_routes
-    if options[:for_test]
-      order_routes = "[:index, :new, :create, :show, :destroy]"
-    else
-      order_routes = "[:index, :show, :destroy]"
-    end
-
     route_content = <<~ROUTES
-      resources :orders, only: #{order_routes} do
+      resources :payments, only: [:show] do
         member do
-          get :pay
           post :pay
           get :success
           get :failure
         end
       end
-      post '/webhooks/stripe', to: 'orders#webhook'
+      post '/webhooks/stripe', to: 'payments#webhook'
     ROUTES
 
     route route_content
   end
 
   def add_admin_routes
-    route "resources :orders", namespace: :admin
+    route "resources :payments", namespace: :admin
   end
 
   def generate_admin_controller
     @auth = options[:auth]
-    template "admin_orders_controller.rb.erb", "app/controllers/admin/orders_controller.rb"
+    template "admin_payments_controller.rb.erb", "app/controllers/admin/payments_controller.rb"
   end
 
   def generate_admin_views
     @auth = options[:auth]
-    template "admin_views/index.html.erb", "app/views/admin/orders/index.html.erb"
-    template "admin_views/show.html.erb", "app/views/admin/orders/show.html.erb"
+    template "admin_views/index.html.erb", "app/views/admin/payments/index.html.erb"
+    template "admin_views/show.html.erb", "app/views/admin/payments/show.html.erb"
   end
 
   def generate_tests
-    @auth = options[:auth]
-    @for_test = options[:for_test]
-    template "orders_spec.rb.erb", "spec/requests/orders_spec.rb"
-    template "factory.rb.erb", "spec/factories/orders.rb"
+    # Skip test generation - users should write tests based on their business logic
   end
 
   def update_sidebar
@@ -156,9 +144,9 @@ class StripePayGenerator < Rails::Generators::Base
       sidebar_content = File.read(sidebar_path)
 
       # Check if menu item already exists
-      generated_comment = "<!-- Generated by stripe_pay: orders -->"
+      generated_comment = "<!-- Generated by stripe_pay: payments -->"
       if sidebar_content.include?(generated_comment)
-        say "Sidebar already contains orders menu item, skipping...", :yellow
+        say "Sidebar already contains payments menu item, skipping...", :yellow
         return
       end
 
@@ -167,21 +155,22 @@ class StripePayGenerator < Rails::Generators::Base
 
         #{generated_comment}
         <li>
-          <%= link_to admin_orders_path,
-              class: "flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300 rounded-lg transition-colors \#{'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' if current_path.include?('/admin/orders')}" do %>
+          <%= link_to admin_payments_path,
+              class: "flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300 rounded-lg transition-colors \#{'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' if current_path.include?('/admin/payments')}" do %>
             <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+              <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
             </svg>
-            Orders
+            Payments
           <% end %>
         </li>
       MENU_ITEM
 
       updated_content = sidebar_content + menu_item
       File.write(sidebar_path, updated_content)
-      say "Updated admin sidebar with Orders menu item", :green
+      say "Updated admin sidebar with Payments menu item", :green
     else
-      say "Warning: Admin sidebar file not found. Please manually add menu item for Orders", :yellow
+      say "Warning: Admin sidebar file not found. Please manually add menu item for Payments", :yellow
     end
   end
 
@@ -254,23 +243,50 @@ class StripePayGenerator < Rails::Generators::Base
   end
 
   def display_next_steps
-    say "\n" + "="*60, :green
+    say "\n" + "="*70, :green
     say "Stripe Payment Generator completed!", :green
-    say "="*60, :green
+    say "="*70, :green
     say "\nNext steps:", :yellow
     say "1. Setup: bundle install && rails db:migrate && touch tmp/restart.txt", :cyan
     say "\n2. Configure Stripe keys in config/application.yml", :cyan
-    say "\n3. Resolve CLACKY_TODOs (tests will fail until resolved):", :cyan
-    say "   - Implement order creation in your business workflow"
-    say "   - Implement process_order_paid() in app/services/stripe_payment_service.rb"
-    say "   - Remove CLACKY_TODO comments after implementing"
-    say "\n" + "="*60, :red
-    say "⚠️  CRITICAL: Payment Button Usage", :red
-    say "="*60, :red
-    say "✅ CORRECT: button_to 'Pay', pay_order_path(@order), method: :post", :green
-    say "✅ CORRECT: render 'orders/pay_button', order: @order", :green
-    say "❌ WRONG:   link_to 'Pay', pay_order_path(@order)  # Uses GET!", :red
-    say "\nPayment requires POST method. link_to defaults to GET and will FAIL.", :yellow
-    say "="*60, :green
+    say "\n" + "="*70, :red
+    say "⚠️  IMPORTANT: Payment views NOT fully generated!", :red
+    say "="*70, :red
+    say "\nGenerated PARTIAL components only:", :yellow
+    say "  ✓ app/views/payments/_pay_button.html.erb", :green
+    say "  ✓ app/views/payments/_payment_card.html.erb", :green
+    say "  ✓ app/views/payments/_status_badge.html.erb", :green
+    say "  ✓ app/views/payments/pay.turbo_stream.erb", :green
+    say "\nYou MUST create full page views:", :yellow
+    say "  ✗ app/views/payments/show.html.erb", :red
+    say "  ✗ app/views/payments/success.html.erb", :red
+    say "\n" + "="*70, :yellow
+    say "📖 Payment Model Pattern (Polymorphic)", :yellow
+    say "="*70, :yellow
+    say "\nPayment works with ANY business model via polymorphic association.", :cyan
+    say "\nExample usage:", :yellow
+    say "\n# 1. Create your business model", :cyan
+    say "rails g model Order user:references total:decimal", :white
+    say "\n# 2. Add payment association in Order model:", :cyan
+    say "has_one :payment, as: :payable, dependent: :destroy", :white
+    say "\n# 3. Implement required methods in Order:", :cyan
+    say "def customer_name", :white
+    say "  user.name", :white
+    say "end", :white
+    say "\ndef customer_email", :white
+    say "  user.email", :white
+    say "end", :white
+    say "\ndef payment_description", :white
+    say '  "Order ##{id}"', :white
+    say "end", :white
+    say "\n# 4. Create payment in your controller:", :cyan
+    say "@payment = @order.create_payment!(amount: @order.total, user: current_user)", :white
+    say "redirect_to payment_path(@payment)", :white
+    say "\n# 5. Show payment button in your view:", :cyan
+    say "<%= render 'payments/pay_button', payment: @order.payment %>", :white
+    say "\n" + "="*70, :yellow
+    say "See lib/generators/stripe_pay/USAGE for detailed examples", :cyan
+    say "See .clackyrules 'Stripe Payment Pattern' section for guidance", :cyan
+    say "="*70, :green
   end
 end

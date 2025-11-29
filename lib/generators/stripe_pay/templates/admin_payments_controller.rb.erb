@@ -1,0 +1,57 @@
+module Admin
+  class PaymentsController < BaseController
+    before_action :set_payment, only: [:show, :edit, :update, :destroy]
+
+    def index
+      @payments = Payment.includes(:payable<% if @auth %>, :user<% end %>)
+                         .order(created_at: :desc)
+                         .page(params[:page])
+
+      # Filter by status
+      @payments = @payments.where(status: params[:status]) if params[:status].present?
+
+      # Filter by payable type
+      @payments = @payments.where(payable_type: params[:payable_type]) if params[:payable_type].present?
+
+      # Search by ID or customer email
+      if params[:q].present?
+        @payments = @payments.where(
+          "payments.id::text LIKE ? OR payments.customer_email LIKE ?",
+          "%#{params[:q]}%", "%#{params[:q]}%"
+        )
+      end
+    end
+
+    def show
+      # Show payment details
+    end
+
+    def update
+      # CLACKY_TODO: Implement manual status updates if needed
+      # Example: manually mark as refunded, update metadata, etc.
+      if @payment.update(payment_params)
+        redirect_to [:admin, @payment], notice: 'Payment updated successfully.'
+      else
+        render :show, status: :unprocessable_entity
+      end
+    end
+
+    def destroy
+      # CLACKY_TODO: Implement payment cancellation logic if needed
+      # Note: This should probably call Stripe API to cancel/refund
+      @payment.mark_as_canceled!
+      redirect_to admin_payments_path, notice: 'Payment canceled.'
+    end
+
+    private
+
+    def set_payment
+      @payment = Payment.find(params[:id])
+    end
+
+    def payment_params
+      # CLACKY_TODO: Customize permitted params based on your needs
+      params.require(:payment).permit(:status, :metadata)
+    end
+  end
+end

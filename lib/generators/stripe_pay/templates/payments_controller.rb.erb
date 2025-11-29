@@ -1,0 +1,88 @@
+class PaymentsController < ApplicationController
+<% if @auth -%>
+  before_action :authenticate_user!, except: [:webhook]
+<% end -%>
+  before_action :set_payment, only: [:show, :pay, :success, :failure]
+  skip_before_action :verify_authenticity_token, only: [:webhook], raise: false
+
+  def show
+    # CLACKY_TODO: Create app/views/payments/show.html.erb
+    # This view should display payment details and include:
+    #   <%%= render 'payments/pay_button', payment: @payment %>
+    # You can also render the payable object:
+    #   <%%= render @payment.payable if @payment.payable %>
+  end
+
+  def pay
+    # Initialize Stripe payment for this payment record
+    stripe_service = StripePaymentService.new(@payment, request)
+    result = stripe_service.call
+
+    if result[:success]
+      @checkout_url = result[:checkout_session].url
+      # Turbo stream will handle the redirect
+    else
+      flash[:alert] = "Payment initialization failed: #{result[:error]}"
+      redirect_to @payment
+    end
+  end
+
+  def success
+    # In development mode, sync payment status from Stripe
+    # since webhooks might not be properly configured
+    if @payment.processing?
+      StripePaymentService.sync_payment_status(@payment)
+    end
+
+    # CLACKY_TODO: Create app/views/payments/success.html.erb
+    # Show success message and next steps based on payable type
+    # Example: redirect to payable or show download/access instructions
+  end
+
+  def failure
+    # CLACKY_TODO: Handle payment failure
+    # You can redirect to payment show page or render custom view
+    redirect_to @payment, alert: 'Payment was canceled or failed. Please try again.'
+  end
+
+  # Stripe webhook endpoint
+  def webhook
+    payload = request.body.read
+    sig_header = request.env['HTTP_STRIPE_SIGNATURE']
+    endpoint_secret = Rails.application.config.stripe[:webhook_secret]
+
+    begin
+      event = Stripe::Webhook.construct_event(payload, sig_header, endpoint_secret)
+      StripePaymentService.process_webhook_event(event)
+      render json: { status: 'success' }
+    rescue JSON::ParserError => e
+      render json: { error: 'Invalid payload' }, status: 400
+    rescue Stripe::SignatureVerificationError => e
+      render json: { error: 'Invalid signature' }, status: 400
+    end
+  end
+
+  private
+
+  def set_payment
+<% if @auth -%>
+    # Find payment and optionally verify user owns it
+    @payment = Payment.find(params[:id])
+
+    # CLACKY_TODO: Customize authorization logic based on your needs
+    # Examples:
+    # - Normal case: verify payment.user == current_user
+    # - Gift case: verify payment.user OR payable.user == current_user
+    # - Flexible: allow if user owns payment OR owns the payable object
+
+    # Default: allow if user owns the payment or the payable
+    unless @payment.user == current_user || @payment.payable.try(:user) == current_user
+      redirect_to root_path, alert: 'Access denied'
+    end
+<% else -%>
+    @payment = Payment.find(params[:id])
+    # CLACKY_TODO: Add authorization check if needed
+    # Example: verify @payment.customer_email matches session email
+<% end -%>
+  end
+end

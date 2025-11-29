@@ -76,11 +76,16 @@ When developing features that require User or Order models, **DO NOT create them
    - The generator creates: User model, migration, sessions, authentication logic, and user pages
    - If User model already exists, remove it first to avoid conflicts
 
-2. **Payment/Order System**: Use `rails generate stripe_pay [--auth]` to generate Order model and payment system
-   - **IMPORTANT**: Before running this generator, ensure NO Order model exists
+2. **Stripe Payment System**: Use `rails generate stripe_pay [--auth]` to generate polymorphic Payment model
+   - **CRITICAL**: Generates Payment model (NOT Order) - Payment works with ANY business model via polymorphic association
    - Use `--auth` option to add user association (requires User model exists)
-   - **Order Creation**: Generator provides order viewing and payment flow only. Integrate order creation into your business workflow, then redirect to `order_path(order)` for payment. DO NOT create standalone order forms.
-   - Should only need to support Stripe payments by default
+   - **Payment Model Pattern**:
+     - Payment = Technical layer (handles Stripe integration, payment status)
+     - Order/Subscription/Booking = Business layer (your domain logic)
+     - Payment belongs_to :payable (polymorphic) - can attach to any model
+   - **Generator creates**: Payment model, controller, service, partial views, admin interface
+   - **You MUST create**: Your business model (Order/Subscription/etc), payment views (show.html.erb, success.html.erb)
+   - **Example usage**: See `lib/generators/stripe_pay/USAGE` for complete examples
 
 3. **LLM Integration:**: Use `rails generate llm` to generate LLM service infrastructure. Always prefer streaming via ActionCable - use `LlmStreamJob.perform_later(channel_name:, prompt:, system:)` for real-time streaming responses. Auto-configures LLM_BASE_URL, LLM_API_KEY, LLM_MODEL in application.yml. When storing LLM messages, include `LlmMessageValidationConcern` - don't validate role & content yourself.
 

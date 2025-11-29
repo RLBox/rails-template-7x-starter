@@ -1,17 +1,17 @@
-<%% # Stripe payment button with test card info
-   # MUST use this partial for all payment-related buttons
+<%% # Stripe payment button
+   # CRITICAL: DO NOT modify - handles Stripe payment correctly
    #
-   # Payment flow uses Turbo Stream:
-   # - Button submits via Turbo (default behavior)
-   # - Controller returns turbo_stream response with redirect action
-   # - JavaScript redirect action handles iframe detection and external redirect
+   # Payment flow:
+   # - Button submits POST request to pay_payment_path
+   # - Controller returns turbo_stream response with redirect to Stripe
+   # - After payment, Stripe redirects back to success/failure URL
    #
    # Usage:
-   #   render 'orders/pay_button', order: @order
-   #   render 'orders/pay_button', order: @order, text: 'Buy Now', css_class: 'btn-secondary'
+   #   render 'payments/pay_button', payment: @payment
+   #   render 'payments/pay_button', payment: @payment, text: 'Buy Now', css_class: 'btn-lg'
 -%>
 
-<%% if Rails.env.development? && (order.pending? || order.failed? || order.processing?) %>
+<%% if Rails.env.development? && (payment.pending? || payment.failed? || payment.processing?) %>
 <div class="alert-info mb-6">
   <div class="flex">
     <div class="flex-shrink-0">
@@ -20,28 +20,29 @@
       </svg>
     </div>
     <div class="ml-3">
-      <h3 class="text-sm font-medium">Development Mode - Test Payment</h3>
+      <h3 class="text-sm font-medium">Test Payment (Development Mode)</h3>
       <div class="mt-2 text-sm">
-        <p class="mb-2">Use these test card numbers (no real charges):</p>
+        <p class="mb-2">Use these test cards (no real charges):</p>
         <ul class="list-disc list-inside space-y-1">
-          <li><strong>Successful:</strong> 4242424242424242</li>
-          <li><strong>Declined:</strong> 4000000000000002</li>
-          <li><strong>Expired:</strong> 4000000000000069</li>
+          <li><strong>Success:</strong> 4242 4242 4242 4242</li>
+          <li><strong>Decline:</strong> 4000 0000 0000 0002</li>
         </ul>
-        <p class="mt-2"><strong>Expiry:</strong> Any future date | <strong>CVC:</strong> Any 3 digits | <strong>ZIP:</strong> Any 5 digits</p>
+        <p class="mt-2"><strong>Expiry:</strong> Any future date | <strong>CVC:</strong> Any 3 digits</p>
       </div>
     </div>
   </div>
 </div>
 <%% end %>
 
-<%% if order.pending? || order.failed? || order.processing? %>
-  <%% text ||= order.failed? ? "Retry Payment" : "Pay Now" -%>
+<%% if payment.pending? || payment.failed? || payment.processing? %>
+  <%% text ||= payment.failed? ? "Retry Payment" : "Pay Now" -%>
   <%% css_class ||= "btn-primary" -%>
 
   <%%= button_to text,
-      pay_order_path(order),
+      pay_payment_path(payment),
       method: :post,
       class: css_class,
       data: { turbo_submits_with: "Processing..." } %>
+<%% elsif payment.paid? %>
+  <span class="badge-success">Payment Completed</span>
 <%% end %>

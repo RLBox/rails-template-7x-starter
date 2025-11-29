@@ -1,142 +1,114 @@
-<div class="container-lg">
-  <div class="mb-6">
-    <!-- Back Button -->
-    <div class="flex items-center space-x-4">
-      <%%= link_to admin_orders_path, class: "btn-ghost text-sm py-1 px-3" do %>
-        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-        </svg>
-        Back to Orders
-      <%% end %>
-    </div>
+<div class="container-xl py-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Payment #<%%= @payment.id %></h1>
+    <%%= link_to "← Back", admin_payments_path, class: "btn-ghost" %>
+  </div>
 
-    <!-- Header -->
-    <div class="mt-4 flex items-center justify-between">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Order #<%%= @order.id %></h1>
-
-      <div class="flex items-center space-x-3">
-        <%%= link_to "Delete Order", admin_order_path(@order), method: :delete,
-            data: { confirm: "Are you sure you want to delete this order? This action cannot be undone." },
-            class: "btn-danger" %>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Payment Details -->
+    <div class="card">
+      <div class="card-body">
+        <h2 class="text-lg font-semibold mb-4">Payment Information</h2>
+        <dl class="space-y-3">
+          <div>
+            <dt class="text-sm text-muted">Amount</dt>
+            <dd class="text-lg font-bold"><%%= number_to_currency(@payment.amount, unit: @payment.currency.upcase + ' ') %></dd>
+          </div>
+          <div>
+            <dt class="text-sm text-muted">Status</dt>
+            <dd>
+              <span class="badge-<%%= case @payment.status
+                    when 'paid' then 'success'
+                    when 'failed' then 'danger'
+                    when 'pending' then 'warning'
+                    when 'processing' then 'info'
+                    else 'neutral'
+                    end %>">
+                <%%= @payment.display_status %>
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm text-muted">Created</dt>
+            <dd><%%= @payment.created_at.strftime('%Y-%m-%d %H:%M:%S') %></dd>
+          </div>
+          <div>
+            <dt class="text-sm text-muted">Updated</dt>
+            <dd><%%= @payment.updated_at.strftime('%Y-%m-%d %H:%M:%S') %></dd>
+          </div>
+        </dl>
       </div>
     </div>
-  </div>
 
-  <!-- Order Status -->
-  <div class="flex items-center space-x-4">
-    <span class="text-lg font-medium text-gray-900 dark:text-gray-100">Status:</span>
-    <span class="<%%= case @order.status
-          when 'paid' then 'badge-success'
-          when 'failed' then 'badge-danger'
-          when 'pending' then 'badge-warning'
-          else 'badge-neutral'
-          end %>">
-      <%%= @order.display_status %>
-    </span>
-  </div>
-
-  <!-- Order Details -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Customer Information -->
-    <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+    <!-- Payable Information -->
+    <div class="card">
       <div class="card-body">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Customer Information</h2>
-
-        <div class="space-y-4">
-<% if @auth -%>
+        <h2 class="text-lg font-semibold mb-4">Related <%%= @payment.payable_type %></h2>
+        <dl class="space-y-3">
           <div>
-            <label class="form-label">User Account</label>
-            <%% if @order.user %>
-              <p class="text-lg text-gray-900 dark:text-gray-100 font-medium">
-                <%%= @order.user.email %>
-                <span class="text-sm text-muted">(ID: <%%= @order.user.id %>)</span>
-              </p>
-            <%% else %>
-              <p class="text-lg text-muted">No user account associated</p>
-            <%% end %>
+            <dt class="text-sm text-muted">Type</dt>
+            <dd><%%= @payment.payable_type %></dd>
           </div>
-
+          <div>
+            <dt class="text-sm text-muted">ID</dt>
+            <dd>#<%%= @payment.payable_id %></dd>
+          </div>
+          <div>
+            <dt class="text-sm text-muted">Description</dt>
+            <dd><%%= @payment.product_description %></dd>
+          </div>
+<% if @auth -%>
+          <%% if @payment.user %>
+          <div>
+            <dt class="text-sm text-muted">User</dt>
+            <dd><%%= @payment.user.email %> (#<%%= @payment.user.id %>)</dd>
+          </div>
+          <%% end %>
 <% end -%>
           <div>
-            <label class="form-label">Name</label>
-            <p class="text-lg text-gray-900 dark:text-gray-100 font-medium"><%%= @order.customer_name %></p>
+            <dt class="text-sm text-muted">Customer Name</dt>
+            <dd><%%= @payment.customer_name %></dd>
           </div>
-
           <div>
-            <label class="form-label">Email</label>
-            <p class="text-lg text-gray-900 dark:text-gray-100 font-medium">
-              <a href="mailto:<%%= @order.customer_email %>" class="text-gray-900 dark:text-gray-100 hover:text-gray-900 dark:text-gray-100-dark">
-                <%%= @order.customer_email %>
-              </a>
-            </p>
+            <dt class="text-sm text-muted">Customer Email</dt>
+            <dd><%%= @payment.customer_email %></dd>
           </div>
-        </div>
+        </dl>
       </div>
     </div>
 
-    <!-- Order Information -->
-    <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+    <!-- Stripe Information -->
+    <div class="card lg:col-span-2">
       <div class="card-body">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Order Information</h2>
-
-        <div class="space-y-4">
+        <h2 class="text-lg font-semibold mb-4">Stripe Information</h2>
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <%% if @payment.stripe_checkout_session_id %>
           <div>
-            <label class="form-label">Product</label>
-            <p class="text-lg text-gray-900 dark:text-gray-100 font-medium"><%%= @order.product_name %></p>
+            <dt class="text-sm text-muted">Checkout Session ID</dt>
+            <dd class="font-mono text-sm"><%%= @payment.stripe_checkout_session_id %></dd>
           </div>
-
-          <div>
-            <label class="form-label">Amount</label>
-            <p class="text-lg text-gray-900 dark:text-gray-100 font-medium"><%%= number_to_currency(@order.amount, unit: @order.currency.upcase + ' ') %></p>
-          </div>
-
-          <div>
-            <label class="form-label">Currency</label>
-            <p class="text-lg text-gray-900 dark:text-gray-100 font-medium"><%%= @order.currency.upcase %></p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Payment Information -->
-  <%% if @order.stripe_payment_intent_id %>
-    <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-      <div class="card-body">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Payment Information</h2>
-
-        <div class="space-y-4">
-          <div>
-            <label class="form-label">Stripe Payment Intent ID</label>
-            <p class="text-sm font-mono text-gray-900 dark:text-gray-100 break-all bg-surface-muted p-3 rounded-lg"><%%= @order.stripe_payment_intent_id %></p>
-          </div>
-
-          <%% if @order.stripe_payment_intent_id %>
-            <div>
-              <label class="form-label">Payment Intent Status</label>
-              <p class="text-lg text-gray-900 dark:text-gray-100 font-medium">Active</p>
-            </div>
           <%% end %>
-        </div>
-      </div>
-    </div>
-  <%% end %>
-
-  <!-- Timestamps -->
-  <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-    <div class="card-body">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Timestamps</h2>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label class="form-label">Created At</label>
-          <p class="text-lg text-gray-900 dark:text-gray-100 font-medium"><%%= @order.created_at.strftime("%B %d, %Y at %l:%M %p") %></p>
-        </div>
-
-        <div>
-          <label class="form-label">Last Updated</label>
-          <p class="text-lg text-gray-900 dark:text-gray-100 font-medium"><%%= @order.updated_at.strftime("%B %d, %Y at %l:%M %p") %></p>
-        </div>
+          <%% if @payment.stripe_payment_intent_id %>
+          <div>
+            <dt class="text-sm text-muted">Payment Intent ID</dt>
+            <dd class="font-mono text-sm"><%%= @payment.stripe_payment_intent_id %></dd>
+          </div>
+          <%% end %>
+          <%% if @payment.payment_method %>
+          <div>
+            <dt class="text-sm text-muted">Payment Method</dt>
+            <dd><%%= @payment.payment_method %></dd>
+          </div>
+          <%% end %>
+          <%% if @payment.metadata.present? %>
+          <div class="md:col-span-2">
+            <dt class="text-sm text-muted">Metadata</dt>
+            <dd class="mt-2">
+              <pre class="bg-gray-100 p-3 rounded text-xs overflow-auto"><%%= JSON.pretty_generate(@payment.metadata) %></pre>
+            </dd>
+          </div>
+          <%% end %>
+        </dl>
       </div>
     </div>
   </div>
