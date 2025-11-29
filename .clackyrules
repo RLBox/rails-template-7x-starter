@@ -8,7 +8,7 @@ Ruby on Rails 7.2
 Tailwind v3
 Figaro
 PostgreSQL
-Active_Storage for upload file
+Active Storage (Local disk only, NO cloud storage like S3/GCS)
 Kaminari
 Puma
 RSpec
