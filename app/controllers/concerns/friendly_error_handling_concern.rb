@@ -23,7 +23,7 @@ module FriendlyErrorHandlingConcern
   end
 
   def handle_routing_error
-    Rails.logger.error("404 - Path not found: #{request.path}")
+    Rails.logger.error("404 - Path not found: #{request.method} #{request.path}")
 
     if request.format.json?
       render json: {
@@ -31,6 +31,7 @@ module FriendlyErrorHandlingConcern
         message: 'The requested endpoint does not exist'
       }, status: :not_found
     else
+      @http_method = request.method
       @error_url = request.path
       @error_title = "Page Not Found"
       @error_description = "If you confirm this is missing implementation, please copy error details and send to chatbox."
@@ -55,6 +56,7 @@ module FriendlyErrorHandlingConcern
         message: exception.message
       }, status: :not_found
     elsif Rails.env.development?
+      @http_method = request.method
       @error_url = request.path
       @original_exception = exception
       @filtered_backtrace = filter_user_backtrace(exception.backtrace)
@@ -76,6 +78,7 @@ module FriendlyErrorHandlingConcern
         errors: exception.record.errors.full_messages
       }, status: :unprocessable_entity
     elsif Rails.env.development?
+      @http_method = request.method
       @error_url = request.path
       @original_exception = exception
       @filtered_backtrace = filter_user_backtrace(exception.backtrace)
@@ -97,6 +100,7 @@ module FriendlyErrorHandlingConcern
         message: exception.message
       }, status: :bad_request
     elsif Rails.env.development?
+      @http_method = request.method
       @error_url = request.path
       @original_exception = exception
       @filtered_backtrace = filter_user_backtrace(exception.backtrace)
@@ -127,6 +131,7 @@ module FriendlyErrorHandlingConcern
     Rails.logger.error(filter_user_backtrace(exception.backtrace).join("\n"))
 
     if request.format.html?
+      @http_method = request.method
       @error_url = request.path
       @original_exception = exception
       @filtered_backtrace = filter_user_backtrace(exception.backtrace)
@@ -173,6 +178,7 @@ module FriendlyErrorHandlingConcern
       end
     elsif request.format.html?
       # HTML responses - friendly error page
+      @http_method = request.method
       @error_url = request.path
       @original_exception = exception
       @filtered_backtrace = filter_user_backtrace(exception.backtrace)
