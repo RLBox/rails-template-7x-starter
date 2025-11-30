@@ -135,7 +135,8 @@ class StripePayGenerator < Rails::Generators::Base
   end
 
   def generate_tests
-    # Skip test generation - users should write tests based on their business logic
+    @auth = options[:auth]
+    template "spec/requests/payment_integration_spec.rb.erb", "spec/requests/payment_integration_spec.rb"
   end
 
   def update_sidebar
