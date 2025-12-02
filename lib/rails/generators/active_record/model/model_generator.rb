@@ -28,9 +28,10 @@ module ActiveRecord
           when 'user'
             say "💡 For user authentication, use:", :blue
             say "   rails generate authentication", :blue
-          when 'order'
-            say "💡 For payment/order system, use:", :blue
+          when 'payment'
+            say "💡 For payment system, use:", :blue
             say "   rails generate stripe_pay", :blue
+            say "   This generates a polymorphic Payment model that works with any business model (Order, Subscription, Booking, etc.)", :yellow
           else
             say "This name is reserved. Please choose a different name.", :yellow
           end
@@ -128,9 +129,7 @@ module ActiveRecord
           session
           registration
           password
-          order
           payment
-          subscription
         ]
       end
 

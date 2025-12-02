@@ -108,6 +108,7 @@ class StripePayGenerator < Rails::Generators::Base
     route_content = <<~ROUTES
       resources :payments, only: [:show] do
         member do
+          get :pay
           post :pay
           get :success
           get :failure

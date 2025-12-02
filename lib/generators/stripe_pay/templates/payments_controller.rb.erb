@@ -69,13 +69,6 @@ class PaymentsController < ApplicationController
     # Find payment and optionally verify user owns it
     @payment = Payment.find(params[:id])
 
-    # CLACKY_TODO: Customize authorization logic based on your needs
-    # Examples:
-    # - Normal case: verify payment.user == current_user
-    # - Gift case: verify payment.user OR payable.user == current_user
-    # - Flexible: allow if user owns payment OR owns the payable object
-
-    # Default: allow if user owns the payment or the payable
     unless @payment.user == current_user || @payment.payable.try(:user) == current_user
       redirect_to root_path, alert: 'Access denied'
     end

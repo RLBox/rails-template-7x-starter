@@ -94,10 +94,10 @@ class StripePaymentService < ApplicationService
 
   private
 
-  # CLACKY_TODO: Customize line items based on payable type
-  # Payable object can implement stripe_line_items to provide custom line items
-  # For subscriptions: [{ price: 'price_xxx', quantity: 1 }]
-  # For one-time: price_data with dynamic pricing (default below)
+  # Build line items for Stripe checkout
+  # Default implementation works for most cases - uses payment amount and description
+  # For custom pricing: implement stripe_line_items in your payable model
+  # For subscriptions: return [{ price: 'price_xxx', quantity: 1 }]
   def build_line_items
     if payment.payable.respond_to?(:stripe_line_items)
       payment.payable.stripe_line_items
@@ -116,15 +116,16 @@ class StripePaymentService < ApplicationService
     end
   end
 
-  # CLACKY_TODO: Determine payment mode
-  # Payable object can implement stripe_mode to return 'subscription' or 'payment'
-  # Default is 'payment' (one-time purchase)
+  # Determine payment mode (one-time vs subscription)
+  # Automatically detects: payable.stripe_mode returns 'subscription' or 'payment'
+  # Default: 'payment' (one-time purchase)
   def payment_mode
     payment.payable.respond_to?(:stripe_mode) ? payment.payable.stripe_mode : 'payment'
   end
 
-  # CLACKY_TODO: Customize metadata
-  # Add business-specific metadata for Stripe records
+  # Standard metadata for Stripe records
+  # Contains all necessary info for tracking and customer support
+  # Rarely needs customization
   def build_metadata
     {
       payment_id: payment.id,
@@ -182,12 +183,13 @@ class StripePaymentService < ApplicationService
   end
 
   # Handle subscription invoice payments (recurring billing)
+  # CLACKY_NOTE: Only needed for subscription-based payments
+  # If you're using subscriptions, implement this to create payment records for each billing cycle
   def self.handle_invoice_payment_success(invoice)
     subscription_id = invoice['subscription']
     return unless subscription_id
 
-    # CLACKY_TODO: Find your Subscription model and create new payment record
-    # Example:
+    # Example implementation (uncomment if using subscriptions):
     # subscription = Subscription.find_by(stripe_subscription_id: subscription_id)
     # return unless subscription
     #
@@ -203,9 +205,9 @@ class StripePaymentService < ApplicationService
     Rails.logger.info "Invoice payment succeeded for subscription #{subscription_id}"
   end
 
+  # CLACKY_NOTE: Only needed for subscription-based payments
   def self.handle_subscription_update(subscription)
-    # CLACKY_TODO: Update your Subscription model status
-    # Example:
+    # Example: sync subscription status from Stripe
     # sub = Subscription.find_by(stripe_subscription_id: subscription['id'])
     # sub&.update!(
     #   status: subscription['status'],
@@ -215,9 +217,9 @@ class StripePaymentService < ApplicationService
     Rails.logger.info "Subscription updated: #{subscription['id']}"
   end
 
+  # CLACKY_NOTE: Only needed for subscription-based payments
   def self.handle_subscription_deleted(subscription)
-    # CLACKY_TODO: Mark subscription as canceled
-    # Example:
+    # Example: mark subscription as canceled
     # sub = Subscription.find_by(stripe_subscription_id: subscription['id'])
     # sub&.update!(status: 'canceled')
 
@@ -226,16 +228,22 @@ class StripePaymentService < ApplicationService
 
   # CLACKY_TODO: Implement post-payment business logic
   # This is called after payment is confirmed as paid
-  # Examples:
-  # - Send confirmation email
-  # - Grant access to content/course
-  # - Update inventory
-  # - Trigger fulfillment
-  # - Notify payable object: payment.payable.on_payment_success(payment) if payment.payable.respond_to?(:on_payment_success)
+  # Write your business logic here based on payable type
+  #
+  # Example:
+  # case payment.payable_type
+  # when 'Order'
+  #   payment.payable.update!(status: 'paid')
+  #   OrderMailer.confirmation(payment.payable).deliver_later
+  # when 'Enrollment'
+  #   payment.payable.update!(status: 'active')
+  #   EnrollmentMailer.welcome(payment.payable).deliver_later
+  # when 'Subscription'
+  #   payment.payable.activate!
+  # end
   def self.process_payment_paid(payment)
-    # Callback to payable object if it implements on_payment_success
-    if payment.payable.respond_to?(:on_payment_success)
-      payment.payable.on_payment_success(payment)
-    end
+    Rails.logger.info "Payment #{payment.id} confirmed as paid for #{payment.payable_type} ##{payment.payable_id}"
+
+    # TODO: Add your business logic here
   end
 end
