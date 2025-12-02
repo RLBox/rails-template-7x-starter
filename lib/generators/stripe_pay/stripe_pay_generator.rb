@@ -121,7 +121,7 @@ class StripePayGenerator < Rails::Generators::Base
   end
 
   def add_admin_routes
-    route "resources :payments", namespace: :admin
+    route "resources :payments, only: [:index, :show]", namespace: :admin
   end
 
   def generate_admin_controller

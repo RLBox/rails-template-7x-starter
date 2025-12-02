@@ -26,7 +26,7 @@ Restarting project is unnecessary because Rails automatically hot-reloads code c
 - `config/application.yml`
 - `config/appname.txt`
 
-Use `touch tmp/restart.txt` quickly restart project After running `rails g authentication` or `rails g stripe_pay` or `rails g llm`.
+**CRITICAL: If you run `rails g authentication`, `rails g stripe_pay`, or `rails g llm`, you MUST run `touch tmp/restart.txt` at the END after ALL tasks are complete.**
 
 ## MANDATORY PROJECT WORKFLOW - FOLLOW EXACTLY IN THIS ORDER
 

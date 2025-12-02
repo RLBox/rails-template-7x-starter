@@ -933,7 +933,7 @@ class ErrorHandler {
       // Common browser errors we can't control
       /Script error/,
       /Non-Error promise rejection captured/,
-      /ResizeObserver loop limit exceeded/,
+      /ResizeObserver loop/,
       /passive event listener/,
 
       // Third-party script errors

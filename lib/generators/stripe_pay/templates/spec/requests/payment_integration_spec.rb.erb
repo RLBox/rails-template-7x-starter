@@ -55,6 +55,15 @@ RSpec.describe "Payment Integration", type: :request do
             issue: "Direct button_to pay_payment_path instead of using pay_button partial"
           }
         end
+
+        # Check for passing wrong object to pay_payment_path (should be payment, not order/subscription)
+        if content.match?(/pay_payment_path\s*\(\s*[^@]/) ||
+           content.match?(/pay_payment_path\s*\(\s*@(?!payment\b)/)
+          violations << {
+            file: relative_path,
+            issue: "pay_payment_path should receive @payment, not @order/@subscription/other objects"
+          }
+        end
       end
 
       if violations.any?

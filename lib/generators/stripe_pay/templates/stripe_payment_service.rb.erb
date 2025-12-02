@@ -95,9 +95,22 @@ class StripePaymentService < ApplicationService
   private
 
   # Build line items for Stripe checkout
-  # Default implementation works for most cases - uses payment amount and description
-  # For custom pricing: implement stripe_line_items in your payable model
-  # For subscriptions: return [{ price: 'price_xxx', quantity: 1 }]
+  #
+  # Default: Uses payment amount for one-time purchases (works out of the box)
+  #
+  # For subscriptions: Implement stripe_line_items in your payable model
+  # Example (dynamic creation - no Stripe Dashboard setup needed):
+  #   def stripe_line_items
+  #     [{
+  #       price_data: {
+  #         currency: 'usd',
+  #         product_data: { name: plan_name },
+  #         unit_amount: (plan_price * 100).to_i,  # dollars to cents
+  #         recurring: { interval: 'month' }        # for subscriptions
+  #       },
+  #       quantity: 1
+  #     }]
+  #   end
   def build_line_items
     if payment.payable.respond_to?(:stripe_line_items)
       payment.payable.stripe_line_items

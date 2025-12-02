@@ -56,7 +56,7 @@ After Generation:
    end
 
    # Example: Subscription (has many payments for recurring billing)
-   rails g model Subscription user:references plan_id:string stripe_subscription_id:string status:string
+   rails g model Subscription user:references plan_name:string plan_price:decimal status:string stripe_subscription_id:string
 
    # In app/models/subscription.rb:
    class Subscription < ApplicationRecord
@@ -80,9 +80,21 @@ After Generation:
        'subscription'
      end
 
-     # Use Stripe Price ID for subscriptions
+     # Dynamically create Stripe Price (no need to pre-create in Stripe Dashboard)
+     # Perfect for templates - just works! No manual Stripe configuration needed.
      def stripe_line_items
-       [{ price: stripe_price_id, quantity: 1 }]
+       [{
+         price_data: {
+           currency: 'usd',
+           product_data: {
+             name: plan_name,
+             description: "Monthly subscription to #{plan_name}"
+           },
+           unit_amount: (plan_price * 100).to_i,  # Convert dollars to cents
+           recurring: { interval: 'month' }  # Can be 'day', 'week', 'month', or 'year'
+         },
+         quantity: 1
+       }]
      end
    end
 
@@ -171,7 +183,9 @@ Required:
 
 Optional (for advanced use):
   - stripe_mode: Returns 'payment' or 'subscription' (String, default: 'payment')
-  - stripe_line_items: Returns custom line items (Array, default: uses amount)
+  - stripe_line_items: Returns line items for Stripe checkout (Array)
+      For subscriptions, use price_data with recurring parameter (see examples above)
+      For one-time purchases, defaults to payment amount (no implementation needed)
   - on_payment_success(payment): Callback when payment succeeds
 
 Webhook Handling:

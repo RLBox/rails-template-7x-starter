@@ -23,7 +23,7 @@ class PaymentsController < ApplicationController
       # Turbo stream will handle the redirect
     else
       flash[:alert] = "Payment initialization failed: #{result[:error]}"
-      redirect_to @payment
+      redirect_to payment_path(@payment)
     end
   end
 
@@ -34,6 +34,10 @@ class PaymentsController < ApplicationController
       StripePaymentService.sync_payment_status(@payment)
     end
 
+    unless @payment.paid?
+      redirect_to payment_path(@payment), alert: 'Payment was not paid. Please try again.'
+    end
+
     # CLACKY_TODO: Create app/views/payments/success.html.erb
     # Show success message and next steps based on payable type
     # Example: redirect to payable or show download/access instructions
@@ -42,7 +46,7 @@ class PaymentsController < ApplicationController
   def failure
     # CLACKY_TODO: Handle payment failure
     # You can redirect to payment show page or render custom view
-    redirect_to @payment, alert: 'Payment was canceled or failed. Please try again.'
+    redirect_to payment_path(@payment), alert: 'Payment was canceled or failed. Please try again.'
   end
 
   # Stripe webhook endpoint

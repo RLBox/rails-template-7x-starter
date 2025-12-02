@@ -39,6 +39,8 @@ class Payment < ApplicationRecord
     status == 'paid'
   end
 
+  alias_method :succeeded?, :paid?
+
   def failed?
     status == 'failed'
   end
