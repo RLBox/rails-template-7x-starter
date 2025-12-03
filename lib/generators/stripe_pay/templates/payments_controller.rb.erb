@@ -16,7 +16,6 @@ class PaymentsController < ApplicationController
       render formats: [:turbo_stream]
     else
       # CLACKY_TODO: Redirect to appropriate page on payment initialization failure
-      # Example: redirect_to @payment.payable, alert: result[:error]
       flash[:alert] = "Payment initialization failed: #{result[:error]}"
       redirect_to root_path
     end
