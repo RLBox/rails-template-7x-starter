@@ -12,7 +12,8 @@ class PaymentsController < ApplicationController
 
     if result[:success]
       @checkout_url = result[:checkout_session].url
-      # Turbo stream will handle the redirect
+      # Render turbo stream to redirect to Stripe checkout
+      render formats: [:turbo_stream]
     else
       # CLACKY_TODO: Redirect to appropriate page on payment initialization failure
       # Example: redirect_to @payment.payable, alert: result[:error]

@@ -94,8 +94,7 @@ class StripePayGenerator < Rails::Generators::Base
 
   def generate_views
     @auth = options[:auth]
-    # Only generate partial components, NO full page views
-    template "views/_pay_button.html.erb", "app/views/payments/_pay_button.html.erb"
+    # Only generate turbo stream for Stripe redirect
     template "views/pay.turbo_stream.erb", "app/views/payments/pay.turbo_stream.erb"
   end
 
@@ -107,6 +106,7 @@ class StripePayGenerator < Rails::Generators::Base
     route_content = <<~ROUTES
       resources :payments, only: [] do
         member do
+          get :pay
           post :pay
           get :success
           get :failure
@@ -232,38 +232,97 @@ class StripePayGenerator < Rails::Generators::Base
     say "1. Setup: bundle install && rails db:migrate && touch tmp/restart.txt", :cyan
     say "\n2. Configure Stripe keys in config/application.yml", :cyan
     say "\n" + "="*70, :red
-    say "⚠️  IMPORTANT: Payment views NOT fully generated!", :red
+    say "⚠️  IMPORTANT: Complete these steps!", :red
     say "="*70, :red
-    say "\nGenerated PARTIAL components only:", :yellow
-    say "  ✓ app/views/payments/_pay_button.html.erb", :green
-    say "  ✓ app/views/payments/pay.turbo_stream.erb", :green
-    say "\nYou MUST create this view:", :yellow
+    say "\nGenerated files:", :yellow
+    say "  ✓ app/views/payments/pay.turbo_stream.erb - Stripe redirect handler", :green
+    say "\nYou MUST create:", :yellow
     say "  ✗ app/views/payments/success.html.erb - Required for Stripe callback", :red
     say "\n" + "="*70, :yellow
-    say "📖 Payment Model Pattern (Polymorphic)", :yellow
+    say "📖 Two Payment Patterns", :yellow
     say "="*70, :yellow
     say "\nPayment works with ANY business model via polymorphic association.", :cyan
-    say "\nExample usage:", :yellow
-    say "\n# 1. Create your business model", :cyan
-    say "rails g model Order user:references total:decimal", :white
-    say "\n# 2. Add payment association in Order model:", :cyan
+    say "\n" + "-"*70, :yellow
+    say "Pattern 1️⃣: One-time Product Purchase", :yellow
+    say "-"*70, :yellow
+    say "Use case: Buy a product once (e.g., e-book, course)", :green
+    say "\n# 1. Create Order model", :cyan
+    say "rails g model Order user:references total:decimal status:string", :white
+    say "\n# 2. Add payment association & methods in Order model:", :cyan
     say "has_one :payment, as: :payable, dependent: :destroy", :white
-    say "\n# 3. Implement required methods in Order:", :cyan
-    say "def customer_name", :white
-    say "  user.name", :white
-    say "end", :white
-    say "\ndef customer_email", :white
-    say "  user.email", :white
-    say "end", :white
-    say "\ndef payment_description", :white
-    say '  "Order ##{id}"', :white
-    say "end", :white
-    say "\n# 4. Create payment in your controller:", :cyan
+    say "def customer_name; user.name; end", :white
+    say "def customer_email; user.email; end", :white
+    say "def payment_description; \"Order #\#{id}\"; end", :white
+    say "def stripe_mode; 'payment'; end  # One-time payment", :white
+    say "\n# 3. In OrdersController#create:", :cyan
+    say "@order = Order.create!(user: current_user, total: 99.00, status: 'pending')", :white
     say "@payment = @order.create_payment!(amount: @order.total, user: current_user)", :white
-    say "redirect_to payment_path(@payment)", :white
-    say "\n# 5. Show payment button in your view:", :cyan
-    say "<%= render 'payments/pay_button', payment: @order.payment %>", :white
-    say "\n" + "="*70, :yellow
+    say "redirect_to pay_payment_path(@payment), data: { turbo_method: :post }", :white
+    say "\n# 4. View: <%= button_to 'Buy Now', orders_path, method: :post %>", :cyan
+    say "\n" + "-"*70, :yellow
+    say "Pattern 2️⃣: Auto-renewing Subscription (Monthly Billing)", :yellow
+    say "-"*70, :yellow
+    say "Use case: Stripe automatically charges user monthly", :green
+    say "⚠️  Requires Stripe Subscription API + webhook handling", :yellow
+    say "\n# 1. Create models", :cyan
+    say "rails g model SubscriptionPlan name:string price_cents:integer credits:integer", :white
+    say "rails g model UserSubscription user:references subscription_plan:references \\", :white
+    say "  status:string started_at:datetime expires_at:datetime credits_used:integer \\", :white
+    say "  stripe_subscription_id:string", :white
+    say "\n# 2. Add in UserSubscription model:", :cyan
+    say "has_one :payment, as: :payable, dependent: :destroy", :white
+    say "def customer_name; user.name; end", :white
+    say "def customer_email; user.email; end", :white
+    say "def payment_description; \"\#{subscription_plan.name} - Monthly Subscription\"; end", :white
+    say "def stripe_mode; 'subscription'; end  # ⚠️ Auto-renewing!", :white
+    say "\n# 3. In SubscriptionsController#new (checkout preview):", :cyan
+    say "@plan = SubscriptionPlan.find(params[:plan_id])", :white
+    say "@subscription = current_user.user_subscriptions.create!(", :white
+    say "  subscription_plan: @plan, status: 'pending',", :white
+    say "  started_at: Time.current, expires_at: 1.month.from_now", :white
+    say ")", :white
+    say "@payment = @subscription.create_payment!(amount: @plan.price_cents / 100.0, user: current_user)", :white
+    say "\n# 4. In SubscriptionsController#create:", :cyan
+    say "@subscription = current_user.user_subscriptions.find_by(status: 'pending')", :white
+    say "redirect_to pay_payment_path(@subscription.payment), data: { turbo_method: :post }", :white
+    say "\n# 5. View: <%= button_to 'Subscribe Monthly', subscriptions_path(plan: @plan.id), method: :post %>", :cyan
+    say "\n# 6. Update StripePaymentService to create Stripe Product/Price/Subscription:", :cyan
+    say "# When stripe_mode == 'subscription', dynamically create in Stripe:", :white
+    say "if payable.stripe_mode == 'subscription'", :white
+    say "  # Create Stripe Product (or reuse existing)", :white
+    say "  product = Stripe::Product.create(name: payable.payment_description)", :white
+    say "  # Create Stripe Price for monthly billing", :white
+    say "  price = Stripe::Price.create(", :white
+    say "    product: product.id,", :white
+    say "    unit_amount: (amount * 100).to_i,", :white
+    say "    currency: currency,", :white
+    say "    recurring: { interval: 'month' }", :white
+    say "  )", :white
+    say "  # Create checkout session with subscription mode", :white
+    say "  session = Stripe::Checkout::Session.create(", :white
+    say "    mode: 'subscription',", :white
+    say "    line_items: [{ price: price.id, quantity: 1 }],", :white
+    say "    # ... other params", :white
+    say "  )", :white
+    say "end", :white
+    say "\n# 7. In webhook - save stripe_subscription_id from checkout:", :cyan
+    say "when 'checkout.session.completed'", :white
+    say "  payment = Payment.find_by(stripe_checkout_session_id: event.data.object.id)", :white
+    say "  subscription = payment.payable", :white
+    say "  # Save Stripe subscription ID for future webhook lookups", :white
+    say "  subscription.update!(", :white
+    say "    stripe_subscription_id: event.data.object.subscription,", :white
+    say "    status: 'active'", :white
+    say "  )", :white
+    say "\n# 8. Handle monthly recurring payments:", :cyan
+    say "when 'invoice.paid'", :white
+    say "  stripe_sub_id = event.data.object.subscription", :white
+    say "  subscription = UserSubscription.find_by(stripe_subscription_id: stripe_sub_id)", :white
+    say "  subscription.update!(expires_at: 1.month.from_now)", :white
+    say "\n# 9. Handle subscription cancellation:", :cyan
+    say "when 'customer.subscription.deleted'", :white
+    say "  subscription = UserSubscription.find_by(stripe_subscription_id: event.data.object.id)", :white
+    say "  subscription.update!(status: 'canceled')", :white
     say "="*70, :green
   end
 

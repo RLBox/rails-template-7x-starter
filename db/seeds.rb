@@ -4,5 +4,7 @@
 # IMPORTANT: Do NOT add Administrator data here!
 # Administrator accounts should be created manually by user.
 # This seeds file is only for application data (products, categories, etc.)
+#
+require 'open-uri'
 
 # Write your seed data here

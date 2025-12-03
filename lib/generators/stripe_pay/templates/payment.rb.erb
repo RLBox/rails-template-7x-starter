@@ -1,7 +1,7 @@
 class Payment < ApplicationRecord
   # Polymorphic association - can be attached to ANY business model
   # Examples: Order (has_one), Subscription (has_many), Booking, Course, etc.
-  belongs_to :payable, polymorphic: true
+  belongs_to :payable, polymorphic: true, optional: true
 <% if @auth -%>
   belongs_to :user, optional: true
   # CLACKY_NOTE: User is optional to support:

@@ -34,56 +34,55 @@ RSpec.describe "Payment Integration", type: :request do
       end
     end
 
-    it "validates that payment views use pay_button partial correctly" do
+    it "validates that pay_payment_path is used correctly in controllers" do
       violations = []
+      found_pay_payment_path = false
 
-      # Check all views for direct button_to pay_payment_path usage
-      Dir.glob(Rails.root.join('app/views/**/*.html.erb')).each do |file_path|
+      # Check all controllers for redirect_to pay_payment_path(@payment)
+      Dir.glob(Rails.root.join('app/controllers/**/*.rb')).each do |file_path|
         content = File.read(file_path)
         relative_path = file_path.sub(Rails.root.to_s + '/', '')
 
-        # Skip the pay_button partial itself
-        next if relative_path.include?('_pay_button.html.erb')
-        next if relative_path.include?('payments/pay.turbo_stream.erb')
+        # Skip payments controller itself
+        next if relative_path.include?('payments_controller.rb')
 
-        # Check for direct button_to pay_payment_path instead of using partial
-        if content.match?(/button_to.*pay_payment_path/) && !content.match?(/render.*payments\/pay_button/)
-          violations << {
-            file: relative_path,
-            issue: "Direct button_to pay_payment_path instead of using pay_button partial"
-          }
-        end
+        # Check if this controller redirects to pay_payment_path
+        if content.match?(/redirect_to\s+pay_payment_path/)
+          found_pay_payment_path = true
 
-        # Check for link_to with pay_payment_path (CRITICAL: must use POST, not GET)
-        if content.match?(/link_to.*pay_payment_path/)
-          violations << {
-            file: relative_path,
-            issue: "CRITICAL: Using link_to (GET) with pay_payment_path - must use button_to (POST) via pay_button partial"
-          }
-        end
-
-        # Check for passing wrong object to pay_payment_path (should be payment, not order/subscription)
-        if content.match?(/pay_payment_path\s*\(\s*[^@]/) ||
-           content.match?(/pay_payment_path\s*\(\s*@(?!payment\b)/)
-          violations << {
-            file: relative_path,
-            issue: "pay_payment_path should receive @payment, not @order/@subscription/other objects"
-          }
+          # Check for passing wrong object to pay_payment_path (should be @payment, not @order/@subscription)
+          if content.match?(/pay_payment_path\s*\(\s*@(?!payment\b)\w+/)
+            violations << {
+              file: relative_path,
+              issue: "pay_payment_path must receive @payment object, not @order/@subscription/other objects"
+            }
+          end
         end
       end
 
+      # Check if pay_payment_path is used at least once in controllers
+      unless found_pay_payment_path
+        fail "\n❌ No pay_payment_path redirect found in controllers!\n\n" \
+             "You must redirect to pay_payment_path(@payment) in your controller to trigger Stripe payment.\n\n" \
+             "Recommended usage in controller:\n" \
+             "  @payment = @order.create_payment!(amount: @order.total, user: current_user)\n" \
+             "  redirect_to pay_payment_path(@payment), data: { turbo_method: :post }\n"
+      end
+
+      # Check for incorrect object usage in controllers
       if violations.any?
-        error_message = "\n❌ Found #{violations.length} payment button violation(s):\n\n"
+        error_message = "\n❌ Found #{violations.length} payment path violation(s) in controllers:\n\n"
 
         violations.each do |v|
           error_message += "📄 #{v[:file]}\n"
-          error_message += "   Issue: #{v[:issue]}\n"
-          error_message += "   Fix: Use <%%= render 'payments/pay_button', payment: @payment %>\n\n"
+          error_message += "   Issue: #{v[:issue]}\n\n"
         end
 
-        error_message += "Correct pattern:\n"
-        error_message += "  MUST use POST method via button_to in the pay_button partial.\n"
-        error_message += "  NEVER use link_to (GET) for pay_payment_path.\n"
+        error_message += "Correct usage:\n"
+        error_message += "  redirect_to pay_payment_path(@payment), data: { turbo_method: :post }\n"
+        error_message += "\nIncorrect usage:\n"
+        error_message += "  redirect_to pay_payment_path(@order) ❌\n"
+        error_message += "  redirect_to pay_payment_path(@subscription) ❌\n"
 
         fail error_message
       end

@@ -120,12 +120,23 @@ class StripePaymentService < ApplicationService
           currency: payment.currency,
           product_data: {
             name: payment.product_description,
-            description: "Payment for #{payment.customer_name}",
+            description: product_description_with_test_cards,
           },
           unit_amount: payment.amount_in_cents,
         },
         quantity: 1,
       }]
+    end
+  end
+
+  def product_description_with_test_cards
+    base_description = "Payment for #{payment.customer_name}"
+
+    if Rails.env.development?
+      test_info = " | TEST CARDS: 4242424242424242 | Any future expiry & CVC"
+      base_description + test_info
+    else
+      base_description
     end
   end
 
