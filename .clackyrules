@@ -45,7 +45,7 @@ CRITICAL: USE SEMANTIC TOKENS FOR COLORS, GRADIENTS, FONTS, ETC. It's important 
 
 **NEVER use `@apply group` in CSS** - `group` class should only be added in HTML templates, not in CSS @apply directives.
 
-**USE EXISTING COMPONENTS**: The system has complete .btn-*, .card-*, .alert-*, .badge-*, .form-* classes. Use these instead of creating new ones.
+**USE EXISTING COMPONENTS**: The system has complete .btn-*, .card-*, .alert-*, .badge-*, .form-* classes. Use these instead of creating new ones. See `application.css` header for full list. Custom components go in application.css bottom section. NEVER modify `components.css`.
 
 Pay attention to contrast, color, and typography.
 
