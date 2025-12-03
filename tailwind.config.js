@@ -8,13 +8,16 @@ module.exports = {
     './app/views/**/*.{erb,html}'
   ],
   safelist: [
-    { pattern: /^btn-/ },
-    { pattern: /^badge-/ },
-    { pattern: /^alert-/ },
-    { pattern: /^card-/ },
-    { pattern: /^trix-/ },
+    { pattern: /^btn/ },
+    { pattern: /^badge/ },
+    { pattern: /^alert/ },
+    { pattern: /^card/ },
+    { pattern: /^table/ },
+    { pattern: /^field/ },
+    { pattern: /^container/ },
+    { pattern: /^trix/ },
     { pattern: /^attachment/ },
-    { pattern: /^form-/ },  // Trix dialogs use form inputs
+    { pattern: /^form/ },
     'dark',  // Dark mode class
   ],
   darkMode: 'class',

@@ -105,7 +105,7 @@ class StripePayGenerator < Rails::Generators::Base
 
   def add_routes
     route_content = <<~ROUTES
-      resources :payments, only: [:show] do
+      resources :payments, only: [] do
         member do
           post :pay
           get :success
@@ -222,24 +222,6 @@ class StripePayGenerator < Rails::Generators::Base
 
     File.write(gemfile_path, updated_content)
     say "Added Stripe gem to Gemfile", :green
-    say "Please run 'bundle install' to install the gem", :yellow
-  end
-
-  private
-
-  def add_stripe_config_to_file(file_path, stripe_config)
-    if File.exist?(file_path)
-      content = File.read(file_path)
-
-      unless content.include?("STRIPE_PUBLISHABLE_KEY")
-        File.write(file_path, content + stripe_config)
-        say "Added Stripe configuration to #{File.basename(file_path)}", :green
-      else
-        say "Stripe configuration already exists in #{File.basename(file_path)}", :yellow
-      end
-    else
-      say "#{File.basename(file_path)} not found, skipping...", :yellow
-    end
   end
 
   def display_next_steps
@@ -282,8 +264,23 @@ class StripePayGenerator < Rails::Generators::Base
     say "\n# 5. Show payment button in your view:", :cyan
     say "<%= render 'payments/pay_button', payment: @order.payment %>", :white
     say "\n" + "="*70, :yellow
-    say "See lib/generators/stripe_pay/USAGE for detailed examples", :cyan
-    say "See .clackyrules 'Stripe Payment Pattern' section for guidance", :cyan
     say "="*70, :green
+  end
+
+  private
+
+  def add_stripe_config_to_file(file_path, stripe_config)
+    if File.exist?(file_path)
+      content = File.read(file_path)
+
+      unless content.include?("STRIPE_PUBLISHABLE_KEY")
+        File.write(file_path, content + stripe_config)
+        say "Added Stripe configuration to #{File.basename(file_path)}", :green
+      else
+        say "Stripe configuration already exists in #{File.basename(file_path)}", :yellow
+      end
+    else
+      say "#{File.basename(file_path)} not found, skipping...", :yellow
+    end
   end
 end
