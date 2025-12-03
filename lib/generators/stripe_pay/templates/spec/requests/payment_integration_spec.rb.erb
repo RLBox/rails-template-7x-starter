@@ -14,7 +14,6 @@ RSpec.describe "Payment Integration", type: :request do
       missing_views = []
 
       required_views = [
-        'app/views/payments/show.html.erb',
         'app/views/payments/success.html.erb'
       ]
 
@@ -29,8 +28,7 @@ RSpec.describe "Payment Integration", type: :request do
         missing_views.each do |view|
           error_message += "📄 #{view}\n"
         end
-        error_message += "\nThese views are required for the payment flow to work.\n"
-        error_message += "Check the CLACKY_TODO comments in PaymentsController for guidance.\n"
+        error_message += "\nThis view is required for Stripe payment success callback.\n"
 
         fail error_message
       end
@@ -56,6 +54,14 @@ RSpec.describe "Payment Integration", type: :request do
           }
         end
 
+        # Check for link_to with pay_payment_path (CRITICAL: must use POST, not GET)
+        if content.match?(/link_to.*pay_payment_path/)
+          violations << {
+            file: relative_path,
+            issue: "CRITICAL: Using link_to (GET) with pay_payment_path - must use button_to (POST) via pay_button partial"
+          }
+        end
+
         # Check for passing wrong object to pay_payment_path (should be payment, not order/subscription)
         if content.match?(/pay_payment_path\s*\(\s*[^@]/) ||
            content.match?(/pay_payment_path\s*\(\s*@(?!payment\b)/)
@@ -76,7 +82,8 @@ RSpec.describe "Payment Integration", type: :request do
         end
 
         error_message += "Correct pattern:\n"
-        error_message += "  Use the pay_button partial for consistent payment UI and test card hints.\n"
+        error_message += "  MUST use POST method via button_to in the pay_button partial.\n"
+        error_message += "  NEVER use link_to (GET) for pay_payment_path.\n"
 
         fail error_message
       end

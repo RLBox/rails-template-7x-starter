@@ -96,7 +96,6 @@ class StripePayGenerator < Rails::Generators::Base
     @auth = options[:auth]
     # Only generate partial components, NO full page views
     template "views/_pay_button.html.erb", "app/views/payments/_pay_button.html.erb"
-    template "views/_payment_card.html.erb", "app/views/payments/_payment_card.html.erb"
     template "views/pay.turbo_stream.erb", "app/views/payments/pay.turbo_stream.erb"
   end
 
@@ -108,7 +107,6 @@ class StripePayGenerator < Rails::Generators::Base
     route_content = <<~ROUTES
       resources :payments, only: [:show] do
         member do
-          get :pay
           post :pay
           get :success
           get :failure
@@ -256,12 +254,9 @@ class StripePayGenerator < Rails::Generators::Base
     say "="*70, :red
     say "\nGenerated PARTIAL components only:", :yellow
     say "  ✓ app/views/payments/_pay_button.html.erb", :green
-    say "  ✓ app/views/payments/_payment_card.html.erb", :green
-    say "  ✓ app/views/payments/_status_badge.html.erb", :green
     say "  ✓ app/views/payments/pay.turbo_stream.erb", :green
-    say "\nYou MUST create full page views:", :yellow
-    say "  ✗ app/views/payments/show.html.erb", :red
-    say "  ✗ app/views/payments/success.html.erb", :red
+    say "\nYou MUST create this view:", :yellow
+    say "  ✗ app/views/payments/success.html.erb - Required for Stripe callback", :red
     say "\n" + "="*70, :yellow
     say "📖 Payment Model Pattern (Polymorphic)", :yellow
     say "="*70, :yellow

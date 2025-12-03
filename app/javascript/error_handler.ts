@@ -739,6 +739,31 @@ class ErrorHandler {
         });
       }
     }, true); // Use capture phase to catch before other handlers
+
+    // Check for placeholder form actions on submit
+    document.addEventListener('submit', (event) => {
+      const form = event.target as HTMLFormElement;
+      if (!form) return;
+
+      const action = form.getAttribute('action');
+
+      // Check for placeholder/invalid action values
+      if (!action || action === '#' || action === '#!' || action.startsWith('javascript:')) {
+        // Check if this form has a data-action (Stimulus/Turbo action), if so, it's OK
+        if (form.hasAttribute('data-action') || form.hasAttribute('data-turbo-stream')) {
+          return;
+        }
+
+        // Report placeholder form action error
+        this.handleError({
+          message: `Submitted form with placeholder action="${action || '(empty)'}" - Use real Rails routes instead`,
+          type: 'interaction',
+          timestamp: new Date().toISOString(),
+          filename: window.location.pathname,
+          error: new Error(`Placeholder form action detected: ${form.outerHTML.substring(0, 100)}`)
+        });
+      }
+    }, true); // Use capture phase to catch before other handlers
   }
 
   interceptFetch() {
