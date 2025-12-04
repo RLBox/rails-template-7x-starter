@@ -103,18 +103,20 @@ class LlmGenerator < Rails::Generators::Base
     say "    IMAGE_GEN_SIZE      - Default image size (e.g., 1024x1024)"
 
     say "\n🚀 Usage:"
-    say "\n  1) Text stream:"
+    say "\n  1) Text generation with streaming:"
     say "     LlmStreamJob.perform_later("
     say "       chat_id: user.id,"
     say "       prompt: 'Explain quantum computing',"
     say "       system: 'You are a helpful assistant',"
-    say "       images: ['https://example.com/ref.jpg'] # optional"
+    say "       images: ['https://example.com/ref.jpg'], # optional"
+    say "       tools: [...],                            # optional, for tool calling"
+    say "       tool_handler: ->(name, args) { ... }     # optional, for tool execution"
     say "     )"
 
     say "\n  2) Direct image generation:"
     say "     result = ImageGenerationService.call("
     say "       prompt: 'A beautiful sunset over the ocean',"
-    say "       images: 'https://example.com/ref.jpg' # optional"
+    say "       images: 'https://example.com/ref.jpg' # optional reference image"
     say "     )"
     say "     # result[:images] → array of image URLs"
 
