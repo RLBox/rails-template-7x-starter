@@ -2310,6 +2310,71 @@ RSpec.describe 'Simple Stimulus Validator', type: :system do
     end
   end
 
+  describe 'CSS Import Order Validation' do
+    it 'ensures @import statements appear before @tailwind directives' do
+      css_violations = []
+      css_file = Rails.root.join('app/assets/stylesheets/application.css')
+
+      unless File.exist?(css_file)
+        puts "\n⚠️  Skipping CSS import validation: application.css not found"
+        next
+      end
+
+      content = File.read(css_file)
+      lines = content.split("\n")
+
+      first_tailwind_line = nil
+      import_violations = []
+
+      lines.each_with_index do |line, index|
+        line_number = index + 1
+        stripped = line.strip
+
+        # Skip comments
+        next if stripped.start_with?('/*') || stripped.start_with?('//')
+
+        # Track first @tailwind directive
+        if stripped.match?(/^@tailwind\s/)
+          first_tailwind_line ||= line_number
+        end
+
+        # Check for @import after @tailwind
+        if stripped.match?(/^@import\s/)
+          if first_tailwind_line && line_number > first_tailwind_line
+            import_violations << {
+              line: line_number,
+              content: stripped,
+              first_tailwind_line: first_tailwind_line
+            }
+          end
+        end
+      end
+
+      if import_violations.any?
+        puts "\n❌ CSS Import Order Errors (#{import_violations.length}):"
+        import_violations.each do |v|
+          puts "   Line #{v[:line]}: #{v[:content]}"
+          puts "   ⚠️  @import appears AFTER @tailwind (line #{v[:first_tailwind_line]})"
+        end
+
+        puts "\n   💡 Why this is wrong:"
+        puts "      • CSS spec requires @import to be at the top of the file"
+        puts "      • Browsers and build tools will ignore @import statements after other rules"
+        puts "      • This causes your imported styles (e.g., components.css) to not load"
+        puts "\n   ✅ Correct order:"
+        puts "      1. @import statements (MUST be first)"
+        puts "      2. @tailwind directives"
+        puts "      3. Other CSS rules\n"
+
+        error_details = import_violations.map { |v| "Line #{v[:line]}: @import after @tailwind" }
+        expect(import_violations).to be_empty,
+          "CSS import validation failed:\n#{error_details.join("\n")}"
+      else
+        puts "\n✅ CSS import order validated: All @import statements appear before @tailwind!"
+      end
+    end
+  end
+
   describe 'Turbo Stream Architecture Enforcement' do
     it 'validates frontend-backend interactions use Turbo Streams exclusively' do
       violations = []

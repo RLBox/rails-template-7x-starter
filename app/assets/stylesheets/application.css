@@ -14,14 +14,11 @@
  * All components defined in components.css - READ ONLY, DO NOT MODIFY
  * Custom components go in "CUSTOM COMPONENTS" section at bottom of this file
  */
-
-@tailwind base;
-@tailwind components;
-
 /* Import design system components - DO NOT MODIFY components.css */
 @import "components";
 
-/* Design System Variables - Place between components and utilities for proper cascade */
+@tailwind base;
+@tailwind components;
 @layer components {
 
   /*
