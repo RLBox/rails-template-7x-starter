@@ -80,32 +80,48 @@ class AuthenticationGenerator < Rails::Generators::Base
   end
 
   def create_views
-    say "Creating views...", :green
+    say "Creating view components and pages...", :green
 
-    # User authentication views
+    # ============================================================
+    # FORM COMPONENTS - AI will compose login/signup pages
+    # ============================================================
+    say "  Creating authentication form components...", :blue
+    copy_file 'views/sessions/_login_form_with_oauth.html.erb', 'app/views/sessions/_login_form_with_oauth.html.erb'
+    copy_file 'views/registrations/_signup_form_with_oauth.html.erb', 'app/views/registrations/_signup_form_with_oauth.html.erb'
+
+    # Shared user dropdown component
+    copy_file 'views/shared/_user_dropdown.html.erb', 'app/views/shared/_user_dropdown.html.erb'
+
+    # NOTE: sessions/new.html.erb and registrations/new.html.erb NOT generated
+    # AI will create these pages using the form components above based on user requirements
+
+    # ============================================================
+    # FUNCTIONAL PAGES - Standard CRUD pages
+    # ============================================================
+    say "  Creating functional pages...", :blue
+
+    # Session management
     copy_file 'views/sessions/show.html.erb', 'app/views/sessions/show.html.erb'
-    copy_file 'views/sessions/new.html.erb', 'app/views/sessions/new.html.erb'
     copy_file 'views/sessions/devices.html.erb', 'app/views/sessions/devices.html.erb'
-    copy_file 'views/registrations/new.html.erb', 'app/views/registrations/new.html.erb'
+
+    # Password management
     copy_file 'views/passwords/edit.html.erb', 'app/views/passwords/edit.html.erb'
 
-    # Identity views
+    # Identity views (email verification, password reset)
     copy_file 'views/identity/emails/edit.html.erb', 'app/views/identity/emails/edit.html.erb'
     copy_file 'views/identity/password_resets/new.html.erb', 'app/views/identity/password_resets/new.html.erb'
     copy_file 'views/identity/password_resets/edit.html.erb', 'app/views/identity/password_resets/edit.html.erb'
 
-    # Invitations views
+    # Invitations
     copy_file 'views/invitations/new.html.erb', 'app/views/invitations/new.html.erb'
 
-    # Profile views
+    # Profile pages
     copy_file 'views/profiles/show.html.erb', 'app/views/profiles/show.html.erb'
     copy_file 'views/profiles/edit.html.erb', 'app/views/profiles/edit.html.erb'
     copy_file 'views/profiles/edit_password.html.erb', 'app/views/profiles/edit_password.html.erb'
 
-    # Shared components
-    # Force overwrite navbar to ensure it has authentication support
-    copy_file 'views/shared/_navbar.html.erb', 'app/views/shared/_navbar.html.erb', force: true
-    copy_file 'views/shared/_user_dropdown.html.erb', 'app/views/shared/_user_dropdown.html.erb'
+    # NOTE: _navbar.html.erb NOT generated - each project has different navigation requirements
+    # Use _user_dropdown.html.erb partial in your custom navbar
   end
 
   def create_mailers
@@ -290,15 +306,47 @@ class AuthenticationGenerator < Rails::Generators::Base
   end
 
   def show_post_install_message
-    say "\n" + "="*50, :green
-    say "Authentication system generated successfully!", :green
-    say "="*50, :green
-    say "\nNext steps:", :yellow
+    say "\n" + "="*70, :green
+    say "Authentication components generated successfully!", :green
+    say "="*70, :green
+
+    say "\n⚠️  IMPORTANT: Login/signup pages and navbar are NOT generated", :yellow
+    say "You need to create them using the provided components.\n", :yellow
+
+    say "\n📋 Required Next Steps:", :cyan
     say "1. Run: bundle install && rails db:migrate && touch tmp/restart.txt"
-    say "2. OAuth login (Google, Facebook, Twitter, GitHub) is built-in:"
-    say "   - Set *_OAUTH_ENABLED: 'true' in config/application.yml to enable"
-    say "   - Default credentials are pre-configured and ready to use"
-    say "   - DO NOT modify CLIENT_ID/CLIENT_SECRET unless user specifies it"
+    say "2. Create login page: app/views/sessions/new.html.erb"
+    say "3. Create signup page: app/views/registrations/new.html.erb"
+    say "4. Update navbar to use: <%= render 'shared/user_dropdown' %>"
+    say "5. Add menu items in app/views/shared/_user_dropdown.html.erb (CLACKY_TODO)"
+
+    say "\n🧩 Available Components:", :cyan
+    say "• Login form:  render 'sessions/login_form_with_oauth'"
+    say "• Signup form: render 'registrations/signup_form_with_oauth'"
+    say "• User menu:   render 'shared/user_dropdown'"
+
+    say "\n💡 Quick Example - Login Page:", :green
+    say <<~EXAMPLE
+
+      <!-- app/views/sessions/new.html.erb -->
+      <div class="container-sm">
+        <div class="card">
+          <div class="card-body">
+            <h1>Sign in</h1>
+            <%= render 'sessions/login_form_with_oauth' %>
+          </div>
+        </div>
+      </div>
+    EXAMPLE
+
+    say "🔐 OAuth Configuration:", :cyan
+    say "OAuth providers (Google, Facebook, Twitter, GitHub) are built-in."
+    say "Enable in config/application.yml:"
+    say "  GOOGLE_OAUTH_ENABLED: 'true'"
+    say "  FACEBOOK_OAUTH_ENABLED: 'true'"
+    say "Then: touch tmp/restart.txt"
+
+    say "\n" + "="*70, :green
   end
 
   private

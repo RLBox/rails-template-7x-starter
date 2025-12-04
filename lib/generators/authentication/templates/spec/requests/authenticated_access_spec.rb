@@ -79,19 +79,38 @@ RSpec.describe "Authenticated Access", type: :request do
     end
   end
 
-  describe "Navbar customization" do
-    it "validates navbar TODOs resolved and uses user_dropdown partial" do
-      # Check CLACKY_TODOs are resolved
-      check_clacky_todos([navbar_file])
+  describe "Authentication pages" do
+    it "renders login page" do
+      get sign_in_path
+      expect(response).to be_success_with_view_check
+    end
 
-      # Check navbar file exists and uses user_dropdown
+    it "renders signup page" do
+      get sign_up_path
+      expect(response).to be_success_with_view_check
+    end
+  end
+
+  describe "Navbar customization" do
+    it "validates navbar exists and uses user_dropdown partial" do
       navbar_path = Rails.root.join(navbar_file)
+
+      # Navbar must exist
       expect(File.exist?(navbar_path)).to be_truthy,
-        "Navbar partial should exist at #{navbar_path}"
+        "Navbar partial must exist at #{navbar_path}"
 
       content = File.read(navbar_path)
+
+      # Navbar must use user_dropdown for authenticated users
       expect(content).to match(/render\s+['"]shared\/user_dropdown['"]/),
-        "Navbar should use the user_dropdown partial for logged-in users"
+        "Navbar must use the user_dropdown partial for logged-in users"
+    end
+
+    it "validates user_dropdown TODOs are resolved" do
+      user_dropdown_file = 'app/views/shared/_user_dropdown.html.erb'
+
+      # Check CLACKY_TODOs are resolved in user_dropdown
+      check_clacky_todos([user_dropdown_file])
     end
   end
 end
