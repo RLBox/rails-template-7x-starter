@@ -346,6 +346,42 @@ class AuthenticationGenerator < Rails::Generators::Base
     say "  FACEBOOK_OAUTH_ENABLED: 'true'"
     say "Then: touch tmp/restart.txt"
 
+    say "\n🔑 Multi-Role Support (Optional):", :cyan
+    say "To add role-based access (premium, moderator, vip, etc.):"
+    say "  1. rails g migration AddRoleToUsers role:string"
+    say "  2. Edit migration: add default: 'user', null: false; add_index :users, :role"
+    say "  3. rails db:migrate"
+    say "  4. Add to User model (see comments in app/models/user.rb):"
+    say "     ROLES = %w[user premium moderator].freeze"
+    say "     validates :role, inclusion: { in: ROLES }"
+    say "     def premium? = role == 'premium'"
+    say "  5. In controllers: before_action :require_premium!, only: [:feature]"
+    say "  6. In ApplicationController add:"
+    say "     def require_premium!"
+    say "       redirect_to root_path unless current_user&.premium?"
+    say "     end"
+    say "  7. In views: <% if current_user.premium? %> ... <% end %>"
+    say "Note: Admin system is separate (Administrator model)"
+
+    say "\n🏥 Multi-Role Separate Routes (e.g. Doctor/Patient):", :cyan
+    say "For apps needing separate signup/login pages per role (different forms/fields):"
+    say "  1. Add role field: rails g migration AddRoleToUsers role:string"
+    say "  2. Define roles in User model: ROLES = %w[doctor patient].freeze"
+    say "  3. Add scoped routes in config/routes.rb:"
+    say "     scope '/doctor', as: 'doctor' do"
+    say "       get  'sign_in', to: 'sessions#new', defaults: { role: 'doctor' }"
+    say "       post 'sign_in', to: 'sessions#create', defaults: { role: 'doctor' }"
+    say "       get  'sign_up', to: 'registrations#new', defaults: { role: 'doctor' }"
+    say "       post 'sign_up', to: 'registrations#create', defaults: { role: 'doctor' }"
+    say "     end"
+    say "     # Repeat for patient scope..."
+    say "  4. Update SessionsController#new to use params[:role] for view selection"
+    say "  5. Update RegistrationsController#create to set user.role = params[:role]"
+    say "  6. Create role-specific views: sessions/new_doctor.html.erb, registrations/new_doctor.html.erb"
+    say "  7. For role-specific fields, use polymorphic Profile: DoctorProfile, PatientProfile"
+    say "  8. OAuth callback: store role in session before redirect, apply after callback"
+    say "Routes: doctor_sign_in_path, doctor_sign_up_path, patient_sign_in_path, etc."
+
     say "\n" + "="*70, :green
   end
 

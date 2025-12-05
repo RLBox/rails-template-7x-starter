@@ -4,6 +4,30 @@ class User < ApplicationRecord
 
   has_secure_password validations: false
 
+  # ========== Role-based Access Control (Optional) ==========
+  # If you need roles (premium, moderator, etc.), add a `role` field:
+  #   rails g migration AddRoleToUsers role:string
+  #   # In migration: add_column :users, :role, :string, default: 'user', null: false
+  #   # Then add in this model:
+  #   ROLES = %w[user premium moderator].freeze
+  #   validates :role, inclusion: { in: ROLES }
+  #   def premium? = role == 'premium'
+  #   def moderator? = role == 'moderator'
+  # ==========================================================
+
+  # ========== Multi-Role Separate Routes (e.g. Doctor/Patient) ==========
+  # For apps needing separate signup/login pages per role:
+  #   1. ROLES = %w[doctor patient].freeze
+  #   2. Add scoped routes: scope '/doctor', as: 'doctor' do ... end
+  #   3. In RegistrationsController#create: @user.role = params[:role]
+  #   4. Create role-specific views: sessions/new_doctor.html.erb
+  #   5. For extra fields per role, use polymorphic Profile:
+  #      has_one :doctor_profile, dependent: :destroy
+  #      has_one :patient_profile, dependent: :destroy
+  #      def profile = doctor? ? doctor_profile : patient_profile
+  # See generator output for full setup instructions.
+  # ======================================================================
+
   generates_token_for :email_verification, expires_in: 2.days do
     email
   end
