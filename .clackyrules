@@ -108,6 +108,8 @@ Generate images using this placeholder website: https://images.unsplash.com/ and
 
 **ActiveStorage in Seeds**: When creating seed data for models with image attachments, Use unsplash image for pretty UI. Example: `Photo.create!(title: 'Demo', image: { io: URI.open('https://images.unsplash.com/xxx'), filename: 'photo.jpg' })`.
 
+**Image Processing**: Prefer native ActiveStorage variants. If custom processing needed, use `ImageProcessing::Vips` only. Forbidden: MiniMagick, direct Vips::Image.
+
 When installing any new gem or npm packages, always specify a version you are most familiar with and suitable for the project. Do not use the latest version directly.
 
 **ALWAYS prefer `rails generate models` for batch model generation:**

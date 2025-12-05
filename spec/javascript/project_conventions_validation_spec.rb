@@ -292,4 +292,114 @@ RSpec.describe 'Project Conventions Validation', type: :system do
       end
     end
   end
+
+  describe 'Image Processing Library Validation' do
+    it 'enforces Vips-only image processing (no ImageMagick/MiniMagick)' do
+      violations = []
+
+      # Define file patterns to scan (minimal necessary set)
+      scan_patterns = [
+        'app/models/**/*.rb',           # Models with image attachments
+        'app/uploaders/**/*.rb',        # CarrierWave uploaders (if exists)
+        'app/services/**/*image*.rb',   # Image processing services
+        'app/services/**/*photo*.rb',   # Photo processing services
+        'app/jobs/**/*image*.rb',       # Image processing jobs
+        'app/jobs/**/*photo*.rb',       # Photo processing jobs
+        'config/initializers/**/*.rb'   # ActiveStorage config
+      ]
+
+      # Collect files to scan
+      files_to_scan = []
+      scan_patterns.each do |pattern|
+        files_to_scan.concat(Dir.glob(Rails.root.join(pattern)))
+      end
+
+      # Forbidden patterns (ImageMagick/MiniMagick/direct Vips)
+      forbidden_patterns = [
+        { pattern: /\bMiniMagick::Image\b/, name: 'MiniMagick::Image', reason: 'Use ImageProcessing::Vips instead' },
+        { pattern: /\bMiniMagick::Tool\b/, name: 'MiniMagick::Tool', reason: 'Use ImageProcessing::Vips instead' },
+        { pattern: /\bImageMagick::\b/, name: 'ImageMagick::', reason: 'Use ImageProcessing::Vips instead' },
+        { pattern: /\bImageList\.new\b/, name: 'ImageList.new (RMagick)', reason: 'Use ImageProcessing::Vips instead' },
+        { pattern: /\bVips::Image\b/, name: 'Vips::Image (direct)', reason: 'Use ImageProcessing::Vips wrapper instead' },
+        { pattern: /\bImageProcessing::MiniMagick\b/, name: 'ImageProcessing::MiniMagick', reason: 'Use ImageProcessing::Vips (Vips-only policy)' }
+      ]
+
+      files_to_scan.each do |file|
+        content = File.read(file)
+        relative_path = file.sub(Rails.root.to_s + '/', '')
+        lines = content.split("\n")
+
+        lines.each_with_index do |line, index|
+          line_number = index + 1
+          stripped = line.strip
+
+          # Skip comments
+          next if stripped.start_with?('#')
+
+          # Allow ImageProcessing::Vips (correct usage)
+          next if line.match?(/\bImageProcessing::Vips\b/)
+
+          # Check for forbidden patterns
+          forbidden_patterns.each do |forbidden|
+            if line.match?(forbidden[:pattern])
+              violations << {
+                file: relative_path,
+                line: line_number,
+                code: stripped,
+                forbidden: forbidden[:name],
+                reason: forbidden[:reason]
+              }
+            end
+          end
+        end
+      end
+
+      if violations.any?
+        puts "\n❌ Image Processing Policy Violations (#{violations.length}):"
+        puts "   📋 Policy: Use Vips only (via ImageProcessing::Vips)\n"
+
+        violations.group_by { |v| v[:forbidden] }.each do |pattern, pattern_violations|
+          puts "\n   🚫 Found #{pattern} (#{pattern_violations.length}):"
+          pattern_violations.each do |v|
+            puts "     • #{v[:file]}:#{v[:line]}"
+            puts "       #{v[:code]}"
+          end
+        end
+
+        puts "\n   💡 Why Vips-only?"
+        puts "      • Vips is 4-10x faster than ImageMagick/MiniMagick"
+        puts "      • Lower memory usage (streaming processing)"
+        puts "      • Better for production workloads"
+        puts "      • Simpler dependency management (one library)"
+
+        puts "\n   ✅ Correct usage (Vips via ImageProcessing):"
+        puts "      # Basic processing:"
+        puts "      ImageProcessing::Vips"
+        puts "        .source(file)"
+        puts "        .resize_to_limit(800, 600)"
+        puts "        .convert('jpg')"
+        puts "        .call"
+        puts ""
+        puts "      # ActiveStorage variants:"
+        puts "      class User < ApplicationRecord"
+        puts "        has_one_attached :avatar do |attachable|"
+        puts "          attachable.variant :thumb, resize_to_limit: [100, 100]"
+        puts "          attachable.variant :medium, resize_to_limit: [400, 400]"
+        puts "        end"
+        puts "      end"
+        puts ""
+        puts "      # Note: ActiveStorage automatically uses ImageProcessing::Vips"
+        puts "      # if 'image_processing' gem is installed and vips is available\n"
+
+        error_details = violations.map do |v|
+          "#{v[:file]}:#{v[:line]} - #{v[:forbidden]} (#{v[:reason]})"
+        end
+
+        expect(violations).to be_empty,
+          "Vips-only policy violated:\n#{error_details.join("\n")}"
+      else
+        puts "\n✅ Image processing validated: Using Vips correctly!"
+      end
+    end
+  end
 end
