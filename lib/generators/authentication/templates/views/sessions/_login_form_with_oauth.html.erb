@@ -1,4 +1,4 @@
-<%#
+<!--
   Login Form with OAuth Component
 
   Usage in app/views/sessions/new.html.erb:
@@ -6,7 +6,7 @@
       <div class="card w-full max-w-md">
         <div class="card-body">
           <h1 class="text-3xl font-bold text-center text-primary mb-8">Sign in</h1>
-          <%= render 'sessions/login_form_with_oauth' %>
+          <%#= render 'sessions/login_form_with_oauth' %>
         </div>
       </div>
     </div>
@@ -17,7 +17,7 @@
       GOOGLE_OAUTH_ENABLED: 'true'
       FACEBOOK_OAUTH_ENABLED: 'true'
     Then restart your server: touch tmp/restart.txt
-%>
+-->
 
 <%= form_with(model: User.new, url: sign_in_path, class: "space-y-6") do |form| %>
   <div>
@@ -96,9 +96,6 @@
 </div>
 
 <div class="text-center mt-8 space-y-3">
-  <div>
-    <%= link_to "Sign up", sign_up_path, class: "text-primary hover:text-primary-dark underline font-medium transition-colors" %>
-  </div>
   <div>
     <%= link_to "Forgot your password?", new_identity_password_reset_path, class: "text-muted hover:text-secondary underline text-sm transition-colors" %>
   </div>

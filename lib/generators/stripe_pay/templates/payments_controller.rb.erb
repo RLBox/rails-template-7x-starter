@@ -15,7 +15,6 @@ class PaymentsController < ApplicationController
       # Render turbo stream to redirect to Stripe checkout
       render formats: [:turbo_stream]
     else
-      # CLACKY_TODO: Redirect to appropriate page on payment initialization failure
       flash[:alert] = "Payment initialization failed: #{result[:error]}"
       redirect_to root_path
     end
@@ -32,10 +31,6 @@ class PaymentsController < ApplicationController
       redirect_to root_path, alert: 'Payment was not paid. Please try again.'
       return
     end
-
-    # CLACKY_TODO: Create app/views/payments/success.html.erb
-    # Show success message and next steps based on payable type
-    # Example: redirect to payable or show download/access instructions
   end
 
   def failure
@@ -70,9 +65,9 @@ class PaymentsController < ApplicationController
       redirect_to root_path, alert: 'Access denied'
     end
 <% else -%>
-    @payment = Payment.find(params[:id])
     # CLACKY_TODO: Add authorization check if needed
     # Example: verify @payment.customer_email matches session email
+    @payment = Payment.find(params[:id])
 <% end -%>
   end
 end

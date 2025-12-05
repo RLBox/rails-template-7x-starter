@@ -34,12 +34,21 @@ module.exports = {
           light: 'hsl(var(--color-secondary-light) / <alpha-value>)',
           dark: 'hsl(var(--color-secondary-dark) / <alpha-value>)',
         },
+        background: {
+          DEFAULT: 'hsl(var(--color-surface) / <alpha-value>)',
+        },
+        foreground: {
+          DEFAULT: 'hsl(var(--color-text-primary) / <alpha-value>)',
+        },
         surface: {
           DEFAULT: 'hsl(var(--color-surface) / <alpha-value>)',
           elevated: 'hsl(var(--color-surface-elevated) / <alpha-value>)',
         },
         border: {
           DEFAULT: 'hsl(var(--color-border) / <alpha-value>)',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--color-text-muted) / <alpha-value>)',
         },
         neutral: {
           DEFAULT: 'hsl(var(--color-neutral) / <alpha-value>)',

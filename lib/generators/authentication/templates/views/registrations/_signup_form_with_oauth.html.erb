@@ -1,4 +1,4 @@
-<%#
+<!--
   Signup Form with OAuth Component
 
   Usage in app/views/registrations/new.html.erb:
@@ -6,7 +6,7 @@
       <div class="card w-full max-w-md">
         <div class="card-body">
           <h1 class="text-3xl font-bold text-center text-primary mb-8">Sign up</h1>
-          <%= render 'registrations/signup_form_with_oauth' %>
+          <%#= render 'registrations/signup_form_with_oauth' %>
         </div>
       </div>
     </div>
@@ -17,7 +17,7 @@
       GOOGLE_OAUTH_ENABLED: 'true'
       FACEBOOK_OAUTH_ENABLED: 'true'
     Then restart your server: touch tmp/restart.txt
-%>
+-->
 
 <%= form_with(model: User.new, url: sign_up_path, class: "space-y-6") do |form| %>
   <div>

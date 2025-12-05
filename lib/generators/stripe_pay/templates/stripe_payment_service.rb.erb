@@ -112,7 +112,7 @@ class StripePaymentService < ApplicationService
   #     }]
   #   end
   def build_line_items
-    if payment.payable.respond_to?(:stripe_line_items)
+    line_items = if payment.payable.respond_to?(:stripe_line_items)
       payment.payable.stripe_line_items
     else
       [{
@@ -127,6 +127,9 @@ class StripePaymentService < ApplicationService
         quantity: 1,
       }]
     end
+
+    # Add test card info to all line items in development
+    add_test_card_info_to_line_items(line_items)
   end
 
   def product_description_with_test_cards
@@ -137,6 +140,25 @@ class StripePaymentService < ApplicationService
       base_description + test_info
     else
       base_description
+    end
+  end
+
+  # Add test card info to all line items in development
+  def add_test_card_info_to_line_items(line_items)
+    return line_items unless Rails.env.development?
+
+    line_items.map do |item|
+      if item[:price_data] && item[:price_data][:product_data]
+        product_data = item[:price_data][:product_data]
+
+        # Add test card info to description if it exists
+        if product_data[:description].present?
+          test_info = " | TEST CARDS: 4242424242424242 | Any future expiry & CVC"
+          product_data[:description] = product_data[:description] + test_info
+        end
+      end
+
+      item
     end
   end
 
