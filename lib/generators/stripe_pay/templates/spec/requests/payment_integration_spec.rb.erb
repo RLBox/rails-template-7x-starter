@@ -1,6 +1,36 @@
 require 'rails_helper'
 
 RSpec.describe "Payment Integration", type: :request do
+  describe "Payable models interface" do
+    it "validates all payable models implement required methods" do
+      Rails.application.eager_load!
+      payable_models = ApplicationRecord.descendants.select do |model|
+        assoc = model.reflect_on_association(:payment) || model.reflect_on_association(:payments)
+        assoc&.options&.dig(:as) == :payable
+      end
+
+      payable_models.each do |model|
+        factory = model.model_name.singular.to_sym
+        instance = build(factory)
+        
+        # Validate required methods exist and return proper types
+        expect(instance.customer_name).to be_a(String).and be_present
+        expect(instance.customer_email).to match(URI::MailTo::EMAIL_REGEXP)
+        expect(instance.payment_description).to be_a(String).and be_present
+        expect(instance.stripe_mode).to be_in(['payment', 'subscription'])
+        expect(instance.stripe_line_items).to be_an(Array).and be_present
+        
+        # Validate subscription mode has recurring
+        if instance.stripe_mode == 'subscription'
+          instance.stripe_line_items.each do |item|
+            expect(item.dig(:price_data, :recurring)).to be_present,
+              "#{model}.stripe_line_items missing :recurring (required for subscription mode)"
+          end
+        end
+      end
+    end
+  end
+
   describe "CLACKY_TODO validation" do
     it "validates that all payment CLACKY_TODOs have been resolved" do
       check_clacky_todos([

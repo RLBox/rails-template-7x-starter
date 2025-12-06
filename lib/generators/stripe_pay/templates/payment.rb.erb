@@ -79,35 +79,28 @@ class Payment < ApplicationRecord
   end
 
   # Customer information - delegates to user or payable
+  # Payable MUST implement these methods
   def customer_name
 <% if @auth -%>
     return user.name if user&.respond_to?(:name) && user.name.present?
     return "#{user.first_name} #{user.last_name}".strip if user&.respond_to?(:first_name)
     return user.email.split('@').first if user&.email
 <% end -%>
-    payable&.respond_to?(:customer_name) ? payable.customer_name : 'Unknown'
+    payable.customer_name
   end
 
   def customer_email
 <% if @auth -%>
-    user&.email || (payable&.respond_to?(:customer_email) ? payable.customer_email : nil)
+    user&.email || payable.customer_email
 <% else -%>
-    super || (payable&.respond_to?(:customer_email) ? payable.customer_email : nil)
+    super || payable.customer_email
 <% end -%>
   end
 
   # Product description for Stripe checkout
-  # Payable object should implement payment_description method
+  # Payable MUST implement payment_description method
   def product_description
-    if payable&.respond_to?(:payment_description)
       payable.payment_description
-    elsif payable&.respond_to?(:name)
-      payable.name
-    elsif payable&.respond_to?(:title)
-      payable.title
-    else
-      "Payment for #{payable_type} ##{payable_id}"
-    end
   end
 
   # Amount helpers
@@ -133,7 +126,7 @@ class Payment < ApplicationRecord
   end
 
   def subscription_payment?
-    payable&.respond_to?(:stripe_mode) && payable.stripe_mode == 'subscription'
+    payable.stripe_mode == 'subscription'
   end
 
   def summary

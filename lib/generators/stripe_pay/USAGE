@@ -1,226 +1,99 @@
 Description:
-    The stripe_pay generator creates a complete Stripe payment integration with a polymorphic Payment model.
-    This allows one Payment model to work with ANY business model (Order, Subscription, Booking, Course, etc.)
+    Generates Stripe payment integration with polymorphic Payment model.
+    One Payment model works with ANY business model (Order, Subscription, etc.)
 
-Example:
+Usage:
     rails g stripe_pay
-    rails g stripe_pay --auth
+    rails g stripe_pay --auth  # Add user association
 
-    This will create:
-        Migration:  db/migrate/create_payments.rb (polymorphic payable, user reference)
-        Model:      app/models/payment.rb
-        Controller: app/controllers/payments_controller.rb
-        Service:    app/services/stripe_payment_service.rb
-        Views:      app/views/payments/_pay_button.html.erb (partial only)
-                   app/views/payments/_payment_card.html.erb (partial only)
-                   app/views/payments/pay.turbo_stream.erb
-        Admin:      app/controllers/admin/payments_controller.rb
-                   app/views/admin/payments/index.html.erb
-                   app/views/admin/payments/show.html.erb
-        Tests:      spec/requests/payments_spec.rb
-                   spec/factories/payments.rb
-        Config:     config/initializers/stripe.rb
-        Routes:     Added to config/routes.rb
+Setup:
+    1. bundle install && rails db:migrate && touch tmp/restart.txt
+    2. Configure Stripe keys in config/application.yml
+    3. Create app/views/payments/success.html.erb (required for callback)
 
-Options:
-    --auth: Add user association to payments (requires User model)
+Payable Interface (ALL REQUIRED):
 
-After Generation:
+Your business model MUST implement these 5 methods:
 
-1. Run setup:
-   bundle install && rails db:migrate && touch tmp/restart.txt
+    has_one :payment, as: :payable, dependent: :destroy
 
-2. Configure Stripe keys in config/application.yml
+    def customer_name        # String
+    def customer_email       # String (valid email)
+    def payment_description  # String
+    def stripe_mode          # 'payment' or 'subscription'
+    def stripe_line_items    # Array (see examples below)
 
-3. Create your business model and add payment association:
+Example 1: One-time Payment (Order)
 
-   # Example: One-time purchase (Order)
-   rails g model Order user:references total:decimal status:string
+    rails g model Order user:references total:decimal status:string
 
-   # In app/models/order.rb:
-   class Order < ApplicationRecord
-     belongs_to :user
-     has_one :payment, as: :payable, dependent: :destroy
+    class Order < ApplicationRecord
+      belongs_to :user
+      has_one :payment, as: :payable, dependent: :destroy
 
-     def customer_name
-       user.name
-     end
+      def customer_name; user.name; end
+      def customer_email; user.email; end
+      def payment_description; "Order ##{id}"; end
+      def stripe_mode; 'payment'; end
+      def stripe_line_items
+        [{
+          price_data: {
+            currency: 'usd',
+            product_data: { name: payment_description },
+            unit_amount: (total * 100).to_i  # dollars to cents
+          },
+          quantity: 1
+        }]
+      end
+    end
 
-     def customer_email
-       user.email
-     end
+    # Controller
+    def create
+      @order = current_user.orders.create!(order_params)
+      @payment = @order.create_payment!(amount: @order.total, user: current_user)
+      redirect_to pay_payment_path(@payment), data: { turbo_method: :post }
+    end
 
-     def payment_description
-       "Order ##{id}"
-     end
-   end
+Example 2: Subscription (Recurring)
 
-   # Example: Subscription (has many payments for recurring billing)
-   rails g model Subscription user:references plan_name:string plan_price:decimal status:string stripe_subscription_id:string
+    rails g model Subscription user:references plan_name:string plan_price:decimal stripe_subscription_id:string
 
-   # In app/models/subscription.rb:
-   class Subscription < ApplicationRecord
-     belongs_to :user
-     has_many :payments, as: :payable  # Multiple payments for recurring billing
+    class Subscription < ApplicationRecord
+      belongs_to :user
+      has_many :payments, as: :payable
 
-     def customer_name
-       user.name
-     end
+      def customer_name; user.name; end
+      def customer_email; user.email; end
+      def payment_description; "#{plan_name} Subscription"; end
+      def stripe_mode; 'subscription'; end
+      def stripe_line_items
+        [{
+          price_data: {
+            currency: 'usd',
+            product_data: { name: plan_name },
+            unit_amount: (plan_price * 100).to_i,
+            recurring: { interval: 'month' }  # REQUIRED for subscription
+          },
+          quantity: 1
+        }]
+      end
+    end
 
-     def customer_email
-       user.email
-     end
+    # Controller
+    def create
+      @sub = current_user.subscriptions.create!(subscription_params)
+      @payment = @sub.payments.create!(amount: @sub.plan_price, user: current_user)
+      redirect_to pay_payment_path(@payment), data: { turbo_method: :post }
+    end
 
-     def payment_description
-       "#{plan_name} - Monthly Subscription"
-     end
+Validation:
 
-     # Tell Payment Service to use subscription mode
-     def stripe_mode
-       'subscription'
-     end
+    Run 'rake test' to validate payable interface automatically
+    Missing/incorrect methods will cause clear test failures
 
-     # Dynamically create Stripe Price (no need to pre-create in Stripe Dashboard)
-     # Perfect for templates - just works! No manual Stripe configuration needed.
-     def stripe_line_items
-       [{
-         price_data: {
-           currency: 'usd',
-           product_data: {
-             name: plan_name,
-             description: "Monthly subscription to #{plan_name}"
-           },
-           unit_amount: (plan_price * 100).to_i,  # Convert dollars to cents
-           recurring: { interval: 'month' }  # Can be 'day', 'week', 'month', or 'year'
-         },
-         quantity: 1
-       }]
-     end
-   end
+Notes:
 
-4. Create payment in your controller:
-
-   # One-time purchase example:
-   def create
-     @order = current_user.orders.create!(order_params)
-     @payment = @order.create_payment!(
-       amount: @order.total,
-       currency: 'usd',
-       user: current_user
-     )
-     redirect_to payment_path(@payment)
-   end
-
-   # Subscription example:
-   def subscribe
-     @subscription = current_user.subscriptions.create!(plan: params[:plan])
-     @payment = @subscription.payments.create!(
-       amount: plan_price,
-       currency: 'usd',
-       user: current_user
-     )
-     redirect_to payment_path(@payment)
-   end
-
-5. Create payment views:
-
-   CRITICAL: You MUST create these views (NOT generated):
-   - app/views/payments/show.html.erb
-   - app/views/payments/success.html.erb
-
-   Example show.html.erb:
-   <div class="container py-12">
-     <h1>Payment for <%= @payment.payable_type %> #<%= @payment.payable_id %></h1>
-
-     <!-- Render your payable object -->
-     <%= render @payment.payable if @payment.payable %>
-
-     <div class="card mt-6">
-       <div class="card-body">
-         <p>Amount: <%= number_to_currency(@payment.amount) %></p>
-         <p>Status: <%= @payment.status %></p>
-       </div>
-     </div>
-
-     <!-- CRITICAL: Include pay button for unpaid payments -->
-     <% if @payment.pending? || @payment.failed? %>
-       <%= render 'payments/pay_button', payment: @payment %>
-     <% end %>
-   </div>
-
-   Example success.html.erb:
-   <div class="container py-12 text-center">
-     <h1>Payment Successful!</h1>
-     <p>Payment #<%= @payment.id %> has been completed.</p>
-     <%= link_to "View #{@payment.payable_type}", @payment.payable, class: "btn-primary" %>
-   </div>
-
-6. Use payment button in your business views:
-
-   <!-- In app/views/orders/show.html.erb -->
-   <h1>Order #<%= @order.id %></h1>
-   <!-- Your order details -->
-
-   <% if @order.payment && !@order.payment.paid? %>
-     <%= render 'payments/pay_button', payment: @order.payment %>
-   <% end %>
-
-   <!-- In app/views/subscriptions/show.html.erb -->
-   <h1>Your Subscription</h1>
-   <h2>Payment History</h2>
-   <% @subscription.payments.each do |payment| %>
-     <%= render 'payments/payment_card', payment: payment %>
-   <% end %>
-
-Payable Interface:
-
-Your business model should implement these methods:
-
-Required:
-  - customer_name:  Returns name for Stripe (String)
-  - customer_email: Returns email for Stripe (String)
-  - payment_description: Returns product/service description (String)
-
-Optional (for advanced use):
-  - stripe_mode: Returns 'payment' or 'subscription' (String, default: 'payment')
-  - stripe_line_items: Returns line items for Stripe checkout (Array)
-      For subscriptions, use price_data with recurring parameter (see examples above)
-      For one-time purchases, defaults to payment amount (no implementation needed)
-  - on_payment_success(payment): Callback when payment succeeds
-
-Webhook Handling:
-
-The service handles these Stripe events automatically:
-  - checkout.session.completed: Marks payment as paid
-  - payment_intent.succeeded: Marks payment as paid
-  - payment_intent.payment_failed: Marks payment as failed
-  - invoice.payment_succeeded: For subscription renewals (requires custom implementation)
-  - customer.subscription.*: For subscription updates (requires custom implementation)
-
-Testing:
-
-Use Stripe test cards in development:
-  - Success: 4242 4242 4242 4242
-  - Decline: 4000 0000 0000 0002
-  - Any future expiry, any 3-digit CVC
-
-Important Notes:
-
-1. Payment vs Order:
-   - Payment = Technical concept (handling money)
-   - Order/Subscription/Booking = Business concept (your domain)
-   - Keep them separate for maximum flexibility
-
-2. One-time vs Subscription:
-   - One-time: Order has_one :payment
-   - Subscription: Subscription has_many :payments (first + renewals)
-
-3. Views are intentionally minimal:
-   - Only partials are generated
-   - Full page views must be created by you
-   - This allows complete customization for your business
-
-4. User association is optional:
-   - Supports normal case: payment.user == payable.user
-   - Supports gift/proxy: payment.user != payable.user
-   - Supports anonymous: payment.user = nil
+    - Subscription mode MUST include 'recurring: { interval: ... }' in stripe_line_items
+    - One-time: has_one :payment
+    - Subscription: has_many :payments (for recurring billing)
+    - Test card: 4242 4242 4242 4242 (shown in development)

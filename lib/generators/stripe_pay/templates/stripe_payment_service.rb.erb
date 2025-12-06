@@ -95,38 +95,34 @@ class StripePaymentService < ApplicationService
   private
 
   # Build line items for Stripe checkout
+  # Payable MUST implement stripe_line_items method
   #
-  # Default: Uses payment amount for one-time purchases (works out of the box)
+  # For one-time payments:
+  #   def stripe_line_items
+  #     [{
+  #       price_data: {
+  #         currency: 'usd',
+  #         product_data: { name: product_name },
+  #         unit_amount: (price * 100).to_i  # dollars to cents
+  #       },
+  #       quantity: 1
+  #     }]
+  #   end
   #
-  # For subscriptions: Implement stripe_line_items in your payable model
-  # Example (dynamic creation - no Stripe Dashboard setup needed):
+  # For subscriptions (MUST include recurring):
   #   def stripe_line_items
   #     [{
   #       price_data: {
   #         currency: 'usd',
   #         product_data: { name: plan_name },
-  #         unit_amount: (plan_price * 100).to_i,  # dollars to cents
-  #         recurring: { interval: 'month' }        # for subscriptions
+  #         unit_amount: (plan_price * 100).to_i,
+  #         recurring: { interval: 'month' }  # REQUIRED for subscription mode
   #       },
   #       quantity: 1
   #     }]
   #   end
   def build_line_items
-    line_items = if payment.payable.respond_to?(:stripe_line_items)
-      payment.payable.stripe_line_items
-    else
-      [{
-        price_data: {
-          currency: payment.currency,
-          product_data: {
-            name: payment.product_description,
-            description: product_description_with_test_cards,
-          },
-          unit_amount: payment.amount_in_cents,
-        },
-        quantity: 1,
-      }]
-    end
+    line_items = payment.payable.stripe_line_items
 
     # Add test card info to all line items in development
     add_test_card_info_to_line_items(line_items)
@@ -163,10 +159,10 @@ class StripePaymentService < ApplicationService
   end
 
   # Determine payment mode (one-time vs subscription)
-  # Automatically detects: payable.stripe_mode returns 'subscription' or 'payment'
-  # Default: 'payment' (one-time purchase)
+  # Payable MUST implement stripe_mode method
+  # Returns: 'payment' (one-time) or 'subscription' (recurring)
   def payment_mode
-    payment.payable.respond_to?(:stripe_mode) ? payment.payable.stripe_mode : 'payment'
+    payment.payable.stripe_mode
   end
 
   # Standard metadata for Stripe records
