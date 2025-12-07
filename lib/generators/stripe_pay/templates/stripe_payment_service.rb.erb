@@ -136,10 +136,11 @@ class StripePaymentService < ApplicationService
       if item[:price_data] && item[:price_data][:product_data]
         product_data = item[:price_data][:product_data]
 
-        # Add test card info to description if it exists and not already added
-        if product_data[:description].present? && !product_data[:description].include?('TEST CARDS')
-          test_info = " | TEST CARDS: 4242424242424242 | Any future expiry & CVC"
-          product_data[:description] = product_data[:description] + test_info
+        # Always add test card info in development (if not already added)
+        current_desc = product_data[:description].to_s
+        unless current_desc.include?('TEST CARDS')
+          test_info = "💳 TEST CARDS: 4242 4242 4242 4242 | Any future expiry & CVC"
+          product_data[:description] = current_desc.present? ? "#{current_desc} | #{test_info}" : test_info
         end
       end
 
