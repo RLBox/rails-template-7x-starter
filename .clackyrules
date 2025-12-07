@@ -18,6 +18,8 @@ FriendlyId
 
 Do not add or remove any components and avoid upgrading or downgrading components.
 
+**When users ask about deployment/architecture/environment setup** → Read `docs/project.md`
+
 ## What time you should run/stop project
 
 Restarting project is unnecessary because Rails automatically hot-reloads code changes in most cases. Changes to the following explicitly require a restart:
