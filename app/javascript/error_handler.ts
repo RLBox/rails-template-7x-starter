@@ -967,6 +967,9 @@ class ErrorHandler {
       /facebook\.net/,
       /twitter\.com/,
 
+      // Preview/Debug SDKs
+      /clacky-preview-sdk/,
+
       // iOS Safari specific
       /WebKitBlobResource/,
     ];

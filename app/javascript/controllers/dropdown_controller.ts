@@ -62,7 +62,6 @@ export default class extends Controller<HTMLElement> {
   }
 
   toggle(event: Event): void {
-    event.stopPropagation()
     const isHidden = this.menuTarget.classList.contains('hidden')
     if (isHidden) {
       this.open(event)
@@ -72,7 +71,6 @@ export default class extends Controller<HTMLElement> {
   }
 
   open(event: Event): void {
-    event.stopPropagation()
     this.menuTarget.classList.remove('hidden')
     if (this.hasTriggerTarget) {
       this.triggerTarget.setAttribute('aria-expanded', 'true')
@@ -80,7 +78,6 @@ export default class extends Controller<HTMLElement> {
   }
 
   close(event: Event): void {
-    event.stopPropagation()
     this.menuTarget.classList.add('hidden')
     if (this.hasTriggerTarget) {
       this.triggerTarget.setAttribute('aria-expanded', 'false')

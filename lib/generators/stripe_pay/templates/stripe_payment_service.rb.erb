@@ -128,17 +128,6 @@ class StripePaymentService < ApplicationService
     add_test_card_info_to_line_items(line_items)
   end
 
-  def product_description_with_test_cards
-    base_description = "Payment for #{payment.customer_name}"
-
-    if Rails.env.development?
-      test_info = " | TEST CARDS: 4242424242424242 | Any future expiry & CVC"
-      base_description + test_info
-    else
-      base_description
-    end
-  end
-
   # Add test card info to all line items in development
   def add_test_card_info_to_line_items(line_items)
     return line_items unless Rails.env.development?
@@ -147,8 +136,8 @@ class StripePaymentService < ApplicationService
       if item[:price_data] && item[:price_data][:product_data]
         product_data = item[:price_data][:product_data]
 
-        # Add test card info to description if it exists
-        if product_data[:description].present?
+        # Add test card info to description if it exists and not already added
+        if product_data[:description].present? && !product_data[:description].include?('TEST CARDS')
           test_info = " | TEST CARDS: 4242424242424242 | Any future expiry & CVC"
           product_data[:description] = product_data[:description] + test_info
         end
