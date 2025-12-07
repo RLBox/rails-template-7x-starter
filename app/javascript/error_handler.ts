@@ -388,6 +388,14 @@ class ErrorHandler {
   private originalConsoleError: typeof console.error;
   private sourceMapCache: Map<string, SourceMapConsumer> = new Map();
   private sourceMapPending: Map<string, Promise<SourceMapConsumer | null>> = new Map();
+  private lastUserAction: {
+    timestamp: number;
+    type: string;
+    element: string;
+    text?: string;
+    stimulusAction?: string;
+    stimulusController?: string;
+  } | null = null;
 
   constructor() {
     // Save original console.error before any interception
@@ -558,6 +566,60 @@ class ErrorHandler {
     }
   }
 
+  recordUserAction(eventType: string, event: Event) {
+    const target = event.target as HTMLElement;
+    if (!target) return;
+
+    // Extract element information
+    const elementParts: string[] = [target.tagName.toLowerCase()];
+
+    if (target.id) {
+      elementParts.push(`#${target.id}`);
+    }
+
+    if (target.className && typeof target.className === 'string') {
+      const classes = target.className.split(' ').filter(c => c.trim());
+      if (classes.length > 0) {
+        elementParts.push(`.${classes.slice(0, 3).join('.')}`); // Max 3 classes
+      }
+    }
+
+    const elementSelector = elementParts.join('');
+
+    // Extract text content (limit to 50 chars, skip for input/change events)
+    let text: string | undefined;
+    if (eventType !== 'change' && eventType !== 'keydown') {
+      const textContent = target.textContent?.trim() || '';
+      if (textContent && textContent.length > 0) {
+        text = textContent.substring(0, 50);
+        if (textContent.length > 50) text += '...';
+      }
+    }
+
+    // Extract Stimulus attributes
+    const stimulusAction = target.getAttribute('data-action') || undefined;
+    const stimulusController = target.getAttribute('data-controller') || undefined;
+
+    // Extract form action or link href
+    let additionalInfo = '';
+    if (target.tagName === 'A') {
+      const href = target.getAttribute('href');
+      if (href) additionalInfo = ` href="${href}"`;
+    } else if (target.tagName === 'FORM') {
+      const action = target.getAttribute('action');
+      if (action) additionalInfo = ` action="${action}"`;
+    }
+
+    this.lastUserAction = {
+      timestamp: Date.now(),
+      type: eventType,
+      element: elementSelector + additionalInfo,
+      text,
+      stimulusAction,
+      stimulusController
+    };
+  }
+
   setupGlobalErrorHandlers() {
     // Intercept console.error
     console.error = (...args: any[]) => {
@@ -703,9 +765,13 @@ class ErrorHandler {
   setupInteractionTracking() {
     // Track user interactions to identify interaction-triggered errors
     ['click', 'submit', 'change', 'keydown'].forEach(eventType => {
-      document.addEventListener(eventType, () => {
+      document.addEventListener(eventType, (event) => {
         this.isInteractionError = true;
         this.lastInteractionTime = Date.now();
+
+        // Record last user action
+        this.recordUserAction(eventType, event);
+
         setTimeout(() => {
           this.isInteractionError = false;
         }, 2000); // 2 second window for interaction errors
@@ -1298,7 +1364,7 @@ class ErrorHandler {
 Time: ${new Date().toLocaleString()}
 Page Path: ${window.location.pathname}
 Total Errors: ${totalErrors} (showing latest ${recentErrors.length})
-
+${this.formatLastUserAction()}
 `;
 
     for (let index = 0; index < recentErrors.length; index++) {
@@ -1349,7 +1415,7 @@ Technical Details:`;
 ─────────────
 Time: ${new Date(error.timestamp).toLocaleString()}
 Page Path: ${window.location.pathname}
-
+${this.formatLastUserAction()}
 Technical Details:
 ${error.message}`;
 
@@ -1471,6 +1537,33 @@ ${error.message}`;
         this.recentErrorsDebounce.delete(key);
       }
     }
+  }
+
+  formatLastUserAction(): string {
+    if (!this.lastUserAction) return '';
+
+    const timeDiff = Date.now() - this.lastUserAction.timestamp;
+    // Only show if within 5 seconds
+    if (timeDiff > 5000) return '';
+
+    const secondsAgo = (timeDiff / 1000).toFixed(1);
+    let actionDesc = `Last User Action: ${this.lastUserAction.type} ${this.lastUserAction.element}`;
+
+    if (this.lastUserAction.text) {
+      actionDesc += ` "${this.lastUserAction.text}"`;
+    }
+
+    if (this.lastUserAction.stimulusAction) {
+      actionDesc += ` [data-action="${this.lastUserAction.stimulusAction}"]`;
+    }
+
+    if (this.lastUserAction.stimulusController) {
+      actionDesc += ` [controller="${this.lastUserAction.stimulusController}"]`;
+    }
+
+    actionDesc += ` (${secondsAgo}s ago)`;
+
+    return `${actionDesc}\n`;
   }
 
   // Public API methods
