@@ -86,10 +86,7 @@ Rails.application.configure do
 
   # Configure GoodJob for production
   config.good_job.execution_mode = :async
-  config.good_job.max_threads = 4
-  config.good_job.poll_interval = 10
-  config.good_job.shutdown_timeout = 25
-  config.good_job.enable_cron = true
+  config.good_job.max_threads = 20
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.

@@ -46,18 +46,24 @@ module Myapp
     # Application name configuration
     config.x.appname = File.read(Rails.root.join('config', 'appname.txt')).strip
 
-    # Configure GoodJob as the Active Job queue adapter
-    config.active_job.queue_adapter = :good_job
-
     # Use vips for Active Storage variants
     config.active_storage.variant_processor = :vips
 
     # Use custom MailDeliveryJob that inherits from ApplicationJob
     config.action_mailer.delivery_job = "MailDeliveryJob"
 
+    # Configure GoodJob as the Active Job queue adapter
+    config.active_job.queue_adapter = :good_job
+
+    # test execution_mode is setted to inline
+    config.good_job.execution_mode = :async
+    # production max_threads is setted to 20
+    config.good_job.max_threads = 5
+    config.good_job.poll_interval = 10
+    config.good_job.shutdown_timeout = 25
+
     # Enable cron-style recurring jobs
     config.good_job.enable_cron = true
-
     # Load cron configuration from recurring.yml
     cron_config = Rails.application.config_for(:recurring)
     config.good_job.cron = cron_config if cron_config.present?
