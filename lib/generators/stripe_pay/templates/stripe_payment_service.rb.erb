@@ -259,14 +259,21 @@ class StripePaymentService < ApplicationService
   end
 
   # CLACKY_TODO: Implement post-payment business logic
-  # This is called after payment is confirmed as paid
-  # Write your business logic here based on payable type
+  # ⚠️ CRITICAL: This is the ONLY place to update business data after payment
+  # This method is called ONLY after payment is confirmed as paid (via webhook or manual sync)
+  # 
+  # ❌ NEVER update business logic in controller's create action
+  # ❌ NEVER add credits/items/access before payment is confirmed
+  # ✅ ALWAYS implement business logic HERE
   #
   # Example:
   # case payment.payable_type
   # when 'Order'
-  #   payment.payable.update!(status: 'paid')
-  #   OrderMailer.confirmation(payment.payable).deliver_later
+  #   order = payment.payable
+  #   order.update!(status: 'paid')
+  #   # Add purchased items/credits ONLY here
+  #   order.user.increment!(:credits, order.quantity)
+  #   OrderMailer.confirmation(order).deliver_later
   # when 'Enrollment'
   #   payment.payable.update!(status: 'active')
   #   EnrollmentMailer.welcome(payment.payable).deliver_later
@@ -277,5 +284,6 @@ class StripePaymentService < ApplicationService
     Rails.logger.info "Payment #{payment.id} confirmed as paid for #{payment.payable_type} ##{payment.payable_id}"
 
     # TODO: Add your business logic here
+    # This is called AFTER payment is confirmed - safe to grant access/credits/items
   end
 end

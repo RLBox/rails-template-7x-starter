@@ -239,6 +239,18 @@ class StripePayGenerator < Rails::Generators::Base
     say "  ✓ spec/requests/payment_integration_spec.rb - Validates payable interface", :green
     say "\nYou MUST create:", :yellow
     say "  ✗ app/views/payments/success.html.erb - Required for Stripe callback", :red
+    say "\n" + "="*70, :red
+    say "⚠️  CRITICAL: Payment Flow Rules", :red
+    say "="*70, :red
+    say "\n1. Controller#create: Create order with status: 'pending'", :yellow
+    say "   └─> Create payment record", :white
+    say "   └─> Redirect to Stripe checkout", :white
+    say "   └─> ❌ DO NOT add credits/items here!", :red
+    say "\n2. User pays on Stripe", :yellow
+    say "\n3. Webhook → process_payment_paid", :yellow
+    say "   └─> Update order status to 'paid'", :white
+    say "   └─> ✅ Add credits/items HERE (after payment confirmed)", :green
+    say "   └─> Send confirmation emails", :white
     say "\n" + "="*70, :yellow
     say "📖 Two Payment Patterns", :yellow
     say "="*70, :yellow
@@ -270,7 +282,19 @@ class StripePayGenerator < Rails::Generators::Base
     say "@order = Order.create!(user: current_user, total: 99.00, status: 'pending')", :white
     say "@payment = @order.create_payment!(amount: @order.total, user: current_user)", :white
     say "redirect_to pay_payment_path(@payment), data: { turbo_method: :post }", :white
-    say "\n# 4. View: <%= button_to 'Buy Now', orders_path, method: :post %>", :cyan
+    say "\n⚠️  CRITICAL: Do NOT add business logic here (e.g., add credits/items)!", :red
+    say "Business logic MUST be in StripePaymentService.process_payment_paid", :red
+    say "\n# 4. Implement post-payment logic in StripePaymentService:", :cyan
+    say "def self.process_payment_paid(payment)", :white
+    say "  case payment.payable_type", :white
+    say "  when 'Order'", :white
+    say "    order = payment.payable", :white
+    say "    order.update!(status: 'paid')", :white
+    say "    # Add purchased items/credits ONLY here after payment confirmed", :white
+    say "    order.user.increment!(:credits, order.quantity)", :white
+    say "  end", :white
+    say "end", :white
+    say "\n# 5. View: <%= button_to 'Buy Now', orders_path, method: :post %>", :cyan
     say "\n" + "-"*70, :yellow
     say "Pattern 2️⃣: Auto-renewing Subscription (Monthly Billing)", :yellow
     say "-"*70, :yellow
