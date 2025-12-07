@@ -6,13 +6,13 @@ module FriendlyErrorHandlingConcern
     before_action :set_default_format_for_api
 
     # Global error handling for both API and HTML controllers
-    rescue_from StandardError, with: :handle_friendly_error
-    rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found_error
-    rescue_from ActiveRecord::RecordInvalid, with: :handle_validation_error
-    rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing_error
-
-    # Additional rescues for development HTML
     if Rails.env.development?
+      rescue_from StandardError, with: :handle_friendly_error
+      rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found_error
+      rescue_from ActiveRecord::RecordInvalid, with: :handle_validation_error
+      rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing_error
+
+      # Additional rescues for development HTML
       rescue_from NameError, with: :handle_friendly_error
       rescue_from ActionView::SyntaxErrorInTemplate, with: :handle_friendly_error
       rescue_from ActiveRecord::StatementInvalid, with: :handle_friendly_error

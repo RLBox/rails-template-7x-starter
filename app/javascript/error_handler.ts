@@ -771,22 +771,25 @@ class ErrorHandler {
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
 
-      // Only handle 500+ errors with JSON content-type
       if (response.status >= 500) {
         const contentType = response.headers.get('content-type');
+        const requestOptions = args[1] || {};
+        const method = (requestOptions.method || 'GET').toUpperCase();
 
-        // Only report JSON API errors, ignore HTML/other responses
-        if (contentType && contentType.includes('application/json')) {
-          const requestOptions = args[1] || {};
-          const method = (requestOptions.method || 'GET').toUpperCase();
+        // 500 errors: report both HTML and JSON
+        // 501+ errors: only report JSON
+        const shouldReport = response.status === 500 ||
+                            (contentType && contentType.includes('application/json'));
 
+        if (shouldReport) {
           let jsonError = null;
 
           try {
             const responseClone = response.clone();
             jsonError = await responseClone.json();
           } catch (bodyError) {
-            jsonError = { error: 'Unable to read JSON response' };
+            // If not JSON, ignore the error (it's likely HTML)
+            jsonError = null;
           }
 
           // Create detailed error message
@@ -830,18 +833,22 @@ class ErrorHandler {
       // Skip network error and timeout listeners (not actionable frontend errors)
 
       xhr.addEventListener('loadend', () => {
-        // Only handle 500+ errors with JSON content-type
         if (xhr.status >= 500) {
           const contentType = xhr.getResponseHeader('content-type');
 
-          // Only report JSON API errors, ignore HTML/other responses
-          if (contentType && contentType.includes('application/json')) {
+          // 500 errors: report both HTML and JSON
+          // 501+ errors: only report JSON
+          const shouldReport = xhr.status === 500 ||
+                              (contentType && contentType.includes('application/json'));
+
+          if (shouldReport) {
             let jsonError = null;
 
             try {
               jsonError = JSON.parse(xhr.responseText);
             } catch (parseError) {
-              jsonError = { error: 'Unable to read JSON response' };
+              // If not JSON, ignore the error (it's likely HTML)
+              jsonError = null;
             }
 
             // Create detailed error message
@@ -960,6 +967,11 @@ class ErrorHandler {
       /Non-Error promise rejection captured/,
       /ResizeObserver loop/,
       /passive event listener/,
+
+      // Turbo navigation aborted requests (normal behavior)
+      /user aborted/i,
+      /AbortError/,
+      /request.*aborted/i,
 
       // Third-party script errors
       /google-analytics/,
