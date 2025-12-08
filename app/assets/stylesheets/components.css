@@ -50,8 +50,8 @@
     outline-offset: 2px;
   }
 
-  /* Button active state */
-  .btn:active:not(:disabled) {
+  /* Button active state - lower specificity allows Tailwind utility override */
+  .btn:active {
     transform: translateY(1px);
   }
 
@@ -61,7 +61,7 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-primary:hover:not(:disabled) {
+  .btn-primary:hover {
     background-color: hsl(var(--color-primary-dark));
     box-shadow: var(--shadow);
   }
@@ -72,10 +72,10 @@
   }
 
   .btn-primary:disabled {
-    background-color: hsl(var(--color-primary) / 0.5);
+    background-color: hsl(var(--color-primary) / 0.5) !important;
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   .btn-secondary,
@@ -85,8 +85,8 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-secondary:hover:not(:disabled),
-  .btn-info:hover:not(:disabled) {
+  .btn-secondary:hover,
+  .btn-info:hover {
     background-color: hsl(var(--color-secondary-dark));
     box-shadow: var(--shadow);
   }
@@ -99,10 +99,10 @@
 
   .btn-secondary:disabled,
   .btn-info:disabled {
-    background-color: hsl(var(--color-secondary) / 0.5);
+    background-color: hsl(var(--color-secondary) / 0.5) !important;
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   .btn-neutral {
@@ -111,7 +111,7 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-neutral:hover:not(:disabled) {
+  .btn-neutral:hover {
     background-color: hsl(var(--color-neutral));
     box-shadow: var(--shadow);
   }
@@ -122,10 +122,10 @@
   }
 
   .btn-neutral:disabled {
-    background-color: hsl(var(--color-neutral) / 0.5);
+    background-color: hsl(var(--color-neutral) / 0.5) !important;
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   .btn-success {
@@ -134,7 +134,7 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-success:hover:not(:disabled) {
+  .btn-success:hover {
     opacity: 0.9;
     box-shadow: var(--shadow);
   }
@@ -145,10 +145,11 @@
   }
 
   .btn-success:disabled {
-    background-color: hsl(var(--color-success) / 0.5);
+    background-color: hsl(var(--color-success) / 0.5) !important;
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
+    opacity: 0.5 !important;
   }
 
   .btn-warning {
@@ -157,7 +158,7 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-warning:hover:not(:disabled) {
+  .btn-warning:hover {
     opacity: 0.9;
     box-shadow: var(--shadow);
   }
@@ -168,10 +169,11 @@
   }
 
   .btn-warning:disabled {
-    background-color: hsl(var(--color-warning) / 0.5);
+    background-color: hsl(var(--color-warning) / 0.5) !important;
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
+    opacity: 0.5 !important;
   }
 
   .btn-danger,
@@ -181,8 +183,8 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-danger:hover:not(:disabled),
-  .btn-error:hover:not(:disabled) {
+  .btn-danger:hover,
+  .btn-error:hover {
     opacity: 0.9;
     box-shadow: var(--shadow);
   }
@@ -195,10 +197,11 @@
 
   .btn-danger:disabled,
   .btn-error:disabled {
-    background-color: hsl(var(--color-danger) / 0.5);
+    background-color: hsl(var(--color-danger) / 0.5) !important;
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
+    opacity: 0.5 !important;
   }
 
   .btn-accent {
@@ -207,7 +210,7 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .btn-accent:hover:not(:disabled) {
+  .btn-accent:hover {
     background-color: hsl(var(--color-secondary-dark));
     box-shadow: var(--shadow);
   }
@@ -218,10 +221,10 @@
   }
 
   .btn-accent:disabled {
-    background-color: hsl(var(--color-secondary) / 0.5);
+    background-color: hsl(var(--color-secondary) / 0.5) !important;
     color: hsl(0 0% 100% / 0.7);
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   .btn-ghost,
@@ -232,9 +235,9 @@
     border: 1px solid hsl(var(--color-border));
   }
 
-  .btn-ghost:hover:not(:disabled),
-  .btn-default:hover:not(:disabled),
-  .btn-light:hover:not(:disabled) {
+  .btn-ghost:hover,
+  .btn-default:hover,
+  .btn-light:hover {
     background-color: hsl(var(--color-surface-elevated));
     box-shadow: var(--shadow-sm);
   }
@@ -251,9 +254,9 @@
   .btn-light:disabled {
     border-color: hsl(var(--color-border) / 0.5);
     opacity: 0.5;
-    background-color: transparent;
+    background-color: transparent !important;
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   .dark .btn-ghost,
@@ -262,17 +265,18 @@
     border-color: hsl(var(--color-border));
   }
 
-  .dark .btn-ghost:hover:not(:disabled),
-  .dark .btn-default:hover:not(:disabled),
-  .dark .btn-light:hover:not(:disabled) {
+  .dark .btn-ghost:hover,
+  .dark .btn-default:hover,
+  .dark .btn-light:hover {
     background-color: hsl(var(--color-surface-elevated));
   }
 
+  /* Disabled state overrides hover */
   .dark .btn-ghost:disabled,
   .dark .btn-default:disabled,
   .dark .btn-light:disabled {
     border-color: hsl(var(--color-border) / 0.3);
-    background-color: transparent;
+    background-color: transparent !important;
   }
 
   .btn-outline {
@@ -282,7 +286,7 @@
     color: hsl(var(--color-text-primary));
   }
 
-  .btn-outline:hover:not(:disabled) {
+  .btn-outline:hover {
     background-color: hsl(var(--color-surface-elevated));
     border-color: hsl(var(--color-text-secondary));
     box-shadow: var(--shadow-sm);
@@ -294,11 +298,11 @@
   }
 
   .btn-outline:disabled {
-    border-color: hsl(var(--color-border) / 0.5);
+    border-color: hsl(var(--color-border) / 0.5) !important;
     color: hsl(var(--color-text-muted));
-    background-color: transparent;
+    background-color: transparent !important;
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   .dark .btn-outline {
@@ -306,7 +310,7 @@
     color: hsl(var(--color-text-secondary));
   }
 
-  .dark .btn-outline:hover:not(:disabled) {
+  .dark .btn-outline:hover {
     background-color: hsl(var(--color-surface-elevated));
     border-color: hsl(var(--color-text-primary));
   }
@@ -318,7 +322,7 @@
     color: hsl(var(--color-primary));
   }
 
-  .btn-outline-primary:hover:not(:disabled) {
+  .btn-outline-primary:hover {
     background-color: hsl(var(--color-primary-light) / 0.1);
     box-shadow: var(--shadow-sm);
   }
@@ -329,11 +333,11 @@
   }
 
   .btn-outline-primary:disabled {
-    border-color: hsl(var(--color-primary) / 0.3);
+    border-color: hsl(var(--color-primary) / 0.3) !important;
     color: hsl(var(--color-primary) / 0.3);
-    background-color: transparent;
+    background-color: transparent !important;
     cursor: not-allowed;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   .btn-xs {
