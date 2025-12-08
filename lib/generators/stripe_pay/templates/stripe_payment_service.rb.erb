@@ -20,7 +20,7 @@ class StripePaymentService < ApplicationService
 
     begin
       @checkout_session = Stripe::Checkout::Session.create(
-        payment_method_types: ['card'],
+        automatic_payment_methods: { enabled: true },
         line_items: build_line_items,
         mode: payment_mode,
         customer_email: payment.customer_email,
