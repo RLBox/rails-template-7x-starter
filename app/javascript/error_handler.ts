@@ -1411,18 +1411,30 @@ Technical Details:`;
   }
 
   generateErrorReport(error: StoredError): string {
+    const maxDetailLength = 800; // Limit each detail field length
+    const maxTotalLength = 3000; // Total character limit for single error
+
     let report = `Frontend Error Report
 ─────────────
 Time: ${new Date(error.timestamp).toLocaleString()}
 Page Path: ${window.location.pathname}
 ${this.formatLastUserAction()}
 Technical Details:
-${error.message}`;
+${this.truncateText(error.message, maxDetailLength)}`;
 
     // Use the unified formatting system for text output
     const typeSpecificDetails = this.formatErrorDetails(error, 'text');
     if (typeSpecificDetails.length > 0) {
-      report += `\n\n${  typeSpecificDetails.join('\n')}`;
+      // Truncate long details to respect length limits
+      const truncatedDetails = typeSpecificDetails.map(detail =>
+        this.truncateText(detail, maxDetailLength)
+      );
+      report += `\n\n${  truncatedDetails.join('\n')}`;
+    }
+
+    // Ensure total length doesn't exceed limit
+    if (report.length > maxTotalLength - 100) {
+      report = `${report.substring(0, maxTotalLength - 100)}...\n\n[Report truncated due to length limit]`;
     }
 
     report += `\n\nPlease help me analyze and fix this issue.`;

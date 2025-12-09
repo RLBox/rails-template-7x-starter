@@ -17,30 +17,48 @@
     <% if Rails.env.development? && (@original_exception || @error_url) %>
       <!-- Development Info -->
       <%
-        # Prepare formatted error text for clipboard
+        # Prepare formatted error text for clipboard with length limits
+        max_message_length = 800
+        max_line_length = 500
+        max_total_length = 3000
+
         error_text = []
         error_text << "Method: #{@http_method}" if @http_method
         error_text << "URL: #{@error_url}"
         error_text << "Title: #{@error_title}"
         error_text << "Description: #{@error_description}"
-        
+
         if @original_exception
-          error_text << "Message: #{@original_exception.message}"
-          
+          # Truncate exception message if too long
+          exception_message = @original_exception.message
+          if exception_message.length > max_message_length
+            exception_message = "#{exception_message[0...max_message_length]}... [truncated]"
+          end
+          error_text << "Message: #{exception_message}"
+
           if @filtered_backtrace&.any?
             error_text << "User Code Stack Trace:"
-            @filtered_backtrace.each_with_index do |line, index|
-              error_text << "#{index + 1}: #{line}"
+            @filtered_backtrace.first(10).each_with_index do |line, index|
+              # Truncate long backtrace lines
+              truncated_line = line.length > max_line_length ? "#{line[0...max_line_length]}... [truncated]" : line
+              error_text << "#{index + 1}: #{truncated_line}"
             end
           elsif @original_exception&.backtrace
             error_text << "Stack Trace (First 3 lines):"
             @original_exception.backtrace.first(3).each_with_index do |line, index|
-              error_text << "#{index + 1}: #{line}"
+              # Truncate long backtrace lines
+              truncated_line = line.length > max_line_length ? "#{line[0...max_line_length]}... [truncated]" : line
+              error_text << "#{index + 1}: #{truncated_line}"
             end
           end
         end
-        
+
         formatted_error_text = error_text.join("\n")
+
+        # Ensure total length doesn't exceed limit
+        if formatted_error_text.length > max_total_length
+          formatted_error_text = "#{formatted_error_text[0...max_total_length]}...\n\n[Report truncated due to length limit]"
+        end
       %>
       <div class="mb-8 text-left" data-controller="clipboard">
         <div class="card shadow-lg">
