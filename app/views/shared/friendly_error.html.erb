@@ -26,7 +26,6 @@
         error_text << "Method: #{@http_method}" if @http_method
         error_text << "URL: #{@error_url}"
         error_text << "Title: #{@error_title}"
-        error_text << "Description: #{@error_description}"
 
         if @original_exception
           # Truncate exception message if too long
