@@ -6,6 +6,17 @@ class ControllerGenerator < Rails::Generators::NamedBase
   class_option :auth, type: :boolean, default: false, desc: "Generate controller with authentication required"
   class_option :single, type: :boolean, default: false, desc: "Generate singular resource (resource instead of resources)"
 
+  # Auto-fix common namespace separator mistakes
+  def normalize_name
+    if name.include?(':') && !name.include?('::')
+      original_name = name.dup
+      self.name = name.gsub(':', '::')
+      say "⚠️  Auto-corrected namespace separator:", :yellow
+      say "    #{original_name} → #{name}", :yellow
+      say "    (Use '::' for namespaces, not ':')", :cyan
+    end
+  end
+
   # Check if controller has namespace (e.g., admin::posts, api::v1::posts)
   def has_namespace?
     name.include?('::')
@@ -532,10 +543,11 @@ class ControllerGenerator < Rails::Generators::NamedBase
       route_lines << "  #{base_route} do"
     end
 
-    # Add custom actions as simple member routes
+    # Add custom actions as collection routes (no :id parameter needed)
+    # Change to 'on: :member' if the action needs :id parameter
     if non_crud_actions.any?
       non_crud_actions.each do |action|
-        route_lines << "    get :#{action}"
+        route_lines << "    get :#{action}, on: :collection"
       end
     end
 
@@ -569,10 +581,10 @@ class ControllerGenerator < Rails::Generators::NamedBase
       route_lines << "#{indent}#{base_route} do"
     end
 
-    # Add custom actions
+    # Add custom actions as collection routes
     if non_crud_actions.any?
       non_crud_actions.each do |action|
-        route_lines << "#{indent}  get :#{action}"
+        route_lines << "#{indent}  get :#{action}, on: :collection"
       end
     end
 
