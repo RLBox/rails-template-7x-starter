@@ -85,6 +85,8 @@ class User < ApplicationRecord
     end
   end
 
+  public
+
   def oauth_user?
     provider.present? && uid.present?
   end
@@ -93,11 +95,11 @@ class User < ApplicationRecord
     email.end_with?(GENERATED_EMAIL_SUFFIX)
   end
 
-  private
-
   def password_required?
     return false if oauth_user?
     password_digest.blank? || password.present?
   end
+
+  # write your own code here
 
 end
