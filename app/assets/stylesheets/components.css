@@ -626,6 +626,64 @@
     color: hsl(var(--color-neutral));
   }
 
+  .form-file {
+    @apply w-full px-3 py-2 transition-colors duration-200;
+    border: 1px solid hsl(var(--color-surface-elevated));
+    border-radius: var(--border-radius);
+    background-color: hsl(var(--color-surface));
+    color: hsl(var(--color-text-primary));
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+
+  .form-file::file-selector-button {
+    margin-right: 1rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: calc(var(--border-radius) - 2px);
+    background: hsl(var(--color-primary) / 0.1);
+    color: hsl(var(--color-primary));
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .form-file::file-selector-button:hover {
+    background: hsl(var(--color-primary) / 0.2);
+  }
+
+  .form-file:focus {
+    outline: none;
+    border-color: hsl(var(--color-primary));
+    box-shadow: 0 0 0 3px hsl(var(--color-primary) / 0.1);
+  }
+
+  .dark .form-file {
+    border-color: hsl(var(--color-border));
+    background-color: hsl(var(--color-surface-elevated));
+    color: hsl(var(--color-text-primary));
+  }
+
+  .dark .form-file::file-selector-button {
+    background: hsl(var(--color-primary) / 0.15);
+    color: hsl(var(--color-primary-light));
+  }
+
+  .dark .form-file::file-selector-button:hover {
+    background: hsl(var(--color-primary) / 0.25);
+  }
+
+  /* Form field error state - red border */
+  .field-error {
+    border-color: hsl(var(--color-danger)) !important;
+  }
+
+  .field-error:focus {
+    border-color: hsl(var(--color-danger)) !important;
+    box-shadow: 0 0 0 3px hsl(var(--color-danger) / 0.1) !important;
+  }
+
   /* ==========================================================================
      TABLES
      ========================================================================== */

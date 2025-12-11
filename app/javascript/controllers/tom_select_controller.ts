@@ -45,6 +45,9 @@ export default class extends Controller {
   connect() {
     const element = this.element as HTMLSelectElement
 
+    // Save original classes before Tom Select modifies them
+    const originalClasses = element.className.split(' ').filter(cls => cls.trim() !== '')
+
     // Build configuration
     const config: RecursivePartial<TomSettings> = {
       // Core options
@@ -91,6 +94,24 @@ export default class extends Controller {
 
     // Initialize Tom Select
     this.tomSelect = new TomSelect(element, config)
+
+    // Copy original classes to ts-control (before Tom Select added its own classes)
+    // This allows form-select, field-error, and other custom classes to style the control
+    if (this.tomSelect && originalClasses.length > 0) {
+      const control = this.tomSelect.control
+      const wrapper = this.tomSelect.wrapper
+
+      if (control) {
+        originalClasses.forEach(cls => {
+          // Add to control
+          control.classList.add(cls)
+          // Remove from wrapper (Tom Select might have copied them there)
+          if (wrapper) {
+            wrapper.classList.remove(cls)
+          }
+        })
+      }
+    }
   }
 
   disconnect() {

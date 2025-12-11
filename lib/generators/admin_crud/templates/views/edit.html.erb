@@ -4,9 +4,7 @@
   <!-- Page Title -->
   <div class="flex items-center space-x-4 mb-6">
     <%%= link_to admin_<%= singular_name %>_path(@<%= singular_name %>.id), class: "btn-ghost text-sm py-1 px-3" do %>
-      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-      </svg>
+      <%%= lucide_icon "arrow-left", class: "w-4 h-4 mr-2" %>
       Back to <%= humanized_name %>
     <%% end %>
     <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50">Edit <%= humanized_name %></h1>
