@@ -182,6 +182,16 @@ class EnhancedFormBuilder < ActionView::Helpers::FormBuilder
     super
   end
 
+  # Label - automatically adds required indicator (*) and form-label class
+  def label(method, text = nil, options = {}, &block)
+    options[:class] = [options[:class], 'form-label'].compact.join(' ') unless options[:class]&.include?('form-label')
+
+    super(method, text, options) do
+      content = block_given? ? @template.capture(&block) : (text || method.to_s.humanize)
+      field_required?(method) ? @template.safe_join([content, @template.content_tag(:span, ' *', class: 'text-red-500')]) : content
+    end
+  end
+
   private
 
   # Wrap field with error message if validation errors exist
@@ -225,6 +235,16 @@ class EnhancedFormBuilder < ActionView::Helpers::FormBuilder
       end
     else
       options[:data][:controller] = controller_name
+    end
+  end
+
+  # Check if field is required based on model validations
+  def field_required?(method)
+    return false unless @object && @object.class.respond_to?(:validators_on)
+
+    validators = @object.class.validators_on(method)
+    validators.any? do |validator|
+      validator.is_a?(ActiveModel::Validations::PresenceValidator)
     end
   end
 end

@@ -30,94 +30,39 @@
         </div>
 <% else -%>
         <div class="form-group">
-          <%%= form.label :<%= attribute.name %>, class: "form-label" do %>
-            <%= attribute.name.humanize %><%% if field_required?(@<%= singular_name %>, :<%= attribute.name %>) %> <span class="text-red-500">*</span><%% end %>
-          <%% end %>
+          <%%= form.label :<%= attribute.name %> %>
 <% if attribute.type.to_s == 'datetime' -%>
-          <%%= form.text_field :<%= attribute.name %>, {
-            placeholder: "Select <%= attribute.name.humanize.downcase %>...",
-            class: "form-input",
-            value: @<%= singular_name %>.<%= attribute.name %>&.strftime("%Y-%m-%d %H:%M"),
-            data: {
-              controller: "flatpickr",
-              flatpickr_enable_time_value: true,
-              flatpickr_date_format_value: "Y-m-d H:i"
-            }
-          }.merge(field_required?(@<%= singular_name %>, :<%= attribute.name %>) ? { required: true } : {}) %>
+          <%%= form.datetime_field :<%= attribute.name %>, placeholder: "Select <%= attribute.name.humanize.downcase %>..." %>
 <% elsif attribute.type.to_s == 'date' -%>
-          <%%= form.text_field :<%= attribute.name %>, {
-            placeholder: "Select <%= attribute.name.humanize.downcase %>...",
-            class: "form-input",
-            value: @<%= singular_name %>.<%= attribute.name %>&.strftime("%Y-%m-%d"),
-            data: {
-              controller: "flatpickr",
-              flatpickr_date_format_value: "Y-m-d"
-            }
-          }.merge(field_required?(@<%= singular_name %>, :<%= attribute.name %>) ? { required: true } : {}) %>
+          <%%= form.date_field :<%= attribute.name %>, placeholder: "Select <%= attribute.name.humanize.downcase %>..." %>
 <% elsif attribute.type.to_s == 'text' -%>
-          <%%= form.text_area :<%= attribute.name %>, {
-            rows: 5,
-            placeholder: "Enter <%= attribute.name.humanize.downcase %>...",
-            class: "form-textarea"
-          }.merge(field_required?(@<%= singular_name %>, :<%= attribute.name %>) ? { required: true } : {}) %>
+          <%%= form.text_area :<%= attribute.name %>, rows: 5, placeholder: "Enter <%= attribute.name.humanize.downcase %>..." %>
 <% else -%>
-          <%%= form.<%= form_field_for(attribute) %> :<%= attribute.name %>, {
-            placeholder: "Enter <%= attribute.name.humanize.downcase %>...",
-            class: "form-input"
-          }.merge(field_required?(@<%= singular_name %>, :<%= attribute.name %>) ? { required: true } : {}) %>
+          <%%= form.<%= form_field_for(attribute) %> :<%= attribute.name %>, placeholder: "Enter <%= attribute.name.humanize.downcase %>..." %>
 <% end -%>
-          <%% if @<%= singular_name %>.errors[:<%= attribute.name %>].any? %>
-            <p class="form-error"><%%= @<%= singular_name %>.errors[:<%= attribute.name %>].first %></p>
-          <%% end %>
         </div>
 <% end -%>
 <% elsif field[:type] == :enum -%>
         <!-- <%= field[:enum_name].humanize %> -->
         <div class="form-group">
-          <%%= form.label :<%= field[:enum_name] %>, class: "form-label" do %>
-            <%= field[:enum_name].humanize %><%% if field_required?(@<%= singular_name %>, :<%= field[:enum_name] %>) %> <span class="text-red-500">*</span><%% end %>
-          <%% end %>
+          <%%= form.label :<%= field[:enum_name] %> %>
           <%%= form.select :<%= field[:enum_name] %>,
-              options_for_select(<%= enum_options_for_select(field[:enum_name], field[:enum_values]).inspect %>, @<%= singular_name %>.<%= field[:enum_name] %>),
-              {},
-              {
-                data: {
-                  controller: "tom-select",
-                  tom_select_placeholder_value: "Select <%= field[:enum_name].humanize.downcase %>..."
-                }
-              } %>
-          <%% if @<%= singular_name %>.errors[:<%= field[:enum_name] %>].any? %>
-            <p class="form-error"><%%= @<%= singular_name %>.errors[:<%= field[:enum_name] %>].first %></p>
-          <%% end %>
+              options_for_select(<%= enum_options_for_select(field[:enum_name], field[:enum_values]).inspect %>, @<%= singular_name %>.<%= field[:enum_name] %>) %>
         </div>
 <% elsif field[:type] == :association -%>
 <% association = field[:association] -%>
         <!-- <%= association[:name].to_s.humanize %> -->
-        <div class="mb-4">
-          <%%= form.label :<%= association[:foreign_key] %>, class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" do %>
-            <%= association[:name].to_s.humanize %><%% if field_required?(@<%= singular_name %>, :<%= association[:name] %>) %> <span class="text-red-500">*</span><%% end %>
-          <%% end %>
-          <%%= form.select :<%= association[:foreign_key] %>, 
-              options_for_select([['Select <%= association[:name].to_s.humanize %>', '']] + <%= association_options_method(association) %>, @<%= singular_name %>.<%= association[:foreign_key] %>),
-              {},
-              { class: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-50" } %>
-          <%% if @<%= singular_name %>.errors[:<%= association[:foreign_key] %>].any? %>
-            <p class="text-sm text-red-500 mt-1"><%%= @<%= singular_name %>.errors[:<%= association[:foreign_key] %>].first %></p>
-          <%% end %>
+        <div class="form-group">
+          <%%= form.label :<%= association[:foreign_key] %>, "<%= association[:name].to_s.humanize %>" %>
+          <%%= form.select :<%= association[:foreign_key] %>,
+              options_for_select([['Select <%= association[:name].to_s.humanize %>', '']] + <%= association_options_method(association) %>, @<%= singular_name %>.<%= association[:foreign_key] %>) %>
         </div>
 <% elsif field[:type] == :attachment -%>
 <% attachment = field[:attachment] -%>
         <!-- <%= attachment[:name].humanize %> -->
         <div class="form-group">
-          <%%= form.label :<%= attachment[:name] %>, class: "form-label" do %>
-            <%= attachment[:name].humanize %>
-          <%% end %>
-          <%%= form.<%= form_field_for_attachment(attachment) %> :<%= attachment[:name] %>, {
-<% if attachment[:type] == :has_many_attached -%>
-            multiple: true,
-<% end -%>
-            class: "form-file"
-          } %>
+          <%%= form.label :<%= attachment[:name] %> %>
+          <%%= form.<%= form_field_for_attachment(attachment) %> :<%= attachment[:name] %><% if attachment[:type] == :has_many_attached -%>, multiple: true<% end -%> %>
           <%% if @<%= singular_name %>.errors.any? %>
             <p class="form-help text-orange-600 dark:text-orange-400">Note: Please reselect the file if form validation fails</p>
           <%% else %>
@@ -126,9 +71,6 @@
 <% else -%>
             <p class="form-help">Upload a file</p>
 <% end -%>
-          <%% end %>
-          <%% if @<%= singular_name %>.errors[:<%= attachment[:name] %>].any? %>
-            <p class="form-error"><%%= @<%= singular_name %>.errors[:<%= attachment[:name] %>].first %></p>
           <%% end %>
         </div>
 <% end -%>

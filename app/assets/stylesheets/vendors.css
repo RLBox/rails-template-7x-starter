@@ -33,6 +33,11 @@
     background-size: 1.25rem;
   }
 
+  /* Keep dark background when not active and after selection */
+  .dark .ts-wrapper .ts-control {
+    background-color: hsl(var(--color-surface-elevated)) !important;
+  }
+
   /* Dropdown */
   .ts-dropdown {
     border: 1.5px solid hsl(var(--color-border));
