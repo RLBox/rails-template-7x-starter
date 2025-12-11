@@ -7,6 +7,7 @@
  * Alerts: .alert-success, .alert-warning, .alert-danger, .alert-info
  * Badges: .badge-primary, .badge-secondary, .badge-success, .badge-warning, .badge-danger, .badge-neutral
  * Forms: .form-input, .form-textarea, .form-select, .form-label, .form-error, .form-help
+ * Enhanced Forms: Tom Select (searchable select), Flatpickr (date/time picker)
  * Tables: .table, .table-header, .table-row, .table-cell, .table-header-cell
  * Containers: .container-sm (login), .container-md (forms), .container-lg (detail), .container-xl (lists)
  * Utils: .loading-spinner, .skeleton, .text-balance, .transition-default, .focus-ring
@@ -16,6 +17,11 @@
  */
 /* Import design system components - DO NOT MODIFY components.css */
 @import "components";
+
+/* Import third-party CSS libraries */
+@import "tom-select/dist/css/tom-select.css";
+@import "flatpickr/dist/flatpickr.css";
+@import "vendors"; /* Custom themes for third-party libraries */
 
 @tailwind base;
 @tailwind components;

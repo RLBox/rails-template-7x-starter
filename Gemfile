@@ -20,6 +20,7 @@ gem 'image_processing', '~> 1.2'
 gem 'ostruct', '~> 0.6.3'
 gem "solid_cable", "~> 3.0"
 gem "turbo-rails", "~> 2.0"
+gem "lucide-rails", "~> 0.7.1"
 
 group :development do
   gem "error_highlight", ">= 0.4.0", platforms: [ :ruby ]
