@@ -8,61 +8,61 @@
 
   <!-- Statistics Cards -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Total Revenue -->
+    <!-- Yesterday's Revenue -->
+    <div class="card bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-medium opacity-90">Yesterday</h3>
+          <%%= lucide_icon "trending-up", class: "w-5 h-5 opacity-75" %>
+        </div>
+        <p class="text-3xl font-bold">
+          <%%= number_to_currency(@yesterday_revenue, unit: '$') %>
+        </p>
+        <p class="text-xs opacity-75 mt-2">Yesterday's revenue</p>
+      </div>
+    </div>
+
+    <!-- This Month -->
     <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-medium opacity-90">This Month</h3>
+          <%%= lucide_icon "calendar", class: "w-5 h-5 opacity-75" %>
+        </div>
+        <p class="text-3xl font-bold">
+          <%%= number_to_currency(@this_month_revenue, unit: '$') %>
+        </p>
+        <p class="text-xs opacity-75 mt-2">
+          <%%= @this_month_count %> payments
+        </p>
+      </div>
+    </div>
+
+    <!-- Projected 6-Month Revenue -->
+    <div class="card bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-medium opacity-90">Projected 6M</h3>
+          <%%= lucide_icon "bar-chart-3", class: "w-5 h-5 opacity-75" %>
+        </div>
+        <p class="text-3xl font-bold">
+          <%%= number_to_currency(@projected_6month_revenue, unit: '$') %>
+        </p>
+        <p class="text-xs opacity-75 mt-2">Based on this month's pace</p>
+      </div>
+    </div>
+
+    <!-- Total Revenue -->
+    <div class="card bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
       <div class="card-body">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-medium opacity-90">Total Revenue</h3>
           <%%= lucide_icon "dollar-sign", class: "w-5 h-5 opacity-75" %>
         </div>
         <p class="text-3xl font-bold">
-          <%%= number_to_currency(Payment.where(status: 'paid').sum(:amount) / 100.0, unit: '$') %>
+          <%%= number_to_currency(@total_revenue, unit: '$') %>
         </p>
         <p class="text-xs opacity-75 mt-2">All time paid payments</p>
-      </div>
-    </div>
-
-    <!-- MRR (Monthly Recurring Revenue) -->
-    <div class="card bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
-      <div class="card-body">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-medium opacity-90">MRR</h3>
-          <%%= lucide_icon "trending-up", class: "w-5 h-5 opacity-75" %>
-        </div>
-        <p class="text-3xl font-bold">
-          <%%= number_to_currency(Payment.where(status: 'paid').where('created_at >= ?', 30.days.ago).sum(:amount) / 100.0, unit: '$') %>
-        </p>
-        <p class="text-xs opacity-75 mt-2">Last 30 days</p>
-      </div>
-    </div>
-
-    <!-- ARR (Annual Recurring Revenue) -->
-    <div class="card bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
-      <div class="card-body">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-medium opacity-90">ARR</h3>
-          <%%= lucide_icon "calendar", class: "w-5 h-5 opacity-75" %>
-        </div>
-        <p class="text-3xl font-bold">
-          <%%= number_to_currency((Payment.where(status: 'paid').where('created_at >= ?', 30.days.ago).sum(:amount) / 100.0) * 12, unit: '$') %>
-        </p>
-        <p class="text-xs opacity-75 mt-2">MRR × 12 months</p>
-      </div>
-    </div>
-
-    <!-- This Month -->
-    <div class="card bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
-      <div class="card-body">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-medium opacity-90">This Month</h3>
-          <%%= lucide_icon "bar-chart-3", class: "w-5 h-5 opacity-75" %>
-        </div>
-        <p class="text-3xl font-bold">
-          <%%= number_to_currency(Payment.where(status: 'paid').where('created_at >= ?', Time.current.beginning_of_month).sum(:amount) / 100.0, unit: '$') %>
-        </p>
-        <p class="text-xs opacity-75 mt-2">
-          <%%= Payment.where(status: 'paid').where('created_at >= ?', Time.current.beginning_of_month).count %> payments
-        </p>
       </div>
     </div>
   </div>
@@ -70,18 +70,14 @@
   <!-- Filters -->
   <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 mb-6">
     <div class="card-body">
-      <%%= form_with url: admin_payments_path, method: :get, class: "flex gap-4 flex-wrap" do |f| %>
+      <%%= form_with url: admin_payments_path, method: :get, class: "flex gap-4 flex-wrap items-center" do |f| %>
         <div class="flex-1 min-w-[200px]">
           <%%= f.text_field :q, value: params[:q], placeholder: "Search by ID", class: "form-input w-full" %>
         </div>
-        <div>
-          <%%= f.select :status,
-              options_for_select([['All', ''], ['Pending', 'pending'], ['Processing', 'processing'], ['Paid', 'paid'], ['Failed', 'failed'], ['Canceled', 'canceled'], ['Refunded', 'refunded']], params[:status]),
-              {}, class: "form-select" %>
-        </div>
-        <div>
-          <%%= f.submit "Filter", class: "btn-primary" %>
-        </div>
+        <%%= f.select :status,
+            options_for_select([['All', ''], ['Pending', 'pending'], ['Processing', 'processing'], ['Paid', 'paid'], ['Failed', 'failed'], ['Canceled', 'canceled'], ['Refunded', 'refunded']], params[:status]),
+            {}, class: "form-select" %>
+        <%%= f.submit "Filter", class: "btn-primary" %>
       <%% end %>
     </div>
   </div>

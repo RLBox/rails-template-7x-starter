@@ -609,6 +609,7 @@
 
   .form-select {
     @apply form-input cursor-pointer;
+    min-width: 150px;
   }
 
   .form-label {

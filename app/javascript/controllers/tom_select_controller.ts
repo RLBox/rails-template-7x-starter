@@ -41,6 +41,7 @@ export default class extends Controller {
   declare readonly hasMaxItemsValue: boolean
 
   private tomSelect: TomSelect | null = null
+  private scrollHandler: (() => void) | null = null
 
   connect() {
     const element = this.element as HTMLSelectElement
@@ -49,13 +50,17 @@ export default class extends Controller {
     const originalClasses = element.className.split(' ').filter(cls => cls.trim() !== '')
 
     // Build configuration
-    const config: RecursivePartial<TomSettings> = {
+    const config = {
       // Core options
       allowEmptyOption: this.allowEmptyOptionValue,
       searchField: this.searchFieldValue,
 
-      // Styling
-      controlInput: null, // Hide the input when single select
+      // Disable input for single select - null disables typing
+      // (TypeScript types are incorrect, but Tom Select docs support null)
+      controlInput: null as any,
+
+      // Fix z-index stacking context issue by rendering dropdown in body
+      dropdownParent: 'body',
 
       // Placeholder
       ...(this.hasPlaceholderValue && {
@@ -112,9 +117,26 @@ export default class extends Controller {
         })
       }
     }
+
+    // Handle scroll events - reposition dropdown when scrolling
+    this.scrollHandler = () => {
+      if (this.tomSelect && this.tomSelect.isOpen) {
+        this.tomSelect.positionDropdown()
+      }
+    }
+
+    // Listen to scroll events on window and scrollable parents
+    // Use passive: true for better scroll performance
+    window.addEventListener('scroll', this.scrollHandler, { capture: true, passive: true })
   }
 
   disconnect() {
+    // Remove scroll event listener
+    if (this.scrollHandler) {
+      window.removeEventListener('scroll', this.scrollHandler, { capture: true })
+      this.scrollHandler = null
+    }
+
     if (this.tomSelect) {
       this.tomSelect.destroy()
       this.tomSelect = null
