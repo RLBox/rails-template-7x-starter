@@ -35,7 +35,21 @@ module.exports = [
       'eqeqeq': ['error', 'always'],
       'no-console': 'off',
       'no-debugger': 'error',
-      'no-alert': 'off',
+      'no-alert': 'error',
+      'no-restricted-globals': ['error',
+        {
+          name: 'alert',
+          message: 'Use showToast(message, type) instead. Example: showToast("Success!", "success")'
+        },
+        {
+          name: 'confirm',
+          message: 'Use custom modal or showToast() for confirmations instead of confirm()'
+        },
+        {
+          name: 'prompt',
+          message: 'Use custom input modal instead of prompt()'
+        }
+      ],
       'no-unused-expressions': 'error',
       'no-useless-return': 'off',
 
@@ -59,6 +73,13 @@ module.exports = [
       '@typescript-eslint/no-unused-vars': 'off',
       'no-unused-vars': 'off',
       'no-undef': 'off',
+    },
+  },
+  {
+    files: ['app/javascript/error_handler.ts'],
+    rules: {
+      'no-alert': 'off',
+      'no-restricted-globals': 'off',
     },
   },
   {

@@ -14,6 +14,7 @@ import './clipboard_utils'
 import './sdk_utils'
 import './stimulus_validator'
 import './channels'
+import './toast'
 
 ActiveStorage.start()
 window.ActionCable = ActionCable

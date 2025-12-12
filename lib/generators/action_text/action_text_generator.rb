@@ -36,6 +36,12 @@ class ActionTextGenerator < Rails::Generators::Base
     say "✓ Trix controller created", :green
   end
 
+  def create_trix_toolbar
+    say "Creating Trix toolbar customization...", :green
+    template 'trix_toolbar.ts.erb', 'app/javascript/trix_toolbar.ts'
+    say "✓ Trix toolbar created", :green
+  end
+
   def create_actiontext_stylesheet
     say "Creating ActionText Tailwind stylesheet...", :green
     template 'actiontext.css.erb', 'app/assets/stylesheets/actiontext.css'
@@ -44,8 +50,8 @@ class ActionTextGenerator < Rails::Generators::Base
     say "✓ ActionText stylesheet created", :green
   end
 
-  def import_trix_in_base_ts
-    say "Adding Trix import to base.ts...", :green
+  def import_trix_toolbar_in_base_ts
+    say "Adding Trix toolbar import to base.ts...", :green
 
     base_ts = 'app/javascript/base.ts'
 
@@ -56,13 +62,13 @@ class ActionTextGenerator < Rails::Generators::Base
     end
 
     content = File.read(base_ts)
-    if content.include?("import 'trix'")
-      say "⚠️  Trix import already exists in base.ts", :yellow
+    if content.include?("import './trix_toolbar'")
+      say "⚠️  Trix toolbar import already exists in base.ts", :yellow
       return
     end
 
-    insert_after_last_import(base_ts, "import 'trix'\n")
-    say "✓ Added Trix import to base.ts", :green
+    insert_after_last_import(base_ts, "import './trix_toolbar'\n")
+    say "✓ Added Trix toolbar import to base.ts", :green
   end
 
   def create_blob_partial

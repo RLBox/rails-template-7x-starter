@@ -18,6 +18,7 @@ declare global {
     sendToSDK: (message: string) => boolean;
     sendErrorToSDK: (errorInfo: any) => boolean;
     isSDKAvailable: () => boolean;
+    showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
     sdk?: {
       send: (message: string) => void;
     };
