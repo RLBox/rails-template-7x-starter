@@ -370,7 +370,7 @@
      ========================================================================== */
 
   .card {
-    @apply px-4 py-4 my-4 overflow-hidden;
+    @apply px-4 py-4 my-4;
     background-color: hsl(var(--color-surface));
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-md);
@@ -503,68 +503,68 @@
 
   .badge-primary {
     @apply badge;
-    background-color: hsl(var(--color-primary-light) / 0.2);
-    color: hsl(var(--color-primary));
+    background-color: hsl(var(--color-primary));
+    color: hsl(var(--color-surface));
   }
 
   .dark .badge-primary {
-    background-color: hsl(var(--color-primary) / 0.3);
-    color: hsl(var(--color-primary-light));
+    background-color: hsl(var(--color-primary));
+    color: hsl(var(--color-surface));
   }
 
   .badge-secondary {
     @apply badge;
-    background-color: hsl(var(--color-secondary-light) / 0.2);
-    color: hsl(var(--color-secondary));
+    background-color: hsl(var(--color-secondary));
+    color: hsl(var(--color-surface));
   }
 
   .dark .badge-secondary {
-    background-color: hsl(var(--color-secondary) / 0.3);
-    color: hsl(var(--color-secondary-light));
+    background-color: hsl(var(--color-secondary));
+    color: hsl(var(--color-surface));
   }
 
   .badge-success {
     @apply badge;
-    background-color: hsl(var(--color-success-bg));
-    color: hsl(var(--color-success));
+    background-color: hsl(var(--color-success));
+    color: hsl(var(--color-surface));
   }
 
   .dark .badge-success {
-    background-color: hsl(var(--color-success) / 0.3);
-    color: hsl(var(--color-success));
+    background-color: hsl(var(--color-success));
+    color: hsl(var(--color-surface));
   }
 
   .badge-warning {
     @apply badge;
-    background-color: hsl(var(--color-warning-bg));
-    color: hsl(var(--color-warning));
+    background-color: hsl(var(--color-warning));
+    color: hsl(var(--color-surface));
   }
 
   .dark .badge-warning {
-    background-color: hsl(var(--color-warning) / 0.3);
-    color: hsl(var(--color-warning));
+    background-color: hsl(var(--color-warning));
+    color: hsl(var(--color-surface));
   }
 
   .badge-danger {
     @apply badge;
-    background-color: hsl(var(--color-danger-bg));
-    color: hsl(var(--color-danger));
+    background-color: hsl(var(--color-danger));
+    color: hsl(var(--color-surface));
   }
 
   .dark .badge-danger {
-    background-color: hsl(var(--color-danger) / 0.3);
-    color: hsl(var(--color-danger));
+    background-color: hsl(var(--color-danger));
+    color: hsl(var(--color-surface));
   }
 
   .badge-neutral {
     @apply badge;
-    background-color: hsl(var(--color-surface-elevated));
-    color: hsl(var(--color-text-primary));
+    background-color: hsl(var(--color-neutral));
+    color: hsl(var(--color-surface));
   }
 
   .dark .badge-neutral {
-    background-color: hsl(var(--color-surface-elevated));
-    color: hsl(var(--color-text-secondary));
+    background-color: hsl(var(--color-neutral));
+    color: hsl(var(--color-surface));
   }
 
   /* ==========================================================================

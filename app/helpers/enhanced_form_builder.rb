@@ -183,12 +183,34 @@ class EnhancedFormBuilder < ActionView::Helpers::FormBuilder
   end
 
   # Label - automatically adds required indicator (*) and form-label class
+  # Options:
+  #   - required: true/false - manually control required indicator
+  #   - If not specified, automatically detects from model validations
+  #
+  # Usage:
+  #   form.label :name                                    # Auto-detect
+  #   form.label :name, required: true                    # Force show *
+  #   form.label :name, "Name", required: true            # With custom text
+  #   form.label :name, required: true do "Name" end      # With block
   def label(method, text = nil, options = {}, &block)
+    # Smart parameter handling: if text is a Hash, treat it as options
+    if text.is_a?(Hash) && options.empty?
+      options = text
+      text = nil
+    end
+
+    # Extract required option (can be true, false, or nil)
+    show_required = options.delete(:required)
+
+    # If not manually specified, check model validations
+    show_required = field_required?(method) if show_required.nil?
+
+    # Add form-label class
     options[:class] = [options[:class], 'form-label'].compact.join(' ') unless options[:class]&.include?('form-label')
 
     super(method, text, options) do
       content = block_given? ? @template.capture(&block) : (text || method.to_s.humanize)
-      field_required?(method) ? @template.safe_join([content, @template.content_tag(:span, ' *', class: 'text-red-500')]) : content
+      show_required ? @template.safe_join([content, @template.content_tag(:span, ' *', class: 'text-red-500')]) : content
     end
   end
 

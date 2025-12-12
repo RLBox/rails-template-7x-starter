@@ -21,17 +21,17 @@
 
 <%= form_with(model: User.new, url: sign_in_path, class: "space-y-6") do |form| %>
   <div>
-    <%= form.label :email, class: "form-label" do %>
+    <%= form.label :email do %>
       Email
     <% end %>
-    <%= form.email_field :email, value: params[:email_hint], required: true, autofocus: true, autocomplete: "email", class: "form-input" %>
+    <%= form.email_field :email, value: params[:email_hint], required: true, autofocus: true, autocomplete: "email", placeholder: "Enter your email" %>
   </div>
 
   <div>
-    <%= form.label :password, class: "form-label" do %>
+    <%= form.label :password, required: true do %>
       Password
     <% end %>
-    <%= form.password_field :password, required: true, autocomplete: "current-password", class: "form-input" %>
+    <%= form.password_field :password, required: true, autocomplete: "current-password", placeholder: "Enter your password" %>
   </div>
 
   <div class="pt-2">

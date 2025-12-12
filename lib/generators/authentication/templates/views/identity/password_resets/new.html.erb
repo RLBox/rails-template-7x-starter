@@ -5,10 +5,10 @@
 
       <%= form_with model: @user, url: identity_password_reset_path, local: true, class: "space-y-6" do |form| %>
         <div>
-          <%= form.label :email, class: "form-label" do %>
+          <%= form.label :email do %>
             Email Address
           <% end %>
-          <%= form.email_field :email, required: true, autofocus: true, autocomplete: "email", class: "form-input" %>
+          <%= form.email_field :email, required: true, autofocus: true, autocomplete: "email", placeholder: "Enter your email" %>
           <div class="form-help">
             We'll send you a link to reset your password
           </div>

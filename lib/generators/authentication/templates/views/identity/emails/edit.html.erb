@@ -11,13 +11,11 @@
         <%= button_to "Re-send verification email", identity_email_verification_path, class: "btn-ghost w-full" %>
       <% else %>
         <%= form_with model: @user, url: identity_email_path, method: :patch, local: true, class: "space-y-6" do |form| %>
-          <%= render 'shared/form_error_message', model: @user %>
-
           <div>
-            <%= form.label :email, class: "form-label" do %>
+            <%= form.label :email do %>
               New Email Address
             <% end %>
-            <%= form.email_field :email, required: true, autofocus: true, autocomplete: "email", class: "form-input" %>
+            <%= form.email_field :email, required: true, autofocus: true, autocomplete: "email", placeholder: "Enter new email address" %>
           </div>
 
           <div class="pt-2">

@@ -4,20 +4,18 @@
       <h1 class="text-3xl font-bold text-center text-primary mb-8">Reset Password</h1>
 
       <%= form_with model: @user, url: identity_password_reset_path(token: params[:token]), method: :patch, local: true, class: "space-y-6" do |form| %>
-        <%= render 'shared/form_error_message', model: @user %>
-
         <div>
-          <%= form.label :password, class: "form-label" do %>
+          <%= form.label :password, required: true do %>
             New Password
           <% end %>
-          <%= form.password_field :password, required: true, autofocus: true, autocomplete: "new-password", class: "form-input" %>
+          <%= form.password_field :password, required: true, autofocus: true, autocomplete: "new-password", placeholder: "Enter new password" %>
         </div>
 
         <div>
-          <%= form.label :password_confirmation, class: "form-label" do %>
+          <%= form.label :password_confirmation, required: true do %>
             Confirm Password
           <% end %>
-          <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", class: "form-input" %>
+          <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", placeholder: "Re-enter new password" %>
         </div>
 
         <div class="pt-2">
