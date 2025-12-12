@@ -23,8 +23,6 @@
           </h2>
 
           <%= form_with model: current_admin, url: admin_account_path, class: "space-y-6" do |f| %>
-            <%= render 'shared/form_error_message', model: current_admin %>
-
             <!-- Name Field -->
             <div class="form-group">
               <%= f.label :name %>
