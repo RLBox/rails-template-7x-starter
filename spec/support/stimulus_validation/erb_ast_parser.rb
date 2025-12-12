@@ -139,10 +139,18 @@ class ErbAstParser
       action_matches = find_actions_in_ast(ast, controller_name)
 
       action_matches.each do |match|
+        # Calculate the actual line number by finding where 'action' keyword appears in the original file
+        # Search the raw file content from the block's start position
+        block_start_pos = block[:position][0]
+        block_end_pos = block[:position][1]
+        block_start_line = calculate_line_number(block_start_pos)
+        action_line_offset = find_action_line_in_original_content(block_start_pos, block_end_pos)
+        actual_line_number = block_start_line + action_line_offset
+
         results << {
           block: block,
           match: match,
-          line_number: calculate_line_number(block[:position][0])
+          line_number: actual_line_number
         }
       end
     end
@@ -535,6 +543,42 @@ class ErbAstParser
 
   def calculate_line_number(position)
     @content[0...position].count("\n") + 1
+  end
+
+  # Find the line offset of 'action:' within the original ERB content starting from block position
+  # Returns the number of newlines before 'action:' appears in the raw file
+  def find_action_line_in_original_content(block_start_pos, block_end_pos)
+    # Extract the raw ERB content from the file for this block range
+    # We need to search forward from block_start_pos to find where the matching end tag is
+    # For merged blocks, we need to find the final <% end %>
+
+    # Search from block start to find the action keyword in the raw content
+    search_content = @content[block_start_pos..-1]
+
+    # Find the end of this ERB structure (either next <% end %> or end of content)
+    end_search = search_content.index(/<%\s*end\s*%>/)
+    if end_search
+      search_content = search_content[0...(end_search + 10)] # Include the end tag
+    end
+
+    # Look for 'action:' or 'action =>' patterns in the raw content
+    action_patterns = [
+      /action:\s*["']/,  # action: "..."
+      /["']action["']\s*=>/,  # "action" =>
+      /:action\s*=>/   # :action =>
+    ]
+
+    action_pos = nil
+    action_patterns.each do |pattern|
+      if match = search_content.match(pattern)
+        action_pos = match.begin(0) if action_pos.nil? || match.begin(0) < action_pos
+      end
+    end
+
+    return 0 unless action_pos
+
+    # Count newlines before this position in the search content
+    search_content[0...action_pos].count("\n")
   end
 
   # Check if AST contains controller definition

@@ -245,18 +245,38 @@ module StimulusValidationHelpers
     # Find the opening tag that contains data-controller
     start_line = lines[start_index]
 
-    # Look for the opening tag in the current line or previous line
+    # Look for the opening tag by searching backwards from the data-controller line
+    # This handles multi-line HTML attributes like:
+    #   <div
+    #     class="..."
+    #     data-controller="file-upload"
+    #     ...
+    #   >
     opening_tag_line = nil
     tag_name = nil
 
-    # Check current line and previous line for opening tag
-    [start_index - 1, start_index].each do |line_idx|
-      next if line_idx < 0
+    # Search backwards up to 20 lines to find the opening tag
+    search_start = [start_index - 20, 0].max
+    (search_start..start_index).reverse_each do |line_idx|
       line = lines[line_idx]
-      if match = line.match(/<(\w+)(?:\s[^>]*)?(?:\s+data-controller|\s+id=)/)
-        tag_name = match[1]
-        opening_tag_line = line_idx
-        break
+      # Match opening tag: <tagname ... (may not be closed on this line)
+      if match = line.match(/<(\w+)(?:\s|$)/)
+        # Found a tag opening, now verify it's not already closed
+        # Check if this tag closes before our start_index line
+        tag_closes_early = false
+        (line_idx..start_index).each do |check_idx|
+          check_line = lines[check_idx]
+          if check_line.match(/<\/#{match[1]}>/)
+            tag_closes_early = true
+            break
+          end
+        end
+
+        unless tag_closes_early
+          tag_name = match[1]
+          opening_tag_line = line_idx
+          break
+        end
       end
     end
 
