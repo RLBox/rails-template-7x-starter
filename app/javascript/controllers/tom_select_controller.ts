@@ -20,6 +20,7 @@ import type { TomInput, TomSettings, RecursivePartial } from "tom-select/dist/ty
 //     multiple: true
 //   } %>
 
+// stimulus-validator: system-controller
 export default class extends Controller {
   static values = {
     placeholder: String,

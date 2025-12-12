@@ -25,6 +25,7 @@ import type { Options } from "flatpickr/dist/types/options"
 //     }
 //   %>
 
+// stimulus-validator: system-controller
 export default class extends Controller {
   static values = {
     enableTime: { type: Boolean, default: false },

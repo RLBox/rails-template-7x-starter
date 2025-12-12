@@ -20,6 +20,226 @@ RSpec.describe 'Stimulus Validation', type: :system do
     erb_parser.send(:contains_controller_in_ast?, node, controller_name)
   end
 
+  # Collect all controllers from both HTML and ERB sources
+  def collect_all_controllers(content, doc, relative_path)
+    controllers = []
+
+    # 1. Collect from static HTML (Nokogiri)
+    doc.css('[data-controller]').each do |element|
+      element['data-controller'].split(/\s+/).each do |controller_name|
+        controllers << {
+          controller_name: controller_name.strip,
+          element: element,
+          source: :html,
+          file: relative_path
+        }
+      end
+    end
+
+    # 2. Collect from ERB blocks (AST parser)
+    erb_parser = ErbAstParser.new(content)
+    erb_controllers = erb_parser.find_all_controllers
+    erb_controllers.each do |erb_ctrl|
+      controllers << {
+        controller_name: erb_ctrl[:controller_name],
+        element: nil,
+        source: :erb,
+        file: relative_path,
+        erb_info: erb_ctrl
+      }
+    end
+
+    controllers
+  end
+
+  # Validate a single controller (works for both HTML and ERB sources)
+  def validate_controller(controller_info, controller_data, content, doc, registration_errors, target_errors, target_scope_errors, value_errors, outlet_errors)
+    controller_name = controller_info[:controller_name]
+    element = controller_info[:element]
+    source = controller_info[:source]
+    relative_path = controller_info[:file]
+
+    # Check if controller name ends with '-controller' suffix (not allowed)
+    if controller_name.end_with?('-controller')
+      registration_errors << {
+        controller: controller_name,
+        file: relative_path,
+        suggestion: "❌ Controller name '#{controller_name}' should not end with '-controller' suffix. Use '#{controller_name.gsub(/-controller$/, '')}' instead. Update #{source == :html ? 'HTML' : 'ERB'}: data-controller=\"#{controller_name.gsub(/-controller$/, '')}\""
+      }
+      return
+    end
+
+    # Check if controller exists
+    unless controller_data.key?(controller_name)
+      registration_errors << {
+        controller: controller_name,
+        file: relative_path,
+        suggestion: "Create controller file: rails generate stimulus_controller #{controller_name.gsub('-', '_')}"
+      }
+      return
+    end
+
+    # Validate targets (only for HTML controllers with elements)
+    if source == :html && element
+      validate_targets(controller_name, element, controller_data, content, doc, relative_path, target_errors, target_scope_errors)
+      validate_values(controller_name, element, controller_data, content, relative_path, value_errors)
+      validate_outlets(controller_name, element, controller_data, doc, relative_path, outlet_errors)
+    end
+  end
+
+  def validate_targets(controller_name, element, controller_data, content, doc, relative_path, target_errors, target_scope_errors)
+    controller_data[controller_name][:targets].each do |target|
+      # Skip optional targets
+      next if controller_data[controller_name][:optional_targets].include?(target)
+      next if controller_data[controller_name][:targets_with_skip].include?(target)
+
+      target_found_in_scope = false
+
+      # Check if controller element itself has the target
+      if element["data-#{controller_name}-target"]&.include?(target)
+        target_found_in_scope = true
+      end
+
+      # Look inside element (HTML descendants)
+      unless target_found_in_scope
+        target_selector = "[data-#{controller_name}-target*='#{target}']"
+        target_found_in_scope = element.css(target_selector).any?
+      end
+
+      # Check ERB blocks
+      unless target_found_in_scope
+        erb_parser = ErbAstParser.new(content)
+        erb_targets = erb_parser.find_stimulus_targets(controller_name, target)
+        target_found_in_scope = erb_targets.any?
+      end
+
+      unless target_found_in_scope
+        # Check if target exists elsewhere (out of scope)
+        target_exists_elsewhere = doc.css("[data-#{controller_name}-target*='#{target}']").any? do |el|
+          !el.ancestors.include?(element)
+        end
+
+        if target_exists_elsewhere
+          target_scope_errors << {
+            controller: controller_name,
+            target: target,
+            file: relative_path,
+            error_type: "out_of_scope",
+            suggestion: "Move <div data-#{controller_name}-target=\"#{target}\">...</div> inside controller scope"
+          }
+        else
+          target_errors << {
+            controller: controller_name,
+            target: target,
+            file: relative_path,
+            suggestion: "Add <div data-#{controller_name}-target=\"#{target}\">...</div> within controller scope"
+          }
+        end
+      end
+    end
+  end
+
+  def validate_values(controller_name, element, controller_data, content, relative_path, value_errors)
+    controller_data[controller_name][:values].each do |value_name|
+      next if controller_data[controller_name][:values_with_defaults].include?(value_name)
+      next if controller_data[controller_name][:values_with_skip].include?(value_name)
+
+      kebab_value_name = value_name.gsub(/([a-z])([A-Z])/, '\1-\2').downcase
+      expected_attr = "data-#{controller_name}-#{kebab_value_name}-value"
+      value_found = element.has_attribute?(expected_attr)
+
+      # Check ERB blocks
+      unless value_found
+        erb_parser = ErbAstParser.new(content)
+        value_found = erb_parser.find_stimulus_values(controller_name, value_name).any?
+      end
+
+      unless value_found
+        # Check for common mistakes
+        common_mistakes = [
+          "data-#{value_name}",
+          "data-#{controller_name}-#{value_name}",
+          "data-#{controller_name}-#{kebab_value_name}",
+          "data-#{value_name}-value"
+        ]
+        found_mistakes = common_mistakes.select { |attr| element.has_attribute?(attr) || content.include?(attr) }
+
+        if found_mistakes.any?
+          value_errors << {
+            controller: controller_name,
+            value: value_name,
+            file: relative_path,
+            expected: expected_attr,
+            found: found_mistakes.first,
+            suggestion: "Change '#{found_mistakes.first}' to '#{expected_attr}'"
+          }
+        else
+          value_errors << {
+            controller: controller_name,
+            value: value_name,
+            file: relative_path,
+            expected: expected_attr,
+            found: nil,
+            suggestion: "Add #{expected_attr}=\"...\" to controller element"
+          }
+        end
+      end
+    end
+  end
+
+  def validate_outlets(controller_name, element, controller_data, doc, relative_path, outlet_errors)
+    controller_data[controller_name][:outlets].each do |outlet_name|
+      outlet_attr = "data-#{controller_name}-#{outlet_name.gsub('_', '-')}-outlet"
+
+      unless element.has_attribute?(outlet_attr)
+        wrong_attr = "#{outlet_attr}-value"
+        if element.has_attribute?(wrong_attr)
+          outlet_errors << {
+            controller: controller_name,
+            outlet: outlet_name,
+            file: relative_path,
+            error_type: 'wrong_attribute_name',
+            found_attr: wrong_attr,
+            expected_attr: outlet_attr,
+            suggestion: "Change '#{wrong_attr}' to '#{outlet_attr}'"
+          }
+        else
+          outlet_errors << {
+            controller: controller_name,
+            outlet: outlet_name,
+            file: relative_path,
+            error_type: 'missing_outlet',
+            expected_attr: outlet_attr,
+            suggestion: "Add #{outlet_attr}=\"[data-controller='...']\" to element"
+          }
+        end
+        next
+      end
+
+      outlet_selector = element[outlet_attr]
+      unless outlet_selector.match?(/^\[data-controller/)
+        outlet_errors << {
+          controller: controller_name,
+          outlet: outlet_name,
+          file: relative_path,
+          error_type: 'invalid_selector',
+          suggestion: "Outlet selector must use [data-controller] pattern, found: '#{outlet_selector}'"
+        }
+        next
+      end
+
+      unless doc.css(outlet_selector).any?
+        outlet_errors << {
+          controller: controller_name,
+          outlet: outlet_name,
+          file: relative_path,
+          error_type: 'target_not_found',
+          suggestion: "No element found matching selector '#{outlet_selector}'"
+        }
+      end
+    end
+  end
+
   describe 'Core Validation: Targets and Actions' do
     it 'validates that controller targets exist in HTML and actions have methods' do
       target_errors = []
@@ -36,237 +256,22 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
         doc = Nokogiri::HTML::DocumentFragment.parse(content)
 
-        doc.css('[data-controller]').each do |controller_element|
-          controllers = controller_element['data-controller'].split(/\s+/)
+        # Collect all controllers from both HTML and ERB sources
+        all_controllers = collect_all_controllers(content, doc, relative_path)
 
-          controllers.each do |controller_name|
-            controller_name = controller_name.strip
-
-            # Check if controller exists
-            unless controller_data.key?(controller_name)
-              registration_errors << {
-                controller: controller_name,
-                file: relative_path,
-                suggestion: "Create controller file: rails generate stimulus_controller #{controller_name.gsub('-', '_')}"
-              }
-              next # Skip further validation if controller doesn't exist
-            end
-
-            controller_data[controller_name][:targets].each do |target|
-              # Skip optional targets (those with hasXXXTarget declaration)
-              next if controller_data[controller_name][:optional_targets].include?(target)
-
-              # Skip targets with stimulus-validator: disable-next-line comment
-              next if controller_data[controller_name][:targets_with_skip].include?(target)
-
-              target_found_in_scope = false
-
-              # 1. Check if controller element itself has the target (HTML attribute)
-              if controller_element["data-#{controller_name}-target"]&.include?(target)
-                target_found_in_scope = true
-              end
-
-              # 2. If not found on controller element, look inside it (HTML descendants)
-              unless target_found_in_scope
-                target_selector = "[data-#{controller_name}-target*='#{target}']"
-                target_found_in_scope = controller_element.css(target_selector).any?
-              end
-
-              # 3. Use AST parser to find targets in ERB blocks within controller scope
-              unless target_found_in_scope
-                erb_parser = ErbAstParser.new(content)
-                erb_targets = erb_parser.find_stimulus_targets(controller_name, target)
-
-                # Check if any ERB target is within the controller scope
-                erb_targets.each do |erb_target|
-                  # For now, consider ERB targets found if they exist anywhere in the file
-                  # TODO: Implement proper scope checking for ERB blocks
-                  target_found_in_scope = true
-                  break
-                end
-              end
-
-              unless target_found_in_scope
-                # Check if target exists anywhere else in the file (out of scope)
-                target_exists_elsewhere = false
-
-                # Check HTML elements outside current controller scope
-                doc.css("[data-#{controller_name}-target*='#{target}']").each do |element|
-                  # Check if this element is outside the current controller scope
-                  is_outside_scope = true
-                  element.ancestors.each do |ancestor|
-                    if ancestor == controller_element
-                      is_outside_scope = false
-                      break
-                    end
-                  end
-
-                  if is_outside_scope
-                    target_exists_elsewhere = true
-                    break
-                  end
-                end
-
-                # Check ERB blocks for targets outside scope
-                unless target_exists_elsewhere
-                  erb_parser = ErbAstParser.new(content)
-                  erb_targets = erb_parser.find_stimulus_targets(controller_name, target)
-                  # If ERB targets exist, they might be outside scope
-                  # For simplicity, we consider them as potentially out of scope
-                end
-
-                if target_exists_elsewhere
-                  # Target exists but is out of scope
-                  target_scope_errors << {
-                    controller: controller_name,
-                    target: target,
-                    file: relative_path,
-                    error_type: "out_of_scope",
-                    suggestion: "Move <div data-#{controller_name}-target=\"#{target}\">...</div> inside controller scope or move controller definition to parent element"
-                  }
-                else
-                  # Target doesn't exist at all
-                  target_errors << {
-                    controller: controller_name,
-                    target: target,
-                    file: relative_path,
-                    suggestion: "Add <div data-#{controller_name}-target=\"#{target}\">...</div> within controller scope or use ERB syntax: data: { \"#{controller_name}-target\" => \"#{target}\" }"
-                  }
-                end
-              end
-            end
-
-            # Check for missing or incorrectly formatted values using AST parser
-            controller_data[controller_name][:values].each do |value_name|
-              # Skip values with default values
-              next if controller_data[controller_name][:values_with_defaults].include?(value_name)
-
-              # Skip values with stimulus-validator: disable-next-line comment
-              next if controller_data[controller_name][:values_with_skip].include?(value_name)
-
-              kebab_value_name = value_name.gsub(/([a-z])([A-Z])/, '\1-\2').downcase
-              expected_attr = "data-#{controller_name}-#{kebab_value_name}-value"
-              value_found = false
-
-              # 1. Check HTML attributes on controller element
-              if controller_element.has_attribute?(expected_attr)
-                value_found = true
-              end
-
-              # 2. Use AST parser to find values in ERB blocks
-              unless value_found
-                erb_parser = ErbAstParser.new(content)
-                erb_values = erb_parser.find_stimulus_values(controller_name, value_name)
-
-                if erb_values.any?
-                  value_found = true
-                end
-              end
-
-              # 3. Check for common mistakes using AST and string detection
-              unless value_found
-                common_mistakes = [
-                  "data-#{value_name}",
-                  "data-#{controller_name}-#{value_name}",
-                  "data-#{controller_name}-#{kebab_value_name}",
-                  "data-#{value_name}-value"
-                ]
-
-                # Filter out standard Stimulus attributes
-                stimulus_standard_attrs = %w[data-controller data-action data-target]
-                common_mistakes = common_mistakes.reject { |attr|
-                  stimulus_standard_attrs.any? { |std_attr| attr.start_with?(std_attr) }
-                }
-
-                found_mistakes = common_mistakes.select { |attr|
-                  controller_element.has_attribute?(attr) || content.include?(attr)
-                }
-
-                if found_mistakes.any?
-                  value_errors << {
-                    controller: controller_name,
-                    value: value_name,
-                    file: relative_path,
-                    expected: expected_attr,
-                    found: found_mistakes.first,
-                    suggestion: "Change '#{found_mistakes.first}' to '#{expected_attr}'"
-                  }
-                else
-                  value_errors << {
-                    controller: controller_name,
-                    value: value_name,
-                    file: relative_path,
-                    expected: expected_attr,
-                    found: nil,
-                    suggestion: "Add #{expected_attr}=\"...\" to controller element"
-                  }
-                end
-              end
-            end
-
-            # Check for outlet attributes
-            controller_data[controller_name][:outlets].each do |outlet_name|
-              outlet_attr = "data-#{controller_name}-#{outlet_name.gsub('_', '-')}-outlet"
-
-              # Check if outlet attribute exists
-              unless controller_element.has_attribute?(outlet_attr)
-                # Check for common mistakes
-                wrong_attr_with_value = "#{outlet_attr}-value"
-
-                if controller_element.has_attribute?(wrong_attr_with_value)
-                  outlet_errors << {
-                    controller: controller_name,
-                    outlet: outlet_name,
-                    selector: nil,
-                    file: relative_path,
-                    error_type: 'wrong_attribute_name',
-                    found_attr: wrong_attr_with_value,
-                    expected_attr: outlet_attr,
-                    suggestion: "Change '#{wrong_attr_with_value}' to '#{outlet_attr}' (remove -value suffix)"
-                  }
-                else
-                  outlet_errors << {
-                    controller: controller_name,
-                    outlet: outlet_name,
-                    selector: nil,
-                    file: relative_path,
-                    error_type: 'missing_outlet',
-                    expected_attr: outlet_attr,
-                    suggestion: "Add #{outlet_attr}=\"[data-controller='...']\" to element"
-                  }
-                end
-                next
-              end
-
-              outlet_selector = controller_element[outlet_attr]
-
-              # Validate that outlet selector uses [data-controller] pattern
-              unless outlet_selector.match?(/^\[data-controller/)
-                outlet_errors << {
-                  controller: controller_name,
-                  outlet: outlet_name,
-                  selector: outlet_selector,
-                  file: relative_path,
-                  error_type: 'invalid_selector',
-                  suggestion: "Outlet selector must use [data-controller] pattern, found: '#{outlet_selector}'"
-                }
-                next
-              end
-
-              # Check if target element exists
-              target_element = doc.css(outlet_selector).first
-              if target_element.nil?
-                outlet_errors << {
-                  controller: controller_name,
-                  outlet: outlet_name,
-                  selector: outlet_selector,
-                  file: relative_path,
-                  error_type: 'target_not_found',
-                  suggestion: "No element found matching selector '#{outlet_selector}'"
-                }
-              end
-            end
-          end
+        # Validate each controller using unified logic
+        all_controllers.each do |controller_info|
+          validate_controller(
+            controller_info,
+            controller_data,
+            content,
+            doc,
+            registration_errors,
+            target_errors,
+            target_scope_errors,
+            value_errors,
+            outlet_errors
+          )
         end
 
         # Parse both HTML data-action attributes and ERB data: { action: } syntax
@@ -299,6 +304,16 @@ RSpec.describe 'Stimulus Validation', type: :system do
           method_name = action_info[:method]
           action = action_info[:action]
           source = action_info[:source]
+
+          # Check if controller name ends with '-controller' suffix (not allowed)
+          if controller_name.end_with?('-controller')
+            registration_errors << {
+              controller: controller_name,
+              file: relative_path,
+              suggestion: "❌ Controller name '#{controller_name}' should not end with '-controller' suffix. Use '#{controller_name.gsub(/-controller$/, '')}' instead. Change action from '#{action}' to '#{action.gsub(controller_name, controller_name.gsub(/-controller$/, ''))}'"
+            }
+            next # Skip further validation for this action with invalid controller name
+          end
 
           # For ERB actions, check if controller scope actually includes the action
           if source == 'erb_ast'

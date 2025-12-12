@@ -209,10 +209,11 @@ module StimulusValidationHelpers
     controller_name = action_info[:controller]
     action_line = action_info[:line_number]
 
-    # Find all controller definitions in the file
+    # Find all controller definitions in the file using AST parsing
     controller_scopes = []
     lines = content.split("\n")
 
+    # First, check for HTML data-controller attributes
     lines.each_with_index do |line, index|
       line_num = index + 1
 
@@ -232,12 +233,71 @@ module StimulusValidationHelpers
       end
     end
 
+    # Second, check for ERB controller definitions using AST parsing
+    begin
+      erb_parser = ErbAstParser.new(content)
+      erb_controllers = erb_parser.find_all_controllers
+
+      erb_controllers.each do |controller_info|
+        if controller_info[:controller_name] == controller_name
+          # Get the ERB block and determine its scope
+          block = controller_info[:block]
+          block_start_line = controller_info[:line_number]
+
+          # Find the end of this ERB block, starting from the controller definition line
+          block_end_line = find_erb_block_end_line(content, block, block_start_line)
+
+          controller_scopes << {
+            start: block_start_line,
+            end: block_end_line,
+            line: "ERB controller: #{controller_name}"
+          }
+        end
+      end
+    rescue => e
+      # If AST parsing fails, fall back to HTML-only checking
+    end
+
     # Check if action line is within any controller scope
     in_scope = controller_scopes.any? do |scope|
       action_line >= scope[:start] && action_line <= scope[:end]
     end
 
     in_scope
+  end
+
+  # Find the end line of an ERB block starting from a specific line number
+  def find_erb_block_end_line(content, block, start_line = nil)
+    # If start_line is provided, use it; otherwise use block position
+    if start_line
+      # Find the position in content corresponding to start_line
+      lines = content.split("\n")
+      start_pos = lines[0...start_line-1].join("\n").length
+      start_pos += 1 if start_line > 1  # Account for newline
+    else
+      start_pos = block[:position][0]
+    end
+
+    # Search forward from the start position to find the matching end tag
+    remaining_content = content[start_pos..-1]
+
+    # Count lines before the start position
+    lines_before_start = content[0...start_pos].count("\n")
+
+    # For merged blocks that contain 'do' and 'end', find the matching end
+    if block[:merged] || block[:code].include?(' do')
+      # Find the position of the closing <% end %> tag
+      end_match = remaining_content.match(/<%\s*end\s*%>/)
+      if end_match
+        end_pos = start_pos + end_match.end(0)
+        lines_in_block = content[start_pos...end_pos].count("\n")
+        return lines_before_start + lines_in_block + 1
+      end
+    end
+
+    # For single-line blocks or blocks without 'do', the scope is just the current line
+    # plus any content within the same HTML element
+    lines_before_start + 1
   end
 
   # Find the end of a scope starting from the given line index

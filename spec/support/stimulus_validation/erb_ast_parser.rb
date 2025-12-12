@@ -139,13 +139,9 @@ class ErbAstParser
       action_matches = find_actions_in_ast(ast, controller_name)
 
       action_matches.each do |match|
-        # Calculate the actual line number by finding where 'action' keyword appears in the original file
-        # Search the raw file content from the block's start position
-        block_start_pos = block[:position][0]
-        block_end_pos = block[:position][1]
-        block_start_line = calculate_line_number(block_start_pos)
-        action_line_offset = find_action_line_in_original_content(block_start_pos, block_end_pos)
-        actual_line_number = block_start_line + action_line_offset
+        # Get the action string and find its line number in the original file
+        action_string = match[:action_string]
+        actual_line_number = find_action_in_original_file(action_string)
 
         results << {
           block: block,
@@ -545,40 +541,65 @@ class ErbAstParser
     @content[0...position].count("\n") + 1
   end
 
-  # Find the line offset of 'action:' within the original ERB content starting from block position
-  # Returns the number of newlines before 'action:' appears in the raw file
-  def find_action_line_in_original_content(block_start_pos, block_end_pos)
-    # Extract the raw ERB content from the file for this block range
-    # We need to search forward from block_start_pos to find where the matching end tag is
-    # For merged blocks, we need to find the final <% end %>
+  # Find the line number where a specific action string appears in the original file
+  # Returns the actual line number (1-based) in the file
+  def find_action_in_original_file(action_string)
+    # Search for the action string in the entire file content
+    # We need to handle multiple occurrences, so we'll find all matches
+    matches = []
 
-    # Search from block start to find the action keyword in the raw content
-    search_content = @content[block_start_pos..-1]
+    # Look for quoted action string
+    offset = 0
+    while true
+      pos1 = @content.index("\"#{action_string}\"", offset)
+      pos2 = @content.index("'#{action_string}'", offset)
 
-    # Find the end of this ERB structure (either next <% end %> or end of content)
-    end_search = search_content.index(/<%\s*end\s*%>/)
-    if end_search
-      search_content = search_content[0...(end_search + 10)] # Include the end tag
+      # Get the earliest match
+      pos = [pos1, pos2].compact.min
+      break unless pos
+
+      # Calculate line number for this match
+      line_num = @content[0...pos].count("\n") + 1
+      matches << { position: pos, line: line_num }
+
+      offset = pos + 1
     end
 
-    # Look for 'action:' or 'action =>' patterns in the raw content
-    action_patterns = [
-      /action:\s*["']/,  # action: "..."
-      /["']action["']\s*=>/,  # "action" =>
-      /:action\s*=>/   # :action =>
-    ]
+    # Return the first match's line number
+    matches.first&.[](:line) || 1
+  end
 
-    action_pos = nil
-    action_patterns.each do |pattern|
-      if match = search_content.match(pattern)
-        action_pos = match.begin(0) if action_pos.nil? || match.begin(0) < action_pos
-      end
+  # Find the line number where a specific controller is defined in the original file
+  # Returns the actual line number (1-based) in the file
+  def find_controller_in_original_file(controller_name)
+    # Search for controller: "name" or "controller" => "name" patterns
+    # We need to handle multiple occurrences
+    matches = []
+
+    # Look for controller definitions in quoted form
+    offset = 0
+    while true
+      # Try to find: controller: "name" or controller: 'name'
+      pos1 = @content.index("controller: \"#{controller_name}\"", offset)
+      pos2 = @content.index("controller: '#{controller_name}'", offset)
+
+      # Also try: "controller" => "name" or 'controller' => 'name'
+      pos3 = @content.index("\"controller\" => \"#{controller_name}\"", offset)
+      pos4 = @content.index("'controller' => '#{controller_name}'", offset)
+
+      # Get the earliest match
+      pos = [pos1, pos2, pos3, pos4].compact.min
+      break unless pos
+
+      # Calculate line number for this match
+      line_num = @content[0...pos].count("\n") + 1
+      matches << { position: pos, line: line_num }
+
+      offset = pos + 1
     end
 
-    return 0 unless action_pos
-
-    # Count newlines before this position in the search content
-    search_content[0...action_pos].count("\n")
+    # Return the first match's line number
+    matches.first&.[](:line) || 1
   end
 
   # Check if AST contains controller definition
@@ -619,5 +640,77 @@ class ErbAstParser
     end
 
     false
+  end
+
+  public
+
+  # Find all controller definitions in ERB blocks
+  def find_all_controllers
+    controllers = []
+
+    @erb_blocks.each do |block|
+      next unless block[:code].include?('data') && (block[:code].include?('controller') || block[:code].include?(':controller'))
+
+      begin
+        processed_code = preprocess_erb_code(block[:code])
+        ast = Parser::CurrentRuby.parse(processed_code)
+
+        extract_controllers_from_ast(ast).each do |controller_name|
+          # Find the actual line number where this controller is defined
+          line_number = find_controller_in_original_file(controller_name)
+
+          controllers << {
+            controller_name: controller_name,
+            block: block,
+            line_number: line_number
+          }
+        end
+      rescue Parser::SyntaxError
+        # Skip blocks with syntax errors
+      end
+    end
+
+    controllers.uniq { |c| c[:controller_name] }
+  end
+
+  private
+
+  def extract_controllers_from_ast(node)
+    return [] unless node
+
+    controllers = []
+
+    # Look for data: { controller: "name" } or data: { "controller" => "name" }
+    if node.type == :hash
+      node.children.each do |pair|
+        next unless pair.type == :pair
+
+        key = pair.children[0]
+        value = pair.children[1]
+
+        # Check if key is :controller, "controller", or 'controller'
+        key_name = case key.type
+                   when :sym then key.children[0].to_s
+                   when :str then key.children[0]
+                   else nil
+                   end
+
+        if key_name == 'controller' && value.type == :str
+          # Split multiple controllers
+          value.children[0].split(/\s+/).each do |ctrl|
+            controllers << ctrl.strip
+          end
+        end
+      end
+    end
+
+    # Recursively search child nodes
+    if node.respond_to?(:children)
+      node.children.each do |child|
+        controllers.concat(extract_controllers_from_ast(child)) if child.is_a?(Parser::AST::Node)
+      end
+    end
+
+    controllers
   end
 end

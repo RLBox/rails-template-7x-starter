@@ -38,6 +38,8 @@ import { Controller } from '@hotwired/stimulus'
  *     <div data-dropdown-target="menu" class="hidden">...</div>
  *   </div>
  */
+
+// stimulus-validator: system-controller
 export default class extends Controller<HTMLElement> {
   static targets = ['menu', 'trigger']
   static values = {
@@ -82,6 +84,12 @@ export default class extends Controller<HTMLElement> {
     if (this.hasTriggerTarget) {
       this.triggerTarget.setAttribute('aria-expanded', 'false')
     }
+  }
+
+  selectItem(event: Event): void {
+    // Handle item selection
+    // Close the dropdown after selection
+    this.close(event)
   }
 
   private clickOutside(event: Event): void {
