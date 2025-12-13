@@ -257,32 +257,29 @@ class StripePaymentService < ApplicationService
     Rails.logger.info "Subscription deleted: #{subscription['id']}"
   end
 
-  # CLACKY_TODO: Implement post-payment business logic
-  # ⚠️ CRITICAL: This is the ONLY place to update business data after payment
-  # This method is called ONLY after payment is confirmed as paid (via webhook or manual sync)
-  # 
+  # ⚠️ CRITICAL: process_payment_paid is the ONLY place to update business data after payment
   # ❌ NEVER update business logic in controller's create action
   # ❌ NEVER add credits/items/access before payment is confirmed
-  # ✅ ALWAYS implement business logic HERE
+  # ✅ ALWAYS implement business logic in process_payment_paid method below
   #
-  # Example:
-  # case payment.payable_type
-  # when 'Order'
-  #   order = payment.payable
-  #   order.update!(status: 'paid')
-  #   # Add purchased items/credits ONLY here
-  #   order.user.increment!(:credits, order.quantity)
-  #   OrderMailer.confirmation(order).deliver_later
-  # when 'Enrollment'
-  #   payment.payable.update!(status: 'active')
-  #   EnrollmentMailer.welcome(payment.payable).deliver_later
-  # when 'Subscription'
-  #   payment.payable.activate!
+  # Example implementation:
+  # def self.process_payment_paid(payment)
+  #   case payment.payable_type
+  #   when 'Order'
+  #     order = payment.payable
+  #     order.update!(status: 'paid')
+  #     order.user.increment!(:credits, order.quantity)
+  #     OrderMailer.confirmation(order).deliver_later
+  #   when 'Enrollment'
+  #     payment.payable.update!(status: 'active')
+  #     EnrollmentMailer.welcome(payment.payable).deliver_later
+  #   when 'Subscription'
+  #     payment.payable.activate!
+  #   end
   # end
   def self.process_payment_paid(payment)
     Rails.logger.info "Payment #{payment.id} confirmed as paid for #{payment.payable_type} ##{payment.payable_id}"
 
-    # TODO: Add your business logic here
-    # This is called AFTER payment is confirmed - safe to grant access/credits/items
+    # CLACKY_TODO: Add your post-payment business logic here
   end
 end

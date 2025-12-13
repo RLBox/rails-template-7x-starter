@@ -5,6 +5,12 @@
 class StimulusValidationPipeline
   attr_reader :controller_data, :view_files, :partial_parent_map
 
+  @instance = nil
+
+  def self.new
+    @instance ||= super
+  end
+
   def initialize
     @controllers_dir = Rails.root.join('app/javascript/controllers')
     @views_dir = Rails.root.join('app/views')
@@ -15,8 +21,11 @@ class StimulusValidationPipeline
     @partial_parent_map = build_partial_parent_map
   end
 
-  # Get controllers from parent files (recursive)
+  # Get controllers from parent files (recursive) with memoization
   def get_controllers_from_parents(partial_path)
+    @parent_controllers_cache ||= {}
+    return @parent_controllers_cache[partial_path] if @parent_controllers_cache.key?(partial_path)
+
     controllers = []
 
     parent_files = partial_parent_map[partial_path] || []
@@ -35,7 +44,7 @@ class StimulusValidationPipeline
       end
     end
 
-    controllers.uniq
+    @parent_controllers_cache[partial_path] = controllers.uniq
   end
 
   private

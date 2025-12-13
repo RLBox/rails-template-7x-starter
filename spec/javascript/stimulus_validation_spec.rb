@@ -22,6 +22,12 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
   # Collect all controllers from both HTML and ERB sources
   def collect_all_controllers(content, doc, relative_path)
+    erb_parser = ErbAstParser.new(content)
+    collect_all_controllers_with_parser(content, doc, relative_path, erb_parser)
+  end
+
+  # Collect all controllers using pre-created ERB parser (performance optimization)
+  def collect_all_controllers_with_parser(content, doc, relative_path, erb_parser)
     controllers = []
 
     # 1. Collect from static HTML (Nokogiri)
@@ -36,8 +42,7 @@ RSpec.describe 'Stimulus Validation', type: :system do
       end
     end
 
-    # 2. Collect from ERB blocks (AST parser)
-    erb_parser = ErbAstParser.new(content)
+    # 2. Collect from ERB blocks (reuse AST parser)
     erb_controllers = erb_parser.find_all_controllers
     erb_controllers.each do |erb_ctrl|
       controllers << {
@@ -54,6 +59,12 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
   # Validate a single controller (works for both HTML and ERB sources)
   def validate_controller(controller_info, controller_data, content, doc, registration_errors, target_errors, target_scope_errors, value_errors, outlet_errors)
+    erb_parser = ErbAstParser.new(content)
+    validate_controller_with_parser(controller_info, controller_data, content, doc, erb_parser, registration_errors, target_errors, target_scope_errors, value_errors, outlet_errors)
+  end
+
+  # Validate a single controller using pre-created ERB parser (performance optimization)
+  def validate_controller_with_parser(controller_info, controller_data, content, doc, erb_parser, registration_errors, target_errors, target_scope_errors, value_errors, outlet_errors)
     controller_name = controller_info[:controller_name]
     element = controller_info[:element]
     source = controller_info[:source]
@@ -81,13 +92,13 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
     # Validate targets (only for HTML controllers with elements)
     if source == :html && element
-      validate_targets(controller_name, element, controller_data, content, doc, relative_path, target_errors, target_scope_errors)
+      validate_targets(controller_name, element, controller_data, content, doc, erb_parser, relative_path, target_errors, target_scope_errors)
       validate_values(controller_name, element, controller_data, content, relative_path, value_errors)
       validate_outlets(controller_name, element, controller_data, doc, relative_path, outlet_errors)
     end
   end
 
-  def validate_targets(controller_name, element, controller_data, content, doc, relative_path, target_errors, target_scope_errors)
+  def validate_targets(controller_name, element, controller_data, content, doc, erb_parser, relative_path, target_errors, target_scope_errors)
     controller_data[controller_name][:targets].each do |target|
       # Skip optional targets
       next if controller_data[controller_name][:optional_targets].include?(target)
@@ -106,9 +117,8 @@ RSpec.describe 'Stimulus Validation', type: :system do
         target_found_in_scope = element.css(target_selector).any?
       end
 
-      # Check ERB blocks
+      # Check ERB blocks (reuse erb_parser)
       unless target_found_in_scope
-        erb_parser = ErbAstParser.new(content)
         erb_targets = erb_parser.find_stimulus_targets(controller_name, target)
         target_found_in_scope = erb_targets.any?
       end
@@ -253,19 +263,20 @@ RSpec.describe 'Stimulus Validation', type: :system do
       view_files.each do |view_file|
         content = File.read(view_file)
         relative_path = view_file.sub(Rails.root.to_s + '/', '')
-
         doc = Nokogiri::HTML::DocumentFragment.parse(content)
+        erb_parser = ErbAstParser.new(content)
 
         # Collect all controllers from both HTML and ERB sources
-        all_controllers = collect_all_controllers(content, doc, relative_path)
+        all_controllers = collect_all_controllers_with_parser(content, doc, relative_path, erb_parser)
 
-        # Validate each controller using unified logic
+        # Validate each controller using unified logic (reuse erb_parser)
         all_controllers.each do |controller_info|
-          validate_controller(
+          validate_controller_with_parser(
             controller_info,
             controller_data,
             content,
             doc,
+            erb_parser,
             registration_errors,
             target_errors,
             target_scope_errors,
