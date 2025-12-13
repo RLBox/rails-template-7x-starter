@@ -234,6 +234,9 @@ class LlmService < ApplicationService
   private
 
   def make_http_request(stream: false, &block)
+    # Auto-mock in test environment to avoid slow API calls
+    return mock_http_response(stream: stream, &block) if Rails.env.test?
+
     require 'net/http'
     require 'uri'
     require 'json'
@@ -497,5 +500,61 @@ class LlmService < ApplicationService
     return [] if images.blank?
     list = images.is_a?(Array) ? images.compact : [images].compact
     list.map(&:to_s).reject(&:blank?)
+  end
+
+  # Mock HTTP response for test environment
+  def mock_http_response(stream: false, &block)
+    if stream
+      mock_stream_response(&block)
+    else
+      mock_blocking_response
+    end
+  end
+
+  def mock_blocking_response
+    # Return OpenAI-compatible response format
+    mock_content = generate_mock_content
+
+    {
+      "id" => "mock-#{SecureRandom.hex(8)}",
+      "object" => "chat.completion",
+      "created" => Time.now.to_i,
+      "model" => @model,
+      "choices" => [
+        {
+          "index" => 0,
+          "message" => {
+            "role" => "assistant",
+            "content" => mock_content
+          },
+          "finish_reason" => "stop"
+        }
+      ],
+      "usage" => {
+        "prompt_tokens" => 10,
+        "completion_tokens" => 20,
+        "total_tokens" => 30
+      }
+    }
+  end
+
+  def mock_stream_response(&block)
+    # Simulate streaming chunks
+    chunks = generate_mock_content.chars.each_slice(5).map(&:join)
+
+    chunks.each do |chunk|
+      block.call({ content: chunk })
+    end
+
+    nil
+  end
+
+  def generate_mock_content
+    # Generate contextual mock content based on prompt
+    return "Fortune reading: Great success awaits you!" if @prompt.to_s.downcase.include?("fortune")
+    return "Weather forecast: Sunny with a chance of clouds" if @prompt.to_s.downcase.include?("weather")
+
+    # Default mock response
+    "This is a mocked LLM response for testing purposes. Prompt: #{@prompt&.truncate(50)}"
   end
 end
