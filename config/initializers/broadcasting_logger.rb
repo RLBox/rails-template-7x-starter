@@ -1,24 +1,44 @@
 # Broadcast Rails logger errors to frontend via ActionCable (development only)
 # Only broadcasts errors from app/ directory (business logic)
 # Frontend error_handler will deduplicate automatically
+#
+# In test environment, raise exception when logger.error is called
 
-if Rails.env.development?
+if Rails.env.development? || Rails.env.test?
   Rails.application.config.after_initialize do
     class << Rails.logger
       alias_method :original_error, :error unless method_defined?(:original_error)
 
       # Support formats:
-      # Rails.logger.error("message")                    - broadcasts
-      # Rails.logger.error("message", broadcast: false)  - no broadcast
-      # Rails.logger.error(exception)                    - broadcasts
-      # Rails.logger.error(exception, broadcast: false)  - no broadcast
-      # Rails.logger.error { "message" }                 - broadcasts
+      # Rails.logger.error("message")                    - broadcasts in dev, raises in test
+      # Rails.logger.error("message", broadcast: false)  - no broadcast in dev
+      # Rails.logger.error(exception)                    - broadcasts in dev, raises in test
+      # Rails.logger.error(exception, broadcast: false)  - no broadcast in dev
+      # Rails.logger.error { "message" }                 - broadcasts in dev, raises in test
       def error(message = nil, broadcast: true, &block)
         result = original_error(message, &block)
         actual_message = message || block&.call
 
-        if broadcast && actual_message.present? && from_app_directory?
-          broadcast_to_frontend(actual_message)
+        if actual_message.present?
+          # Development: broadcast to frontend
+          if Rails.env.development? && broadcast && from_app_directory?
+            broadcast_to_frontend(actual_message)
+          end
+
+          # Test: raise exception with original caller stack
+          if Rails.env.test?
+            error_data = build_error_data(actual_message)
+            exception = RuntimeError.new("Rails.logger.error called:\n#{error_data[:message]}")
+
+            # Set backtrace to original caller (skip this method)
+            if actual_message.is_a?(Exception)
+              exception.set_backtrace(actual_message.backtrace)
+            else
+              exception.set_backtrace(caller)
+            end
+
+            raise exception
+          end
         end
 
         result
@@ -31,9 +51,9 @@ if Rails.env.development?
         caller.first(5).any? { |line| line.include?('/app/') }
       end
 
-      def broadcast_to_frontend(message)
-        # Build error data
-        error_data = if message.is_a?(Exception)
+      # Build error data structure
+      def build_error_data(message)
+        if message.is_a?(Exception)
           {
             message: "#{message.class}: #{message.message}",
             backtrace: Rails.backtrace_cleaner.clean(message.backtrace || []).first(10).join("\n"),
@@ -54,6 +74,10 @@ if Rails.env.development?
             level: 'error'
           }
         end
+      end
+
+      def broadcast_to_frontend(message)
+        error_data = build_error_data(message)
 
         # Broadcast to frontend
         Turbo::StreamsChannel.broadcast_render_to(
