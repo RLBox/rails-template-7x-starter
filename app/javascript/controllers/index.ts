@@ -6,6 +6,7 @@ import SdkIntegrationController from "./sdk_integration_controller"
 import ClipboardController from "./clipboard_controller"
 import TomSelectController from "./tom_select_controller"
 import FlatpickrController from "./flatpickr_controller"
+import SystemMonitorController from "./system_monitor_controller"
 
 const application = Application.start()
 
@@ -15,5 +16,6 @@ application.register("sdk-integration", SdkIntegrationController)
 application.register("clipboard", ClipboardController)
 application.register("tom-select", TomSelectController)
 application.register("flatpickr", FlatpickrController)
+application.register("system-monitor", SystemMonitorController)
 
 window.Stimulus = application

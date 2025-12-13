@@ -787,6 +787,48 @@ class ErrorHandler {
     this.interceptXHR();
   }
 
+  // Check if HTTP error should be reported based on content type and method
+  async shouldReportHttpError(
+    contentType: string | null,
+    method: string,
+    getResponseText: () => Promise<string> | string
+  ): Promise<{ shouldReport: boolean; jsonError: any }> {
+    let shouldReport = false;
+    let jsonError = null;
+
+    // Strategy 1: Always report JSON errors
+    if (contentType && contentType.includes('application/json')) {
+      shouldReport = true;
+      try {
+        const text = await getResponseText();
+        jsonError = JSON.parse(text);
+      } catch (parseError) {
+        // Failed to parse JSON, still report
+      }
+    }
+    // Strategy 2: Report HTML errors for mutation requests (POST/PATCH/DELETE/PUT)
+    else if (contentType && contentType.includes('text/html')) {
+      if (method !== 'GET') {
+        // Mutation request → always report (no full error page displayed)
+        shouldReport = true;
+      } else {
+        // GET request → check if it's a full page or fragment
+        try {
+          const html = await getResponseText();
+          // Full page has DOCTYPE or <html> tag → has friendly error page, don't report
+          // Fragment (Turbo Frame, etc.) → should report
+          const isFullPage = html.includes('<!DOCTYPE') || html.includes('<html');
+          shouldReport = !isFullPage;
+        } catch (bodyError) {
+          // Failed to read HTML, report to be safe
+          shouldReport = true;
+        }
+      }
+    }
+
+    return { shouldReport, jsonError };
+  }
+
   setupInteractionTracking() {
     // Track user interactions to identify interaction-triggered errors
     ['click', 'submit', 'change', 'keydown'].forEach(eventType => {
@@ -867,22 +909,16 @@ class ErrorHandler {
         const requestOptions = args[1] || {};
         const method = (requestOptions.method || 'GET').toUpperCase();
 
-        // 500 errors: report both HTML and JSON
-        // 501+ errors: only report JSON
-        const shouldReport = response.status === 500 ||
-                            (contentType && contentType.includes('application/json'));
+        const { shouldReport, jsonError } = await this.shouldReportHttpError(
+          contentType,
+          method,
+          async () => {
+            const responseClone = response.clone();
+            return await responseClone.text();
+          }
+        );
 
         if (shouldReport) {
-          let jsonError = null;
-
-          try {
-            const responseClone = response.clone();
-            jsonError = await responseClone.json();
-          } catch (bodyError) {
-            // If not JSON, ignore the error (it's likely HTML)
-            jsonError = null;
-          }
-
           // Create detailed error message
           let detailedMessage = `${method} ${args[0]} - HTTP ${response.status}`;
           if (jsonError) {
@@ -923,25 +959,17 @@ class ErrorHandler {
 
       // Skip network error and timeout listeners (not actionable frontend errors)
 
-      xhr.addEventListener('loadend', () => {
+      xhr.addEventListener('loadend', async () => {
         if (xhr.status >= 500) {
           const contentType = xhr.getResponseHeader('content-type');
 
-          // 500 errors: report both HTML and JSON
-          // 501+ errors: only report JSON
-          const shouldReport = xhr.status === 500 ||
-                              (contentType && contentType.includes('application/json'));
+          const { shouldReport, jsonError } = await window.errorHandler?.shouldReportHttpError(
+            contentType,
+            method,
+            () => xhr.responseText
+          ) || { shouldReport: false, jsonError: null };
 
           if (shouldReport) {
-            let jsonError = null;
-
-            try {
-              jsonError = JSON.parse(xhr.responseText);
-            } catch (parseError) {
-              // If not JSON, ignore the error (it's likely HTML)
-              jsonError = null;
-            }
-
             // Create detailed error message
             let detailedMessage = `${method} ${url} - HTTP ${xhr.status}`;
             if (jsonError) {

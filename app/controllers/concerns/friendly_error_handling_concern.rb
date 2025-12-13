@@ -176,21 +176,15 @@ module FriendlyErrorHandlingConcern
           backtrace: filter_user_backtrace(exception.backtrace)
         }, status: :internal_server_error
       end
-    elsif request.format.html?
-      # HTML responses - friendly error page
+    else
+      # HTML responses - friendly error page (for html and unknown formats)
       @http_method = request.method
       @error_url = request.path
       @original_exception = exception
       @filtered_backtrace = filter_user_backtrace(exception.backtrace)
       @error_title = "Something Went Wrong"
       @error_description = "Please copy error details and send it to chatbox"
-      render "shared/friendly_error", status: :internal_server_error
-    else
-      # Other formats - simple JSON fallback
-      render json: {
-        error: 'An error occurred',
-        message: Rails.env.development? ? exception.message : 'Please try again later'
-      }, status: :internal_server_error
+      render "shared/friendly_error", status: :internal_server_error, formats: [:html]
     end
   end
 

@@ -33,8 +33,10 @@
       <%= yield %>
     </main>
     <% if Rails.env.development? %>
-      <div id="system-monitor-stream" data-turbo-permanent>
-        <%= turbo_stream_from "system_monitor" %>
+      <div id="system-monitor-stream"
+           data-controller="system-monitor"
+           data-system-monitor-signed-name-value="<%= Turbo::StreamsChannel.signed_stream_name("system_monitor") %>"
+           data-turbo-permanent>
       </div>
     <% end %>
   </body>

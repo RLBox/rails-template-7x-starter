@@ -61,16 +61,24 @@ module FlexibleRouteHelpers
   end
 
   def route_names_cache
-    @route_names_cache ||= begin
-      routes = []
-      Rails.application.routes.routes.each do |route|
-        if route.name
-          routes << "#{route.name}_path"
-          routes << "#{route.name}_url"
-        end
-      end
-      routes.to_set
+    if Rails.env.development?
+      # Development: no cache, always build fresh to catch route changes
+      build_route_names_set
+    else
+      # Production: cache forever for performance
+      @route_names_cache ||= build_route_names_set
     end
+  end
+
+  def build_route_names_set
+    routes = []
+    Rails.application.routes.routes.each do |route|
+      if route.name
+        routes << "#{route.name}_path"
+        routes << "#{route.name}_url"
+      end
+    end
+    routes.to_set
   end
 
   def generate_route_permutations(parts)
