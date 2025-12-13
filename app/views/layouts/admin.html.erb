@@ -24,6 +24,7 @@
     <%= javascript_include_tag 'error_handler' if Rails.env.development? %>
     <%= javascript_include_tag 'admin', type: "module" %>
     <%= favicon_link_tag asset_path("app-favicon.svg") unless Rails.env.test? %>
+    <!-- stimulus-validator: allow-script -->
     <script>
       (function() {
         const isDarkKey = 'admin-isdark';

@@ -935,4 +935,62 @@ RSpec.describe 'Stimulus Validation', type: :system do
       end
     end
   end
+
+  describe 'Inline JavaScript Validation' do
+    it 'ensures no inline <script> tags exist in view files' do
+      script_errors = []
+
+      view_files.each do |view_file|
+        content = File.read(view_file)
+        relative_path = view_file.sub(Rails.root.to_s + '/', '')
+        lines = content.lines
+
+        # Find all <script> tags in the content
+        lines.each_with_index do |line, index|
+          line_number = index + 1
+
+          # Check for <script> tags (both opening and self-closing)
+          if line.match?(/<script[\s>]/)
+            # Check if previous line has stimulus-validator: allow-script comment
+            previous_line = index > 0 ? lines[index - 1] : nil
+            has_allow_comment = previous_line && previous_line.match?(/stimulus-validator:\s*allow-script/)
+
+            # Skip if marked with allow-script comment
+            next if has_allow_comment
+
+            # Extract a snippet of the problematic line for better error reporting
+            snippet = line.strip.length > 80 ? "#{line.strip[0..77]}..." : line.strip
+
+            script_errors << {
+              file: relative_path,
+              line: line_number,
+              snippet: snippet,
+              suggestion: "Remove inline <script> tag and move JavaScript logic to a Stimulus controller, or add '<!-- stimulus-validator: allow-script -->' comment on the line before if absolutely necessary"
+            }
+          end
+        end
+      end
+
+      if script_errors.any?
+        puts "\n❌ Inline JavaScript Errors (#{script_errors.length}):"
+        puts "   View files should not contain inline <script> tags."
+        puts "   Use Stimulus controllers instead.\n"
+
+        script_errors.each do |error|
+          puts "   • #{error[:file]}:#{error[:line]}"
+          puts "     #{error[:snippet]}"
+          puts "     💡 #{error[:suggestion]}\n"
+        end
+
+        error_details = script_errors.map do |error|
+          "#{error[:file]}:#{error[:line]} - #{error[:suggestion]}\n  Found: #{error[:snippet]}"
+        end
+
+        expect(script_errors).to be_empty,
+          "Inline JavaScript validation failed. Found #{script_errors.length} <script> tag(s):\n#{error_details.join("\n")}"
+      else
+        puts "\n✅ No inline <script> tags found in view files!"
+      end
+    end
+  end
 end

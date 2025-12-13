@@ -147,6 +147,23 @@ StreamActions.report_async_error = function(this: any) {
   }
 }
 
+// Register custom Turbo Stream action for logger errors
+StreamActions.report_logger_error = function(this: any) {
+  const errorData = JSON.parse(this.getAttribute('data-error') || '{}')
+
+  if (window.errorHandler) {
+    window.errorHandler.handleError({
+      type: 'logger',
+      message: errorData.message || 'Logger error occurred',
+      timestamp: errorData.timestamp || new Date().toISOString(),
+      source: errorData.source,
+      level: errorData.level,
+      backtrace: errorData.backtrace,
+      details: errorData
+    })
+  }
+}
+
 // Register custom Turbo Stream action for redirect with turbo: false
 StreamActions.redirect = function(this: any) {
   const url = this.getAttribute('url')

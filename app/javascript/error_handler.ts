@@ -4,7 +4,7 @@
 import { SourceMapConsumer } from 'source-map-js'
 
 // Error type definitions
-type ErrorType = 'javascript' | 'interaction' | 'promise' | 'http' | 'actioncable' | 'manual' | 'stimulus' | 'asyncjob';
+type ErrorType = 'javascript' | 'interaction' | 'promise' | 'http' | 'actioncable' | 'manual' | 'stimulus' | 'asyncjob' | 'logger';
 
 // Base error info interface
 interface BaseErrorInfo {
@@ -317,6 +317,27 @@ const ERROR_TYPE_CONFIGS: { [key: string]: ErrorTypeConfig } = {
       }
     }
   },
+  logger: {
+    icon: '📋',
+    fields: {
+      source: {
+        label: 'Source',
+        priority: 10,
+        htmlFormatter: (value: string) => `<div class="mb-1"><strong>Source:</strong> ${value}</div>`,
+        textFormatter: (value: string) => `Source: ${value}`
+      },
+      backtrace: {
+        label: 'Backtrace',
+        priority: 5,
+        condition: (error) => !!error.backtrace,
+        htmlFormatter: (value: string) => {
+          const preClass = 'text-xs bg-gray-800 p-3 rounded overflow-x-auto whitespace-pre-wrap leading-relaxed';
+          return `<div class="mb-3"><div class="mb-1"><strong>Backtrace:</strong></div><pre class="${preClass}">${value}</pre></div>`;
+        },
+        textFormatter: (value: string) => `Backtrace:\n${value}`
+      }
+    }
+  },
   manual: {
     icon: '📝',
     fields: {
@@ -347,6 +368,8 @@ interface StoredError {
   details?: any;
   missingControllers?: string[];
   suggestion?: string;
+  backtrace?: string;
+  source?: string;
   [key: string]: any; // Allow additional properties for manual errors
 }
 
@@ -360,6 +383,7 @@ interface ErrorCounts {
   asyncjob: number;
   manual?: number;
   stimulus?: number;
+  logger?: number;
 }
 
 class ErrorHandler {
@@ -377,7 +401,8 @@ class ErrorHandler {
     actioncable: 0,
     asyncjob: 0,
     manual: 0,
-    stimulus: 0
+    stimulus: 0,
+    logger: 0
   };
   private recentErrorsDebounce: Map<string, number> = new Map();
   private debounceTime: number = 1000;
@@ -1470,7 +1495,8 @@ ${this.truncateText(error.message, maxDetailLength)}`;
       actioncable: 0,
       asyncjob: 0,
       manual: 0,
-      stimulus: 0
+      stimulus: 0,
+      logger: 0
     };
 
     this.updateStatusBar();
