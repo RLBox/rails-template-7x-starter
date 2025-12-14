@@ -106,11 +106,12 @@ RSpec.describe "Authenticated Access", type: :request do
         "Navbar must use the user_dropdown partial for logged-in users"
     end
 
-    it "validates user_dropdown TODOs are resolved" do
+    it "validates navbar component TODOs are resolved" do
       user_dropdown_file = 'app/views/shared/_user_dropdown.html.erb'
+      nav_links_file = 'app/views/shared/_nav_links.html.erb'
 
-      # Check CLACKY_TODOs are resolved in user_dropdown
-      check_clacky_todos([user_dropdown_file])
+      # Check CLACKY_TODOs are resolved in all navbar components
+      check_clacky_todos([navbar_file, user_dropdown_file, nav_links_file])
     end
   end
 end

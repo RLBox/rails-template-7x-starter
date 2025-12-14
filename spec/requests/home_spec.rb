@@ -8,9 +8,40 @@ require 'rails_helper'
 
 RSpec.describe "Home", type: :request do
   describe "GET /" do
-    it "returns http success" do
+    it "returns http success and validates page quality" do
       get root_path
       expect(response).to be_success_with_view_check('index')
+
+      # Skip quality checks if redirected (no HTML content to validate)
+      return if response.redirect?
+
+      doc = Nokogiri::HTML(response.body)
+
+      # Check 1: No duplicate headers (navigation bars)
+      nav_count = doc.css('nav').count
+
+      # Find headers with auth links: sign_in/sign_out, login/logout, or session (any one counts)
+      nav_headers = doc.css('body header, main header').reject do |header|
+        header.ancestors.any? { |a| %w[article section].include?(a.name) }
+      end.select do |header|
+        header.css('a[href*="sign_in"], a[href*="sign_out"], a[href*="login"], a[href*="logout"], a[href*="session"]').any?
+      end
+
+      total_navigation = nav_count + nav_headers.count
+      expect(total_navigation).to be <= 1,
+        "Found #{total_navigation} navigation elements (#{nav_count} <nav> + #{nav_headers.count} header). " \
+        "Remove duplicate header from view - use shared/_navbar.html.erb instead."
+
+      # Check 2: No demo placeholder links
+      bad_links = doc.css('a[href="#"], a[href="#!"], a[href^="javascript:"]')
+      expect(bad_links).to be_empty,
+        "Found #{bad_links.size} placeholder link(s): #{bad_links.map { |l| l.to_html.truncate(80) }.join(', ')}. " \
+        "Use real Rails routes instead of copying from demo."
+
+      # Check 3: No placeholder forms
+      bad_forms = doc.css('form:not([action]), form[action="#"], form[action=""], form[action^="javascript:"]')
+      expect(bad_forms).to be_empty,
+        "Found #{bad_forms.size} placeholder form(s). Use Rails form helpers (form_with) with real routes."
     end
 
     it "should not have demo.html.erb when home/index.html.erb exists" do
@@ -23,18 +54,6 @@ RSpec.describe "Home", type: :request do
       end
     end
 
-    it "home views should not contain nav tags directly" do
-      # Navigation should be in shared/_navbar.html.erb, not in home views
-      index_template_path = Rails.root.join('app', 'views', 'home', 'index.html.erb')
-
-      if File.exist?(index_template_path)
-          content = File.read(index_template_path)
-          expect(content).not_to match(/<nav[\s>]/i),
-            "home/index.html.erb should not contain <nav> tags. " \
-            "Navigation should be implemented in app/views/shared/_navbar.html.erb instead. " \
-      end
-    end
-
     it "should customize appname from default value" do
       appname = Rails.application.config.x.appname
       expect(appname).not_to eq("ClackyAPP"),
@@ -42,38 +61,5 @@ RSpec.describe "Home", type: :request do
         "Change config.x.appname from the default 'ClackyAPP' to your own app name."
     end
 
-    it "should not contain demo-style placeholder links or forms in view file" do
-      index_template_path = Rails.root.join('app', 'views', 'home', 'index.html.erb')
-
-      if File.exist?(index_template_path)
-        content = File.read(index_template_path)
-        doc = Nokogiri::HTML(content)
-
-        # Check for placeholder links in HTML
-        bad_links = doc.css('a[href="#"], a[href="#!"], a[href^="javascript:"]')
-        expect(bad_links).to be_empty,
-          "Found #{bad_links.size} demo placeholder link(s) in home/index.html.erb: #{bad_links.map { |l| l.to_html.truncate(80) }.join(', ')}. Use real Rails routes (like rooms_path) instead of copying from demo.html.erb."
-
-        # Check for placeholder links in ERB code (link_to or link helpers)
-        erb_bad_links = []
-        content.each_line.with_index do |line, index|
-          line_number = index + 1
-          # Match link_to 'text', '#' or link 'text', '#'
-          if line.match?(/<%=?\s*(link_to|link)\s+['"][^'"]*['"]\s*,\s*['"]#['"]\s*/)
-            erb_bad_links << { line: line_number, content: line.strip }
-          end
-        end
-
-        expect(erb_bad_links).to be_empty,
-          "Found #{erb_bad_links.size} ERB link helper(s) with placeholder href '#' in home/index.html.erb:\n" +
-          erb_bad_links.map { |l| "  Line #{l[:line]}: #{l[:content]}" }.join("\n") +
-          "\nUse real Rails routes (like rooms_path) instead of '#'."
-
-        # Check for forms without action or with placeholder action
-        bad_forms = doc.css('form:not([action]), form[action="#"], form[action=""], form[action^="javascript:"]')
-        expect(bad_forms).to be_empty,
-          "Found #{bad_forms.size} demo placeholder form(s) in home/index.html.erb. Please implement real business logic using Rails form helpers (form_with). WARNING: Never nest button_to inside a form element."
-      end
-    end
   end
 end

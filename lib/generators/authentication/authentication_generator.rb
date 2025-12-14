@@ -4,6 +4,11 @@ class AuthenticationGenerator < Rails::Generators::Base
 
   desc "Generate a complete authentication system with users and sessions"
 
+  class_option :navbar_style,
+               type: :string,
+               default: 'minimal',
+               desc: 'Navbar style: minimal, marketing, or dashboard'
+
   def check_if_already_generated
     session_model = 'app/models/session.rb'
     current_model = 'app/models/current.rb'
@@ -120,8 +125,30 @@ class AuthenticationGenerator < Rails::Generators::Base
     copy_file 'views/profiles/edit.html.erb', 'app/views/profiles/edit.html.erb'
     copy_file 'views/profiles/edit_password.html.erb', 'app/views/profiles/edit_password.html.erb'
 
-    # NOTE: _navbar.html.erb NOT generated - each project has different navigation requirements
-    # Use _user_dropdown.html.erb partial in your custom navbar
+  end
+
+  def create_navbar
+    say "Creating navbar...", :green
+
+    # Validate navbar_style option
+    valid_styles = %w[minimal marketing dashboard]
+    navbar_style = options[:navbar_style]
+
+    unless valid_styles.include?(navbar_style)
+      say "  Warning: Invalid navbar_style '#{navbar_style}'. Using 'minimal' instead.", :yellow
+      navbar_style = 'minimal'
+    end
+
+    # Copy the selected navbar template
+    say "  Generating #{navbar_style} navbar style...", :blue
+    copy_file "views/shared/navbars/_navbar_#{navbar_style}.html.erb",
+              'app/views/shared/_navbar.html.erb'
+
+    # Copy navigation links component (reusable for desktop and mobile)
+    copy_file 'views/shared/_nav_links.html.erb', 'app/views/shared/_nav_links.html.erb'
+
+    say "  ✓ Navbar created with #{navbar_style} style", :green
+    say "  ✓ Navigation links component created", :green
   end
 
   def create_mailers
@@ -364,17 +391,30 @@ class AuthenticationGenerator < Rails::Generators::Base
     say "  - Access at: /admin/users"
     say "  - Includes statistics: Today's users, Monthly users, Active users, Total users"
 
-    say "\n⚠️  IMPORTANT: Login/signup pages and navbar are NOT generated", :yellow
-    say "You need to create them using the provided components.\n", :yellow
+    say "\n✅ Mobile-First Navbar Generated:", :green
+    say "  - Style: #{options[:navbar_style]}"
+    say "  - Location: app/views/shared/_navbar.html.erb"
+    say "  - Mobile menu: Automatically works with dropdown_controller"
+    say "  - Customize: Logo, links, and styling (DO NOT remove data-controller attributes)"
+
+    say "\n📱 Navbar Styles Available:", :cyan
+    say "  • minimal    - Simple logo + auth (default)"
+    say "  • marketing  - Logo + navigation menu + auth"
+    say "  • dashboard  - Feature-rich with search + actions + user menu"
+    say "  AI can specify style: rails g authentication --navbar-style=marketing"
+
+    say "\n⚠️  IMPORTANT: Login/signup pages are NOT generated", :yellow
+    say "AI will create them using the provided components.\n", :yellow
 
     say "\n📋 Required Next Steps:", :cyan
     say "1. Run: bundle install && rails db:migrate && touch tmp/restart.txt"
     say "2. Create login page: app/views/sessions/new.html.erb"
     say "3. Create signup page: app/views/registrations/new.html.erb"
-    say "4. Update navbar to use: <%= render 'shared/user_dropdown' %>"
+    say "4. Customize navbar navigation links in app/views/shared/_navbar.html.erb"
     say "5. Add menu items in app/views/shared/_user_dropdown.html.erb (CLACKY_TODO)"
 
     say "\n🧩 Available Components:", :cyan
+    say "• Navbar:      render 'shared/navbar'"
     say "• Login form:  render 'sessions/login_form_with_oauth'"
     say "• Signup form: render 'registrations/signup_form_with_oauth'"
     say "• User menu:   render 'shared/user_dropdown'"
