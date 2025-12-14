@@ -9,23 +9,35 @@ RSpec.describe "Payment Integration", type: :request do
         assoc&.options&.dig(:as) == :payable
       end
 
+      has_subscription_mode = false
+
       payable_models.each do |model|
         factory = model.model_name.singular.to_sym
         instance = build(factory)
-        
+
         # Validate required methods exist and return proper types
         expect(instance.customer_name).to be_a(String).and be_present
         expect(instance.customer_email).to match(URI::MailTo::EMAIL_REGEXP)
         expect(instance.payment_description).to be_a(String).and be_present
         expect(instance.stripe_mode).to be_in(['payment', 'subscription'])
         expect(instance.stripe_line_items).to be_an(Array).and be_present
-        
+
         # Validate subscription mode has recurring
         if instance.stripe_mode == 'subscription'
+          has_subscription_mode = true
           instance.stripe_line_items.each do |item|
             expect(item.dig(:price_data, :recurring)).to be_present,
               "#{model}.stripe_line_items missing :recurring (required for subscription mode)"
           end
+        end
+      end
+
+      # Check CLACKY_TODO_SUBSCRIPTION if any model uses subscription mode
+      if has_subscription_mode
+        service_file = Rails.root.join('app/services/stripe_payment_service.rb')
+        content = File.read(service_file) if File.exist?(service_file)
+        if content&.include?('CLACKY_TODO_SUBSCRIPTION')
+          fail "CLACKY_TODO_SUBSCRIPTION found in stripe_payment_service.rb - implement subscription webhooks!"
         end
       end
     end

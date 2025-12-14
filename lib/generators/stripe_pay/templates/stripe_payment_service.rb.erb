@@ -217,6 +217,7 @@ class StripePaymentService < ApplicationService
   # CLACKY_NOTE: Only needed for subscription-based payments
   # If you're using subscriptions, implement this to create payment records for each billing cycle
   def self.handle_invoice_payment_success(invoice)
+    # CLACKY_TODO_SUBSCRIPTION: Implement subscription billing logic here
     subscription_id = invoice['subscription']
     return unless subscription_id
 
@@ -238,6 +239,7 @@ class StripePaymentService < ApplicationService
 
   # CLACKY_NOTE: Only needed for subscription-based payments
   def self.handle_subscription_update(subscription)
+    # CLACKY_TODO_SUBSCRIPTION: Sync subscription status from Stripe
     # Example: sync subscription status from Stripe
     # sub = Subscription.find_by(stripe_subscription_id: subscription['id'])
     # sub&.update!(
@@ -250,6 +252,7 @@ class StripePaymentService < ApplicationService
 
   # CLACKY_NOTE: Only needed for subscription-based payments
   def self.handle_subscription_deleted(subscription)
+    # CLACKY_TODO_SUBSCRIPTION: Handle subscription cancellation
     # Example: mark subscription as canceled
     # sub = Subscription.find_by(stripe_subscription_id: subscription['id'])
     # sub&.update!(status: 'canceled')

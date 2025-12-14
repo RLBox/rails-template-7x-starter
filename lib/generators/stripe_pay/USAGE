@@ -112,7 +112,7 @@ Business Logic After Payment:
 
     ⚠️ CRITICAL: Implement business logic in StripePaymentService.process_payment_paid
     This method is called ONLY after payment is confirmed as paid.
-    
+
     # In app/services/stripe_payment_service.rb
     def self.process_payment_paid(payment)
       case payment.payable_type
@@ -124,9 +124,18 @@ Business Logic After Payment:
         OrderMailer.confirmation(order).deliver_later
       end
     end
-    
+
     ⚠️ NEVER update business data in controller's create action!
     Create order with status: 'pending', then update ONLY in process_payment_paid.
+
+Subscription Webhooks (if using stripe_mode: 'subscription'):
+
+    Search for CLACKY_TODO_SUBSCRIPTION in stripe_payment_service.rb and implement:
+    - handle_invoice_payment_success (monthly billing)
+    - handle_subscription_update (status sync)
+    - handle_subscription_deleted (cancellation)
+
+    Tests will enforce these are implemented when subscription mode is detected.
 
 Validation:
 

@@ -25,6 +25,10 @@ class PaymentsController < ApplicationController
     # since webhooks might not be properly configured
     if @payment.processing?
       StripePaymentService.sync_payment_status(@payment)
+<% if @auth -%>
+      # Reload current_user to get fresh data (credits etc.) after payment processing
+      current_user&.reload
+<% end -%>
     end
 
     unless @payment.paid?

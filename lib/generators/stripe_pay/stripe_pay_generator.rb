@@ -334,30 +334,11 @@ class StripePayGenerator < Rails::Generators::Base
     say "@subscription = current_user.user_subscriptions.find_by(status: 'pending')", :white
     say "redirect_to pay_payment_path(@subscription.payment), data: { turbo_method: :post }", :white
     say "\n# 5. View: <%= button_to 'Subscribe Monthly', subscriptions_path(plan: @plan.id), method: :post %>", :cyan
-    say "\n# 6. Stripe configuration is handled automatically via stripe_line_items:", :cyan
-    say "# ✓ No manual Stripe Dashboard setup needed", :white
-    say "# ✓ Products/Prices created dynamically via price_data", :white
-    say "# ✓ Just implement stripe_line_items with recurring for subscriptions", :white
-    say "\n# 7. Validate your payable models:", :cyan
-    say "rake test  # Auto-validates payable interface in payment_integration_spec.rb", :white
-    say "\n# 8. In webhook - save stripe_subscription_id from checkout:", :cyan
-    say "when 'checkout.session.completed'", :white
-    say "  payment = Payment.find_by(stripe_checkout_session_id: event.data.object.id)", :white
-    say "  subscription = payment.payable", :white
-    say "  # Save Stripe subscription ID for future webhook lookups", :white
-    say "  subscription.update!(", :white
-    say "    stripe_subscription_id: event.data.object.subscription,", :white
-    say "    status: 'active'", :white
-    say "  )", :white
-    say "\n# 9. Handle monthly recurring payments:", :cyan
-    say "when 'invoice.paid'", :white
-    say "  stripe_sub_id = event.data.object.subscription", :white
-    say "  subscription = UserSubscription.find_by(stripe_subscription_id: stripe_sub_id)", :white
-    say "  subscription.update!(expires_at: 1.month.from_now)", :white
-    say "\n# 10. Handle subscription cancellation:", :cyan
-    say "when 'customer.subscription.deleted'", :white
-    say "  subscription = UserSubscription.find_by(stripe_subscription_id: event.data.object.id)", :white
-    say "  subscription.update!(status: 'canceled')", :white
+    say "\n# 6. Stripe products/prices created automatically via stripe_line_items", :cyan
+    say "\n# 7. For subscriptions - implement webhook handlers (search CLACKY_TODO_SUBSCRIPTION):", :cyan
+    say "# • handle_invoice_payment_success - process monthly billing", :white
+    say "# • handle_subscription_update - sync subscription status", :white
+    say "# • handle_subscription_deleted - handle cancellation", :white
     say "="*70, :green
   end
 

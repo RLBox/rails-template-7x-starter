@@ -7,8 +7,26 @@ module ActiveRecord
 
       # Store raw attributes before Rails parses them
       def initialize(args, *options)
-        # Store raw attribute strings before parent processes them
-        @raw_attributes = args[1..-1] || []
+        # Filter out timestamp attributes (Rails adds them automatically via t.timestamps)
+        timestamp_fields = %w[created_at updated_at created_on updated_on]
+        raw_attributes = args[1..-1] || []
+
+        @removed_timestamp_attrs = []
+        filtered_attributes = raw_attributes.reject do |attr|
+          field_name = attr.split(':').first
+          if timestamp_fields.include?(field_name)
+            @removed_timestamp_attrs << attr
+            true
+          else
+            false
+          end
+        end
+
+        # Store filtered raw attribute strings
+        @raw_attributes = filtered_attributes
+
+        # Pass filtered attributes to parent
+        args[1..-1] = filtered_attributes
         super
       end
 
