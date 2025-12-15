@@ -4,17 +4,17 @@
   <button type="button"
           data-dropdown-target="trigger"
           data-action="click->dropdown#toggle"
-          class="flex items-center space-x-2 px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          class="w-full md:w-auto flex items-center justify-start space-x-2 px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
     <!-- User avatar -->
     <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-gray-50 text-sm font-medium">
       <%= current_user.name&.first&.upcase || current_user.email&.first&.upcase || 'U' %>
     </div>
-    <!-- User name (hidden on mobile) -->
-    <span class="hidden md:block text-sm font-medium">
+    <!-- User name -->
+    <span class="text-sm font-medium flex-1 text-left">
       <%= current_user.name || current_user.email&.split('@')&.first %>
     </span>
     <!-- Dropdown arrow -->
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
     </svg>
   </button>
@@ -31,8 +31,6 @@
         <%= current_user.email %>
       </p>
     </div>
-
-    <!-- CLACKY_TODO: Add your application-specific menu items here (e.g., Dashboard, Settings, Orders, etc.) -->
 
     <!-- Divider -->
     <div class="border-t border-gray-200 dark:border-gray-700"></div>

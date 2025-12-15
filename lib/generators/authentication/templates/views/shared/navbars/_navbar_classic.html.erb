@@ -1,28 +1,52 @@
-<!-- Dashboard Navbar - Feature-rich design for application interfaces -->
+<!-- Classic Navbar - Traditional, clean design inspired by Bootstrap -->
+<!--
+STYLE VARIANTS - Uncomment or modify classes below to customize:
+
+Background:
+- Light (default): bg-white dark:bg-gray-800
+- Elevated: bg-surface-elevated
+- Custom: bg-gray-50 dark:bg-gray-900
+
+Border:
+- Bottom border (default): border-b border-gray-200 dark:border-gray-700
+- No border: remove "border-b border-gray-200"
+- Thick border: border-b-2 border-gray-300
+
+Shadow:
+- None (default): no shadow
+- Subtle: shadow-sm
+- Medium: shadow-md
+
+Size:
+- Compact: h-14
+- Normal (default): h-16
+- Large: h-20
+-->
 <!-- DO NOT modify data-controller, data-action, or data-dropdown-target attributes -->
 
-<nav class="bg-surface-elevated border-b border-border"
+<nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
      data-controller="dropdown"
      data-dropdown-close-on-click-outside-value="false">
   <div class="container-xl mx-auto px-4">
     <div class="flex items-center justify-between h-16">
 
-      <!-- Left section: Logo + Navigation -->
-      <div class="flex items-center space-x-8">
+      <!-- Logo -->
+      <div class="flex items-center">
         <!-- CLACKY_TODO: Customize your logo, Use Rails.application.config.x.appname for appname -->
-
-        <!-- Desktop navigation -->
-        <div class="hidden lg:flex items-center space-x-1">
-          <%= render 'shared/nav_links' %>
-        </div>
+        <%= link_to Rails.application.config.x.appname, root_path, class: "text-xl font-bold text-gray-900 dark:text-white" %>
       </div>
 
-      <!-- Right section: User menu -->
+      <!-- Desktop navigation -->
+      <div class="hidden md:flex items-center space-x-8">
+        <%= render 'shared/nav_links' %>
+      </div>
+
+      <!-- Desktop auth -->
       <div class="hidden md:flex items-center space-x-4">
         <% if current_user %>
           <%= render 'shared/user_dropdown' %>
         <% else %>
-          <%= link_to "Sign In", sign_in_path, class: "btn-ghost btn-sm" %>
+          <%= link_to "Sign In", sign_in_path, class: "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium" %>
           <%= link_to "Sign Up", sign_up_path, class: "btn-primary btn-sm" %>
         <% end %>
       </div>
@@ -30,7 +54,7 @@
       <!-- Mobile hamburger - DO NOT REMOVE -->
       <button type="button"
               data-action="click->dropdown#toggle"
-              class="md:hidden p-2 text-secondary hover:bg-surface rounded-lg transition-colors">
+              class="md:hidden p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
         <%= lucide_icon "menu", class: "w-6 h-6" %>
       </button>
     </div>
@@ -41,22 +65,22 @@
       <div class="fixed inset-0 bg-black/50" data-action="click->dropdown#close"></div>
 
       <!-- Drawer content -->
-      <div class="fixed right-0 top-0 h-full w-64 bg-surface-elevated shadow-xl overflow-y-auto">
+      <div class="fixed right-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto">
         <div class="p-4">
           <!-- Close button -->
           <button type="button"
                   data-action="click->dropdown#close"
-                  class="mb-6 p-2 hover:bg-surface rounded-lg transition-colors">
+                  class="mb-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
             <%= lucide_icon "x", class: "w-6 h-6" %>
           </button>
 
           <!-- Mobile navigation -->
-          <div class="mb-6 space-y-1">
+          <div class="mb-6 flex flex-col space-y-2">
             <%= render 'shared/nav_links' %>
           </div>
 
           <!-- Mobile user menu -->
-          <div class="border-t border-border pt-4">
+          <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
             <% if current_user %>
               <%= render 'shared/user_dropdown' %>
             <% else %>

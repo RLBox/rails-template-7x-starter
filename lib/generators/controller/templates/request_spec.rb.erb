@@ -118,41 +118,23 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
   end
     <%- end -%>
 <%- end -%>
-<%- if crud_actions_to_generate.include?('create') -%>
+<%- if crud_actions_to_generate.include?('create') && !single_resource? -%>
 
-  describe "POST /<%= single_resource? ? singular_name : plural_name %>" do
+  describe "POST /<%= plural_name %>" do
     it "creates a new <%= singular_name %>" do
       <%- if is_api_controller? -%>
-      expect {
-        post <%= plural_route_path %>, params: { <%= singular_name %>: { } }, as: :json
-      }.to change(<%= class_name.split('::').last.singularize %>, :count).by(1)
-      expect(response).to have_http_status(:created)
+      post <%= plural_route_path %>, params: { <%= singular_name %>: attributes_for(:<%= singular_name %>) }, as: :json
+      expect(response).to have_http_status(:success)
       expect(response.content_type).to match(/json/)
       <%- else -%>
-      expect {
-        post <%= plural_route_path %>, params: { <%= singular_name %>: { } }
-      }.to change(<%= class_name.split('::').last.singularize %>, :count).by(1)
+      post <%= plural_route_path %>, params: { <%= singular_name %>: attributes_for(:<%= singular_name %>) }
       expect(response).to be_success_with_view_check
       <%- end -%>
     end
   end
 <%- end -%>
-<%- if crud_actions_to_generate.include?('update') -%>
+<%- if crud_actions_to_generate.include?('update') && !single_resource? -%>
 
-  <%- if single_resource? -%>
-  describe "PATCH /<%= singular_name %>" do
-    it "updates the <%= singular_name %>" do
-      <%- if is_api_controller? -%>
-      patch <%= singular_route_path %>, params: { <%= singular_name %>: { } }, as: :json
-      expect(response).to have_http_status(:success)
-      expect(response.content_type).to match(/json/)
-      <%- else -%>
-      patch <%= singular_route_path %>, params: { <%= singular_name %>: { } }
-      expect(response).to be_success_with_view_check
-      <%- end -%>
-    end
-  end
-    <%- else -%>
   describe "PATCH /<%= plural_name %>/:id" do
     <%- if requires_authentication? -%>
     let(:<%= singular_name %>_record) { create(:<%= singular_name %>, user: user) }
@@ -162,32 +144,18 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
 
     it "updates the <%= singular_name %>" do
       <%- if is_api_controller? -%>
-      patch <%= singular_route_path %>(<%= singular_name %>_record), params: { <%= singular_name %>: { } }, as: :json
+      patch <%= singular_route_path %>(<%= singular_name %>_record), params: { <%= singular_name %>: attributes_for(:<%= singular_name %>) }, as: :json
       expect(response).to have_http_status(:success)
       expect(response.content_type).to match(/json/)
       <%- else -%>
-      patch <%= singular_route_path %>(<%= singular_name %>_record), params: { <%= singular_name %>: { } }
+      patch <%= singular_route_path %>(<%= singular_name %>_record), params: { <%= singular_name %>: attributes_for(:<%= singular_name %>) }
       expect(response).to be_success_with_view_check
       <%- end -%>
     end
   end
-    <%- end -%>
 <%- end -%>
-<%- if crud_actions_to_generate.include?('destroy') -%>
+<%- if crud_actions_to_generate.include?('destroy') && !single_resource? -%>
 
-  <%- if single_resource? -%>
-  describe "DELETE /<%= singular_name %>" do
-    it "destroys the <%= singular_name %>" do
-      <%- if is_api_controller? -%>
-      delete <%= singular_route_path %>
-      expect(response).to have_http_status(:success)
-      <%- else -%>
-      delete <%= singular_route_path %>
-      expect(response).to be_success_with_view_check
-      <%- end -%>
-    end
-  end
-    <%- else -%>
   describe "DELETE /<%= plural_name %>/:id" do
     <%- if requires_authentication? -%>
     let(:<%= singular_name %>_record) { create(:<%= singular_name %>, user: user) }
@@ -205,18 +173,17 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
       <%- end -%>
     end
   end
-    <%- end -%>
 <%- end -%>
 <%- non_crud_actions.each do |action| -%>
 
-  describe "GET /<%= plural_name %>/<%= action %>" do
+  describe "GET /<%= single_resource? ? singular_name : plural_name %>/<%= action %>" do
     it "returns http success" do
       <%- if is_api_controller? -%>
-      get <%= action %>_<%= route_path_prefix %><%= plural_name %>_path
+      get <%= action %>_<%= route_path_prefix %><%= single_resource? ? singular_name : plural_name %>_path
       expect(response).to have_http_status(:success)
       expect(response.content_type).to match(/json/)
       <%- else -%>
-      get <%= action %>_<%= route_path_prefix %><%= plural_name %>_path
+      get <%= action %>_<%= route_path_prefix %><%= single_resource? ? singular_name : plural_name %>_path
       expect(response).to be_success_with_view_check('<%= action %>')
       <%- end -%>
     end

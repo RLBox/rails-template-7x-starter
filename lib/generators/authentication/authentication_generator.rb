@@ -6,8 +6,8 @@ class AuthenticationGenerator < Rails::Generators::Base
 
   class_option :navbar_style,
                type: :string,
-               default: 'minimal',
-               desc: 'Navbar style: minimal, marketing, or dashboard'
+               default: nil,
+               desc: 'Navbar style: classic, glass, floating, solid, or transparent (random if not specified)'
 
   def check_if_already_generated
     session_model = 'app/models/session.rb'
@@ -131,21 +131,34 @@ class AuthenticationGenerator < Rails::Generators::Base
     say "Creating navbar...", :green
 
     # Validate navbar_style option
-    valid_styles = %w[minimal marketing dashboard]
+    valid_styles = %w[classic glass floating solid transparent]
     navbar_style = options[:navbar_style]
 
-    unless valid_styles.include?(navbar_style)
-      say "  Warning: Invalid navbar_style '#{navbar_style}'. Using 'minimal' instead.", :yellow
-      navbar_style = 'minimal'
+    # Randomly select a style if not specified
+    if navbar_style.nil? || navbar_style.empty?
+      navbar_style = valid_styles.sample
+      say "  No navbar style specified, randomly selected: #{navbar_style}", :cyan
+    elsif !valid_styles.include?(navbar_style)
+      say "  Warning: Invalid navbar_style '#{navbar_style}'. Randomly selecting instead.", :yellow
+      navbar_style = valid_styles.sample
+      say "  Randomly selected: #{navbar_style}", :cyan
     end
 
     # Copy the selected navbar template
     say "  Generating #{navbar_style} navbar style...", :blue
     copy_file "views/shared/navbars/_navbar_#{navbar_style}.html.erb",
-              'app/views/shared/_navbar.html.erb'
+              'app/views/shared/_navbar.html.erb', force: true
 
     # Copy navigation links component (reusable for desktop and mobile)
-    copy_file 'views/shared/_nav_links.html.erb', 'app/views/shared/_nav_links.html.erb'
+    copy_file 'views/shared/_nav_links.html.erb', 'app/views/shared/_nav_links.html.erb', force: true
+
+    # Copy navbar scroll controller for transparent navbar
+    if navbar_style == 'transparent'
+      copy_file 'javascript/controllers/navbar_scroll_controller.ts',
+                'app/javascript/controllers/navbar_scroll_controller.ts'
+      register_navbar_scroll_controller
+      say "  ✓ Navbar scroll controller created and registered", :green
+    end
 
     say "  ✓ Navbar created with #{navbar_style} style", :green
     say "  ✓ Navigation links component created", :green
@@ -392,16 +405,15 @@ class AuthenticationGenerator < Rails::Generators::Base
     say "  - Includes statistics: Today's users, Monthly users, Active users, Total users"
 
     say "\n✅ Mobile-First Navbar Generated:", :green
-    say "  - Style: #{options[:navbar_style]}"
     say "  - Location: app/views/shared/_navbar.html.erb"
     say "  - Mobile menu: Automatically works with dropdown_controller"
     say "  - Customize: Logo, links, and styling (DO NOT remove data-controller attributes)"
 
-    say "\n📱 Navbar Styles Available:", :cyan
-    say "  • minimal    - Simple logo + auth (default)"
-    say "  • marketing  - Logo + navigation menu + auth"
-    say "  • dashboard  - Feature-rich with search + actions + user menu"
-    say "  AI can specify style: rails g authentication --navbar-style=marketing"
+    # Special note for fixed navbar styles
+    if navbar_style == 'floating' || navbar_style == 'transparent'
+      say "\n⚠️  Note: #{navbar_style.capitalize} navbar uses fixed positioning", :yellow
+      say "  Add top padding to main content: <main class=\"pt-28\"> or <div class=\"container pt-28\">", :yellow
+    end
 
     say "\n⚠️  IMPORTANT: Login/signup pages are NOT generated", :yellow
     say "AI will create them using the provided components.\n", :yellow
@@ -852,5 +864,23 @@ module ApplicationCable
   end
 end
     RUBY
+  end
+
+  def register_navbar_scroll_controller
+    index_path = "app/javascript/controllers/index.ts"
+    controller_name = "navbar_scroll"
+    class_name = "NavbarScrollController"
+
+    import_line = "import #{class_name} from \"./#{controller_name}_controller\""
+    register_line = "application.register(\"#{controller_name.dasherize}\", #{class_name})"
+
+    if File.exist?(index_path)
+      inject_into_file index_path, "#{import_line}\n", after: /import.*_controller"\n(?=\n)/
+      inject_into_file index_path, "#{register_line}\n", after: /application\.register\(.*\)\n(?=\n)/
+    else
+      say "⚠️  Warning: #{index_path} not found. Please add the import and registration manually:", :yellow
+      say "Import: #{import_line}", :yellow
+      say "Register: #{register_line}", :yellow
+    end
   end
 end
