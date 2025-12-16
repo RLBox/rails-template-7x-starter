@@ -233,8 +233,8 @@ class AuthenticationGenerator < Rails::Generators::Base
     # Create model tests
     copy_file 'spec/models/user_spec.rb', 'spec/models/user_spec.rb'
 
-    # Create request tests
-    copy_file 'spec/requests/authenticated_access_spec.rb', 'spec/requests/authenticated_access_spec.rb'
+    # Create request tests (using template to process ERB)
+    template 'spec/requests/authenticated_access_spec.rb.erb', 'spec/requests/authenticated_access_spec.rb'
 
     # Create test helpers
     copy_file 'spec/support/authentication_helpers.rb', 'spec/support/authentication_helpers.rb'

@@ -351,4 +351,38 @@ RSpec.describe 'Project Conventions Validation', type: :system do
       end
     end
   end
+
+  describe 'View Helper Method Definition Validation' do
+    it 'prohibits defining helper methods in views via content_for' do
+      violations = []
+      allowed_content_for = %w[title head]
+
+      view_files.each do |file|
+        content = File.read(file)
+        relative_path = file.sub(Rails.root.to_s + '/', '')
+        lines = content.split("\n")
+
+        lines.each_with_index do |line, index|
+          line_number = index + 1
+          if match = line.strip.match(/content_for\s+:(\w+)/)
+            key = match[1]
+            unless allowed_content_for.include?(key)
+              violations << {
+                file: relative_path,
+                line: line_number,
+                type: "content_for :#{key}"
+              }
+            end
+          end
+        end
+      end
+
+      if violations.any?
+        puts "\n❌ View Helper Violations (#{violations.length}):"
+        violations.each { |v| puts "   #{v[:file]}:#{v[:line]} - #{v[:type]}" }
+        puts "\n   ✅ Fix: Define helpers in app/helpers/application_helper.rb\n"
+        expect(violations).to be_empty
+      end
+    end
+  end
 end
