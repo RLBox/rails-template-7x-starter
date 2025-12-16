@@ -10,10 +10,30 @@ RSpec.configure do |config|
 
   private
 
+  def run_lint
+    puts "Running lint checks..."
+    output = `npm run lint 2>&1`
+    result = $?.success?
+
+    unless result
+      puts "\n" + "=" * 80
+      puts "Lint failed - Tests aborted"
+      puts "=" * 80
+      puts output
+      puts "=" * 80 + "\n"
+      abort("Lint failed. Fix the errors above and re-run tests.")
+    end
+
+    puts "✅ Lint passed"
+  end
+
   def ensure_assets_compiled
+    # Always run lint before compilation check
+    run_lint
+
     return unless AssetHelper.needs_compilation?
 
-    puts "📦 Compiling assets for system tests..."
+    puts "Compiling assets for system tests..."
 
     # Capture both stdout and stderr
     output = `npm run build 2>&1`
@@ -21,7 +41,7 @@ RSpec.configure do |config|
 
     unless result
       puts "\n" + "=" * 80
-      puts "❌ Asset compilation failed - Tests aborted"
+      puts "Asset compilation failed - Tests aborted"
       puts "=" * 80
 
       # Extract and display key error information

@@ -19,7 +19,7 @@ if Rails.env.development? || Rails.env.test?
         result = original_error(message, &block)
         actual_message = message || block&.call
 
-        unless broadcast && actual_message && from_app_directory
+        unless broadcast && actual_message && from_app_directory?
           return result
         end
 

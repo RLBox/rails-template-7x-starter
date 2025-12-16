@@ -23,6 +23,18 @@ module Rails
         end
       end
 
+      def check_model_exists
+        model_file = "app/models/#{file_name.singularize}.rb"
+        @model_exists = File.exist?(model_file)
+
+        if @model_exists
+          say "✓ Found model: #{file_name.singularize.camelize}", :green
+        else
+          say "⚠ Model not found: #{model_file}", :yellow
+          say "  Channel will use dynamic parameters - ensure to pass correct IDs from frontend", :yellow
+        end
+      end
+
       def create_base_channel_controller
         base_controller_path = "app/javascript/controllers/base_channel_controller.ts"
 
@@ -170,7 +182,15 @@ module Rails
       end
 
       def stream_name
-        @stream_name ||= "#{file_name}_#{rand(1000..9999)}"
+        @stream_name ||= file_name
+      end
+
+      def param_name
+        "#{file_name.singularize}_id"
+      end
+
+      def value_name
+        "#{file_name.singularize}Id"
       end
 
       def javascript_channel_name
@@ -179,6 +199,10 @@ module Rails
 
       def requires_authentication?
         options[:auth]
+      end
+
+      def model_exists?
+        @model_exists
       end
     end
   end

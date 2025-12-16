@@ -5,9 +5,11 @@ class <%= channel_name %> < ApplicationCable::Channel
     reject unless current_user
 
 <% end -%>
-    # Stream from a channel based on some identifier
-    # Example: stream_from "some_channel"
-    stream_from "<%= stream_name %>"
+    # Require channel_name from frontend
+    channel_name = params[:channel_name]
+    reject unless channel_name
+
+    stream_from channel_name
   rescue StandardError => e
     handle_channel_error(e)
     reject
@@ -24,9 +26,10 @@ class <%= channel_name %> < ApplicationCable::Channel
   # EXAMPLE: Send new message
   # def send_message(data)
   #   message = Message.create!(content: data['content'])
+  #   channel_name = params[:channel_name]
   #
   #   ActionCable.server.broadcast(
-  #     "<%= stream_name %>",
+  #     channel_name,
   #     {
   #       type: 'new-message',  # REQUIRED: routes to handleNewMessage() in frontend
   #       id: message.id,
@@ -39,8 +42,9 @@ class <%= channel_name %> < ApplicationCable::Channel
 
   # EXAMPLE: Send status update
   # def update_status(data)
+  #   channel_name = params[:channel_name]
   #   ActionCable.server.broadcast(
-  #     "<%= stream_name %>",
+  #     channel_name,
   #     {
   #       type: 'status-update',  # Routes to handleStatusUpdate() in frontend
   #       status: data['status']

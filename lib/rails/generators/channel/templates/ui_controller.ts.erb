@@ -12,16 +12,18 @@ export default class extends BaseChannelController {
   ]
 
   static values = {
-    // Add values here, e.g.:
-    // roomId: String
+    channelName: String
+    // Add more values here, e.g.:
+    // recordId: String
   }
 
   connect(): void {
     console.log("<%= file_name.camelize %> controller connected")
 
     this.createSubscription("<%= channel_name %>", {
-      // Add subscription parameters here, e.g.:
-      // room_id: this.roomIdValue
+      channel_name: this.channelNameValue
+      // Add more subscription parameters here, e.g.:
+      // record_id: this.recordIdValue
     })
   }
 
