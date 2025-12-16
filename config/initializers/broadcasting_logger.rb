@@ -19,26 +19,19 @@ if Rails.env.development? || Rails.env.test?
         result = original_error(message, &block)
         actual_message = message || block&.call
 
-        if actual_message.present?
-          # Development: broadcast to frontend
-          if Rails.env.development? && broadcast && from_app_directory?
-            broadcast_to_frontend(actual_message)
-          end
+        unless broadcast && actual_message && from_app_directory
+          return result
+        end
 
-          # Test: raise exception with original caller stack
-          if Rails.env.test?
-            error_data = build_error_data(actual_message)
-            exception = RuntimeError.new("Rails.logger.error called:\n#{error_data[:message]}")
+        if Rails.env.development?
+          broadcast_to_frontend(actual_message)
+        end
 
-            # Set backtrace to original caller (skip this method)
-            if actual_message.is_a?(Exception)
-              exception.set_backtrace(actual_message.backtrace)
-            else
-              exception.set_backtrace(caller)
-            end
-
-            raise exception
-          end
+        if Rails.env.test?
+          error_data = build_error_data(actual_message)
+          exception = RuntimeError.new("Rails.logger.error called:\n#{error_data[:message]}")
+          exception.set_backtrace(error_data[:backtrace])
+          raise exception
         end
 
         result
@@ -46,9 +39,8 @@ if Rails.env.development? || Rails.env.test?
 
       private
 
-      # Check if error is from app/ directory (only check first 5 callers)
       def from_app_directory?
-        caller.first(5).any? { |line| line.include?('/app/') }
+        Rails.backtrace_cleaner.clean(caller).first(10).any? { |line| line.start_with?('app/') }
       end
 
       # Build error data structure
@@ -56,24 +48,32 @@ if Rails.env.development? || Rails.env.test?
         if message.is_a?(Exception)
           {
             message: "#{message.class}: #{message.message}",
-            backtrace: Rails.backtrace_cleaner.clean(message.backtrace || []).first(10).join("\n"),
+            backtrace: format_backtrace(message.backtrace || []),
             timestamp: Time.current.iso8601,
             source: 'rails_logger',
             level: 'error'
           }
         else
-          # For string messages, capture caller info (skip first line which is this file)
-          caller_info = caller[1..-1] || []
-          cleaned_backtrace = Rails.backtrace_cleaner.clean(caller_info)
-
           {
             message: filter_sensitive_data(message.to_s),
-            backtrace: cleaned_backtrace.first(10).join("\n"),
+            backtrace: format_backtrace(caller),
             timestamp: Time.current.iso8601,
             source: 'rails_logger',
             level: 'error'
           }
         end
+      end
+
+      # Format and filter backtrace to show only relevant business logic
+      def format_backtrace(backtrace)
+        # Clean with Rails backtrace cleaner
+        cleaned = Rails.backtrace_cleaner.clean(backtrace)
+
+        # Filter out calls from this file (broadcasting_logger.rb)
+        filtered = cleaned.reject { |line| line.include?('broadcasting_logger') }
+
+        # Take first 10 lines
+        filtered.first(10).join("\n")
       end
 
       def broadcast_to_frontend(message)

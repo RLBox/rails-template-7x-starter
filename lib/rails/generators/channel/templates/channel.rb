@@ -1,5 +1,10 @@
 class <%= channel_name %> < ApplicationCable::Channel
   def subscribed
+<% if requires_authentication? -%>
+    # Require authentication for this channel
+    reject unless current_user
+
+<% end -%>
     # Stream from a channel based on some identifier
     # Example: stream_from "some_channel"
     stream_from "<%= stream_name %>"
