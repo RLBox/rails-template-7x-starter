@@ -40,7 +40,14 @@ if Rails.env.development? || Rails.env.test?
       private
 
       def from_app_directory?
-        Rails.backtrace_cleaner.clean(caller).first(10).any? { |line| line.start_with?('app/') }
+        # Check if the DIRECT caller (not any line in stack) is from app/ directory
+        # This prevents gem errors from being broadcasted even if they pass through app code
+        cleaned = Rails.backtrace_cleaner.clean(caller)
+        return false if cleaned.empty?
+
+        # Check first non-broadcasting_logger line
+        first_line = cleaned.find { |line| !line.include?('broadcasting_logger') }
+        first_line&.start_with?('app/') || false
       end
 
       # Build error data structure

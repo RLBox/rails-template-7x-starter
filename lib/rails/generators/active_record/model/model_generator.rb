@@ -220,7 +220,10 @@ module ActiveRecord
       end
 
       def migration_indexes
-        indexes = parsed_attributes.select { |attr| attr[:index] || attr[:unique] }
+        # Filter out references/belongs_to types as they already include indexes by default
+        indexes = parsed_attributes.select do |attr|
+          (attr[:index] || attr[:unique]) && !['references', 'belongs_to'].include?(attr[:type].to_s)
+        end
         return "" if indexes.empty?
 
         lines = indexes.map do |attr|
