@@ -35,16 +35,18 @@ Position:
 -->
 <!-- DO NOT modify data-controller, data-action, or data-dropdown-target attributes (except to add navbar-scroll) -->
 
-<nav class="fixed top-0 left-0 right-0 z-50 bg-transparent"
-     data-controller="dropdown navbar-scroll"
+<%# Use fixed positioning on homepage, sticky on other pages for better scroll behavior %>
+<nav class="<%= controller_name == 'home' && action_name == 'index' ? 'fixed top-0 bg-transparent' : 'sticky top-0 bg-surface-elevated shadow-md border-b border-border' %> left-0 right-0 z-50"
+     data-controller="dropdown <%= controller_name == 'home' && action_name == 'index' ? 'navbar-scroll' : '' %>"
      data-dropdown-close-on-click-outside-value="false">
   <div class="container-xl mx-auto px-4">
     <div class="flex items-center justify-between h-16">
 
       <!-- Logo -->
-      <div class="flex items-center">
+      <div class="flex items-center gap-2">
         <!-- CLACKY_TODO: Customize your logo, Use Rails.application.config.x.appname for appname -->
-        <%= link_to Rails.application.config.x.appname, root_path, class: "text-xl font-bold text-gray-900 dark:text-white" %>
+        <%%= lucide_icon "sparkles", class: "w-6 h-6 #{controller_name == 'home' && action_name == 'index' ? 'text-gray-900 dark:text-white' : 'text-primary'}" %>
+        <%%= link_to Rails.application.config.x.appname, root_path, class: "text-xl font-bold #{controller_name == 'home' && action_name == 'index' ? 'text-gray-900 dark:text-white' : 'text-primary'}" %>
       </div>
 
       <!-- Desktop navigation -->
@@ -107,6 +109,6 @@ Position:
   </div>
 </nav>
 
-<!-- ⚠️ IMPORTANT: This navbar uses fixed positioning and will overlay content -->
-<!-- Add top padding to your main content wrapper to prevent overlap -->
-<!-- Example: <main class="pt-20"> or <div class="container pt-20"> -->
+<!-- ⚠️ IMPORTANT: This navbar uses fixed positioning on homepage only -->
+<!-- Homepage should have top padding to prevent overlap: data-testid="home-page-container" class="pt-20" -->
+<!-- Other pages use sticky positioning - no extra padding needed -->

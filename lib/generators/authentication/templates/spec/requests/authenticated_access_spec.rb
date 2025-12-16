@@ -113,5 +113,24 @@ RSpec.describe "Authenticated Access", type: :request do
       # Check CLACKY_TODOs are resolved in all navbar components
       check_clacky_todos([navbar_file, user_dropdown_file, nav_links_file])
     end
+<% if @navbar_style == 'floating' || @navbar_style == 'transparent' -%>
+
+    it "validates home page has proper padding for <%= @navbar_style %> navbar" do
+      home_index_file = 'app/views/home/index.html.erb'
+
+      skip "Home page not yet created" unless File.exist?(Rails.root.join(home_index_file))
+
+      content = File.read(Rails.root.join(home_index_file))
+
+      # Home page should have data-testid marker
+      expect(content).to match(/data-testid=["']home-page-container["']/),
+        "Home page should have data-testid='home-page-container' marker for fixed navbar"
+
+      # Home page container should have top padding to avoid navbar overlay
+      expect(content).to match(/data-testid=["']home-page-container["'][^>]*class=["'][^"']*pt-(?:20|24|28|32)/m),
+        "Home page container with data-testid='home-page-container' should have top padding class (pt-20, pt-24, pt-28, or pt-32) " \
+        "to prevent content being hidden under the fixed navbar"
+    end
+<% end -%>
   end
 end
