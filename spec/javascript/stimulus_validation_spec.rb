@@ -449,11 +449,8 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
       total_errors = target_errors.length + target_scope_errors.length + action_errors.length + scope_errors.length + registration_errors.length + value_errors.length + outlet_errors.length
 
-      puts "\n🔍 Simple Stimulus Validation Results:"
-      puts "   📁 Scanned: #{view_files.length} views, #{controller_data.keys.length} controllers"
-
       if total_errors == 0
-        puts "   ✅ All validations passed!"
+        # All validations passed - silent
       else
         puts "\n   ❌ Found #{total_errors} issue(s):"
 
@@ -630,16 +627,6 @@ RSpec.describe 'Stimulus Validation', type: :system do
       checkable_controllers = controller_data.keys - system_controllers
       unused_controllers = checkable_controllers - used_controllers
 
-      puts "\n📊 Controller Usage Statistics:"
-      puts "   • Total controllers: #{total_controllers}"
-      puts "   • System controllers: #{system_controllers.length} (#{system_controllers.join(', ')})" if system_controllers.any?
-      puts "   • Used in views: #{used_controllers.length}"
-      puts "   • Unused: #{unused_controllers.length}"
-
-      if unused_controllers.any?
-        puts "   ⚠️  Unused controllers: #{unused_controllers.join(', ')}"
-      end
-
       expect(controller_data).not_to be_empty
     end
   end
@@ -802,12 +789,10 @@ RSpec.describe 'Stimulus Validation', type: :system do
       total_errors = selector_errors.length + selector_scope_errors.length
       MAX_DISPLAY_ERRORS = 5
 
-      puts "\n🔍 QuerySelector Validation Results:"
       total_selectors = controller_data.values.map { |d| (d[:querySelectors] || []).length }.sum
-      puts "   📁 Found: #{total_selectors} querySelector calls across #{controller_data.keys.length} controllers"
 
       if total_errors == 0
-        puts "   ✅ All querySelector calls are valid!"
+        # All querySelector calls are valid - silent
       else
         puts "\n   ❌ Found #{total_errors} issue(s):"
 
@@ -941,8 +926,6 @@ RSpec.describe 'Stimulus Validation', type: :system do
         error_details = registration_errors.map { |e| "#{e[:file]} - #{e[:suggestion]}" }
         expect(registration_errors).to be_empty,
           "Controller registration validation failed:\n#{error_details.join("\n")}"
-      else
-        puts "\n✅ All controllers are properly imported and registered in index.ts!"
       end
     end
   end
@@ -999,8 +982,6 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
         expect(script_errors).to be_empty,
           "Inline JavaScript validation failed. Found #{script_errors.length} <script> tag(s):\n#{error_details.join("\n")}"
-      else
-        puts "\n✅ No inline <script> tags found in view files!"
       end
     end
   end

@@ -89,7 +89,6 @@ RSpec.describe 'Project Conventions Validation', type: :system do
         expect(param_violations).to be_empty,
           "Routes validation failed:\n#{error_details.join("\n")}"
       else
-        puts "\n✅ Routes validation passed: No custom param usage!"
       end
     end
   end
@@ -176,7 +175,6 @@ RSpec.describe 'Project Conventions Validation', type: :system do
         expect(missing_attachments).to be_empty,
           "Seed must attach images: #{missing_attachments.map { |e| "#{e[:model]}##{e[:attachment]}" }.uniq.join(', ')}"
       else
-        puts "\n✅ ActiveStorage seed validation passed!"
       end
     end
   end
@@ -241,7 +239,6 @@ RSpec.describe 'Project Conventions Validation', type: :system do
         expect(import_violations).to be_empty,
           "CSS import validation failed:\n#{error_details.join("\n")}"
       else
-        puts "\n✅ CSS import order validated: All @import statements appear before @tailwind!"
       end
     end
   end
@@ -351,7 +348,6 @@ RSpec.describe 'Project Conventions Validation', type: :system do
         expect(violations).to be_empty,
           "Vips-only policy violated:\n#{error_details.join("\n")}"
       else
-        puts "\n✅ Image processing validated: Using Vips correctly!"
       end
     end
   end

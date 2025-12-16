@@ -60,7 +60,12 @@ class LlmStreamJob < ApplicationJob
   #     ActionCable.server.broadcast("chat_#{chat_id}", { type: 'done', content: full_content })
   #   end
   def perform(*args)
-    # TODO: Implement streaming logic here
-    raise 'Not Implement job here'
+    # TODO: Implement your streaming logic:
+    # 1. Define method signature: def perform(chat_id:, prompt:, system: nil, **options)
+    # 2. Initialize: full_content = ""
+    # 3. Stream with LlmService.call(prompt: prompt, system: system, **options) { |chunk| ... }
+    # 4. Broadcast chunks: ActionCable.server.broadcast("chat_#{chat_id}", {type: 'chunk', chunk: chunk})
+    # 5. Broadcast done: ActionCable.server.broadcast("chat_#{chat_id}", {type: 'done', content: full_content})
+    raise NotImplementedError, 'Not implemented: call LlmService and broadcast chunks to frontend via ActionCable'
   end
 end

@@ -16,6 +16,11 @@ class LlmGenerator < Rails::Generators::Base
     template 'llm_stream_job.rb.erb', 'app/jobs/llm_stream_job.rb'
   end
 
+  def create_job_spec_file
+    return if options[:skip_job]
+    template 'llm_stream_job_spec.rb.erb', 'spec/jobs/llm_stream_job_spec.rb'
+  end
+
   def create_image_generation_service_file
     template 'image_generation_service.rb.erb', 'app/services/image_generation_service.rb'
   end
@@ -70,9 +75,8 @@ class LlmGenerator < Rails::Generators::Base
 
     unless options[:skip_service]
       generated_files << 'app/services/llm_service.rb'
+      generated_files << 'app/services/image_generation_service.rb'
     end
-
-    generated_files << 'app/services/image_generation_service.rb'
 
     unless options[:skip_job]
       generated_files << 'app/jobs/llm_stream_job.rb'
@@ -116,9 +120,13 @@ class LlmGenerator < Rails::Generators::Base
     say "     # result[:images] → array of image URLs"
 
     say "\n📚 Next:"
-    say "  1) Run `touch tmp/restart.txt` make config/application.yml effect"
-    say "  2) Use images: string|array for multimodal inputs when needed"
-    say "  3) Image generation is slow - consider async processing"
+    say "  1) Implement LlmStreamJob#perform - follow TODO comments in the file"
+    say "  2) Run `touch tmp/restart.txt` to apply config/application.yml changes"
+    say "  3) Use images: string|array for multimodal inputs when needed"
+
+    say "\n🧪 Test Environment:"
+    say "  In spec tests, LlmService auto-uses mock data - no config needed, no external API calls"
+    say "  Tests run fast and reliable without depending on real LLM services"
 
     say "\n🤖 AI Assistant Note:"
     say "  When storing LLM messages, include LlmMessageValidationConcern."

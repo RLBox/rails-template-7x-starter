@@ -80,8 +80,6 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
         end
 
         expect(turbo_violations).to be_empty, "Turbo Frames and turbo_stream_from are not allowed:\n#{error_details.join("\n")}"
-      else
-        puts "\n✅ No Turbo Frame or turbo_stream_from usage detected!"
       end
     end
   end
@@ -228,8 +226,6 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
 
         expect(broadcast_errors).to be_empty,
           "ActionCable broadcast validation failed:\n#{error_details.join("\n")}"
-      else
-        puts "\n✅ ActionCable broadcasts validated: All types have matching handlers!"
       end
     end
   end
@@ -402,8 +398,6 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
 
         expect(violations).to be_empty,
           "Frontend-backend interactions must use Turbo Stream architecture:\n#{error_details.join("\n")}"
-      else
-        puts "\n✅ Frontend-backend architecture validated: All interactions use Turbo Streams!"
       end
     end
   end

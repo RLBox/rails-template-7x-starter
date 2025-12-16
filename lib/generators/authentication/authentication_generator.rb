@@ -85,20 +85,17 @@ class AuthenticationGenerator < Rails::Generators::Base
   end
 
   def create_views
-    say "Creating view components and pages...", :green
+    say "Creating view pages and components...", :green
 
     # ============================================================
-    # FORM COMPONENTS - AI will compose login/signup pages
+    # AUTHENTICATION PAGES
     # ============================================================
-    say "  Creating authentication form components...", :blue
-    copy_file 'views/sessions/_login_form_with_oauth.html.erb', 'app/views/sessions/_login_form_with_oauth.html.erb'
-    copy_file 'views/registrations/_signup_form_with_oauth.html.erb', 'app/views/registrations/_signup_form_with_oauth.html.erb'
+    say "  Creating authentication pages...", :blue
+    copy_file 'views/sessions/new.html.erb', 'app/views/sessions/new.html.erb'
+    copy_file 'views/registrations/new.html.erb', 'app/views/registrations/new.html.erb'
 
     # Shared user dropdown component
     copy_file 'views/shared/_user_dropdown.html.erb', 'app/views/shared/_user_dropdown.html.erb'
-
-    # NOTE: sessions/new.html.erb and registrations/new.html.erb NOT generated
-    # AI will create these pages using the form components above based on user requirements
 
     # ============================================================
     # FUNCTIONAL PAGES - Standard CRUD pages
@@ -132,35 +129,35 @@ class AuthenticationGenerator < Rails::Generators::Base
 
     # Validate navbar_style option
     valid_styles = %w[classic glass floating solid transparent]
-    navbar_style = options[:navbar_style]
+    @navbar_style = options[:navbar_style]
 
     # Randomly select a style if not specified
-    if navbar_style.nil? || navbar_style.empty?
-      navbar_style = valid_styles.sample
-      say "  No navbar style specified, randomly selected: #{navbar_style}", :cyan
-    elsif !valid_styles.include?(navbar_style)
-      say "  Warning: Invalid navbar_style '#{navbar_style}'. Randomly selecting instead.", :yellow
-      navbar_style = valid_styles.sample
-      say "  Randomly selected: #{navbar_style}", :cyan
+    if @navbar_style.nil? || @navbar_style.empty?
+      @navbar_style = valid_styles.sample
+      say "  No navbar style specified, randomly selected: #{@navbar_style}", :cyan
+    elsif !valid_styles.include?(@navbar_style)
+      say "  Warning: Invalid navbar_style '#{@navbar_style}'. Randomly selecting instead.", :yellow
+      @navbar_style = valid_styles.sample
+      say "  Randomly selected: #{@navbar_style}", :cyan
     end
 
     # Copy the selected navbar template
-    say "  Generating #{navbar_style} navbar style...", :blue
-    copy_file "views/shared/navbars/_navbar_#{navbar_style}.html.erb",
+    say "  Generating #{@navbar_style} navbar style...", :blue
+    copy_file "views/shared/navbars/_navbar_#{@navbar_style}.html.erb",
               'app/views/shared/_navbar.html.erb', force: true
 
     # Copy navigation links component (reusable for desktop and mobile)
     copy_file 'views/shared/_nav_links.html.erb', 'app/views/shared/_nav_links.html.erb', force: true
 
     # Copy navbar scroll controller for transparent navbar
-    if navbar_style == 'transparent'
+    if @navbar_style == 'transparent'
       copy_file 'javascript/controllers/navbar_scroll_controller.ts',
                 'app/javascript/controllers/navbar_scroll_controller.ts'
       register_navbar_scroll_controller
       say "  ✓ Navbar scroll controller created and registered", :green
     end
 
-    say "  ✓ Navbar created with #{navbar_style} style", :green
+    say "  ✓ Navbar created with #{@navbar_style} style", :green
     say "  ✓ Navigation links component created", :green
   end
 
@@ -410,40 +407,18 @@ class AuthenticationGenerator < Rails::Generators::Base
     say "  - Customize: Logo, links, and styling (DO NOT remove data-controller attributes)"
 
     # Special note for fixed navbar styles
-    if navbar_style == 'floating' || navbar_style == 'transparent'
-      say "\n⚠️  Note: #{navbar_style.capitalize} navbar uses fixed positioning", :yellow
+    if @navbar_style == 'floating' || @navbar_style == 'transparent'
+      say "\n⚠️  Note: #{@navbar_style.capitalize} navbar uses fixed positioning", :yellow
       say "  Add top padding to main content: <main class=\"pt-28\"> or <div class=\"container pt-28\">", :yellow
     end
 
-    say "\n⚠️  IMPORTANT: Login/signup pages are NOT generated", :yellow
-    say "AI will create them using the provided components.\n", :yellow
-
     say "\n📋 Required Next Steps:", :cyan
     say "1. Run: bundle install && rails db:migrate && touch tmp/restart.txt"
-    say "2. Create login page: app/views/sessions/new.html.erb"
-    say "3. Create signup page: app/views/registrations/new.html.erb"
-    say "4. Customize navbar navigation links in app/views/shared/_navbar.html.erb"
-    say "5. Add menu items in app/views/shared/_user_dropdown.html.erb (CLACKY_TODO)"
+    say "2. Update navigation links in app/views/shared/_nav_links.html.erb"
 
     say "\n🧩 Available Components:", :cyan
     say "• Navbar:      render 'shared/navbar'"
-    say "• Login form:  render 'sessions/login_form_with_oauth'"
-    say "• Signup form: render 'registrations/signup_form_with_oauth'"
     say "• User menu:   render 'shared/user_dropdown'"
-
-    say "\n💡 Quick Example - Login Page:", :green
-    say <<~EXAMPLE
-
-      <!-- app/views/sessions/new.html.erb -->
-      <div class="container-sm">
-        <div class="card">
-          <div class="card-body">
-            <h1>Sign in</h1>
-            <%= render 'sessions/login_form_with_oauth' %>
-          </div>
-        </div>
-      </div>
-    EXAMPLE
 
     say "🔐 OAuth Configuration:", :cyan
     say "OAuth providers (Google, Facebook, Twitter, GitHub) are built-in."
@@ -609,7 +584,7 @@ class AuthenticationGenerator < Rails::Generators::Base
     if session_record = find_session_record
       Current.session = session_record
     else
-      redirect_to sign_in_path
+      redirect_to sign_in_path, alert: 'Please sign in to continue'
     end
   end
 
