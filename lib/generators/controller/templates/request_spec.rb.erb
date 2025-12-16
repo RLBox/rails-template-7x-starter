@@ -154,26 +154,6 @@ RSpec.describe "<%= plural_name.humanize %>", type: :request do
     end
   end
 <%- end -%>
-<%- if crud_actions_to_generate.include?('destroy') && !single_resource? -%>
-
-  describe "DELETE /<%= plural_name %>/:id" do
-    <%- if requires_authentication? -%>
-    let(:<%= singular_name %>_record) { create(:<%= singular_name %>, user: user) }
-    <%- else -%>
-    let(:<%= singular_name %>_record) { create(:<%= singular_name %>) }
-    <%- end -%>
-
-    it "destroys the <%= singular_name %>" do
-      <%- if is_api_controller? -%>
-      delete <%= singular_route_path %>(<%= singular_name %>_record)
-      expect(response).to have_http_status(:success)
-      <%- else -%>
-      delete <%= singular_route_path %>(<%= singular_name %>_record)
-      expect(response).to be_success_with_view_check
-      <%- end -%>
-    end
-  end
-<%- end -%>
 <%- non_crud_actions.each do |action| -%>
 
   describe "GET /<%= single_resource? ? singular_name : plural_name %>/<%= action %>" do

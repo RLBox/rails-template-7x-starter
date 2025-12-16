@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   before_action :authenticate_user!, only: [:show, :devices, :destroy_one]
+  before_action :redirect_if_signed_in, only: [:new, :create]
   before_action :check_session_cookie_availability, only: [:new]
 
   def show
@@ -37,5 +38,11 @@ class SessionsController < ApplicationController
     @session = current_user.sessions.find(params[:id])
     @session.destroy!
     redirect_to(devices_session_path, notice: "That session has been logged out")
+  end
+
+  private
+
+  def redirect_if_signed_in
+    redirect_to root_path, notice: "You are already signed in" if user_signed_in?
   end
 end

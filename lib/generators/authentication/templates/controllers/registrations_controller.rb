@@ -1,4 +1,5 @@
 class RegistrationsController < ApplicationController
+  before_action :redirect_if_signed_in, only: [:new, :create]
   before_action :check_session_cookie_availability, only: [:new]
 
   def new
@@ -21,6 +22,10 @@ class RegistrationsController < ApplicationController
   end
 
   private
+
+  def redirect_if_signed_in
+    redirect_to root_path, notice: "You are already signed in" if user_signed_in?
+  end
 
   def user_params
     params.require(:user).permit(:name, :email, :password, :password_confirmation)
