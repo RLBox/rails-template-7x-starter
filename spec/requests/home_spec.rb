@@ -36,7 +36,7 @@ RSpec.describe "Home", type: :request do
       bad_links = doc.css('a[href="#"], a[href="#!"], a[href^="javascript:"]')
       expect(bad_links).to be_empty,
         "Found #{bad_links.size} placeholder link(s): #{bad_links.map { |l| l.to_html.truncate(80) }.join(', ')}. " \
-        "Use real Rails routes instead of copying from demo."
+        "You can reference demo's HTML structure and Tailwind classes, but must replace placeholder links with real Rails routes (e.g., root_path, sign_up_path)."
 
       # Check 3: No placeholder forms
       bad_forms = doc.css('form:not([action]), form[action="#"], form[action=""], form[action^="javascript:"]')
@@ -50,7 +50,7 @@ RSpec.describe "Home", type: :request do
 
       if File.exist?(index_template_path)
         expect(File.exist?(demo_template_path)).to be_falsey,
-          "Demo file should be deleted when real homepage exists. Found both #{index_template_path} and #{demo_template_path}"
+          "Demo served as HTML structure reference and must be deleted now. Remove #{demo_template_path} since #{index_template_path} exists."
       end
     end
 

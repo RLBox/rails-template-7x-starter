@@ -7,5 +7,6 @@
                  else 'info'
                  end
   %>
-  <script>window.showToast(<%= raw value.to_json %>, '<%= toast_type %>', 'top-center');</script>
+  <!-- stimulus-validator: allow-script -->
+  <script>window.showToast(<%= raw value.to_json %>, '<%= toast_type %>');</script>
 <% end %>

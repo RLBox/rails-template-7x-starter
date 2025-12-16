@@ -316,6 +316,8 @@ class LlmService < ApplicationService
             json = JSON.parse(data)
             delta = json.dig("choices", 0, "delta")
 
+            next unless delta
+
             # Build chunk data with content and tool_calls
             chunk_data = {}
 

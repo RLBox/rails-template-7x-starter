@@ -11,7 +11,7 @@ module ViewDevelopmentMatchers
         action_info = action_name ? "##{action_name}" : ""
         controller_name = response.request.params[:controller]
         @view_not_developed_message = if controller_name == "home" && action_name == "index"
-          "Views for #{controller_name}#{action_info} are not yet developed. After developing index.html.erb, remember to remove demo.html.erb"
+          "Views for #{controller_name}#{action_info} are not yet developed. You can reference demo.html.erb's HTML structure and Tailwind classes, then rewrite with real routes/data in index.html.erb and delete demo.html.erb"
         else
           "Views for #{controller_name}#{action_info} are not yet developed"
         end

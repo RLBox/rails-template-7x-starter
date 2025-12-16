@@ -98,10 +98,9 @@ Do not recreate administrator functionality in User model. Administrator system 
 ## Some important tips when coding
 
 **CRITICAL: Demo File Management**
-- `app/views/shared/demo.html.erb` is ONLY for early development preview with fake data - NEVER copy its content to home/index.html.erb
-- Once ANY real homepage exists (like `app/views/home/index.html.erb`), you MUST delete demo.html.erb immediately
-- NEVER reference or link to demo.html.erb in production features - create real pages with real data from database instead
-- Demo serves as temporary placeholder until real pages are developed - copying demo code creates incomplete links and fake data issues
+- Demo shows good HTML structure and styling - CAN reference sections/layouts/Tailwind classes
+- When creating home/index.html.erb: use real Rails routes and database data, no placeholder links (`href="#"`)
+- Once home/index.html.erb exists, IMMEDIATELY delete demo.html.erb
 
 Do not generate any fake data that should originally be in the database for users.
 
@@ -164,11 +163,13 @@ Use `rails generate stimulus_controller xxx` to create new Stimulus controller, 
 - Type-based routing: Frontend defines `handleEventName(data)` method, backend triggers it via `type: 'event-name'`
 - NO manual message parsing - the routing happens automatically
 
-** STIMULUS TESTING - CRITICAL COMPLIANCE**:
-- ALWAYS run `bundle exec rspec spec/javascript/stimulus_validator_spec.rb` after ANY Stimulus-related changes
-- ALL stimulus validator errors are REAL errors, NOT false positives - fix them immediately
-- NEVER dismiss or ignore stimulus validator failures as "misleading" or "incorrect"
-- These tests validate critical controller-view integration - failures mean broken functionality
+** ARCHITECTURE VALIDATION - CRITICAL COMPLIANCE**:
+- Three validators enforce project architecture (run via `rake test`, never skip):
+  - `spec/javascript/stimulus_validation_spec.rb` - Stimulus controller-view integration
+  - `spec/javascript/turbo_architecture_validation_spec.rb` - Turbo Stream patterns
+  - `spec/javascript/project_conventions_validation_spec.rb` - Project conventions
+- ALL validator errors are REAL violations - fix them immediately, NEVER dismiss as false positives
+- Failures mean broken functionality or architecture violations
 
 Use FriendlyId (already configured) if need slug URLs. For user-facing content use `friendly_id :title, use: :slugged`, for admin/API use simple IDs.
 

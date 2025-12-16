@@ -17,19 +17,20 @@ function createToastContainer(position: 'top-right' | 'top-center' | 'top-left' 
   return container
 }
 
-window.showToast = function(
+function showToast(
   message: string,
-  type: 'success' | 'error' | 'info' | 'warning' = 'info',
+  type: 'success' | 'error' | 'info' | 'warning' | 'danger' = 'info',
   position: 'top-right' | 'top-center' | 'top-left' = 'top-right'
 ): void {
   const container = createToastContainer(position)
 
-  const alertType = type === 'error' ? 'danger' : type
+  // Normalize type (danger -> error for alert styling)
+  const alertType = (type === 'error' || type === 'danger') ? 'danger' : type
 
-  const toast = document.createElement('div')
-  toast.className = `alert-${alertType} pointer-events-auto max-w-md shadow-lg transform transition-all duration-300 ease-out translate-x-0 opacity-100 !py-2 !px-3`
+  const toastElement = document.createElement('div')
+  toastElement.className = `alert-${alertType} pointer-events-auto max-w-md shadow-lg transform transition-all duration-300 ease-out translate-x-0 opacity-100 !py-2 !px-3`
 
-  toast.innerHTML = `
+  toastElement.innerHTML = `
     <div class="flex items-center gap-3">
       <span class="flex-1">${message}</span>
       <button class="ml-2 p-1 rounded hover:bg-black/10 transition-colors" aria-label="Close">
@@ -40,9 +41,9 @@ window.showToast = function(
     </div>
   `
 
-  const closeButton = toast.querySelector('button')
+  const closeButton = toastElement.querySelector('button')
   closeButton?.addEventListener('click', () => {
-    removeToast(toast, position)
+    removeToast(toastElement, position)
   })
 
   const animations = {
@@ -51,19 +52,19 @@ window.showToast = function(
     'top-left': { enter: 'translateX(-400px)', exit: 'translateX(-400px)' }
   }
 
-  toast.style.transform = animations[position].enter
-  toast.style.opacity = '0'
-  container.appendChild(toast)
+  toastElement.style.transform = animations[position].enter
+  toastElement.style.opacity = '0'
+  container.appendChild(toastElement)
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      toast.style.transform = 'translateY(0) translateX(0)'
-      toast.style.opacity = '1'
+      toastElement.style.transform = 'translateY(0) translateX(0)'
+      toastElement.style.opacity = '1'
     })
   })
 
   setTimeout(() => {
-    removeToast(toast, position)
+    removeToast(toastElement, position)
   }, 3000)
 }
 
@@ -87,3 +88,8 @@ function removeToast(toast: HTMLElement, position: 'top-right' | 'top-center' | 
     }
   }, 300)
 }
+
+// Attach to window and export
+window.showToast = showToast
+
+export { showToast }

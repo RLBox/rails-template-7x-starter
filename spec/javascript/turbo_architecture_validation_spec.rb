@@ -70,9 +70,10 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
       end
 
       if turbo_violations.any?
-        puts "\n🚫 Turbo Frame/turbo_stream_from Usage Detected (#{turbo_violations.length}):"
+        puts "\n❌ Turbo Frame/turbo_stream_from Violations (#{turbo_violations.length}):"
         turbo_violations.each do |violation|
           puts "   • #{violation[:file]}: Found '#{violation[:pattern]}' (#{violation[:description]})"
+          puts "     ✅ Fix: #{violation[:suggestion]}"
         end
 
         error_details = turbo_violations.map do |v|
@@ -179,7 +180,7 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
       end
 
       if broadcast_errors.any?
-        puts "\n⚠️  ActionCable Broadcast Type Errors (#{broadcast_errors.length}):"
+        puts "\n❌ ActionCable Broadcast Type Violations (#{broadcast_errors.length}):"
 
         missing_frontend_errors = broadcast_errors.select { |e| e[:error_type] == 'missing_frontend_file' }
         missing_type_errors = broadcast_errors.select { |e| e[:error_type] == 'missing_type' }
@@ -190,7 +191,7 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
           missing_frontend_errors.each do |error|
             puts "     • #{error[:source_file]}:#{error[:line]}"
             puts "       Stream: '#{error[:stream_name]}' → expects #{error[:frontend_file]}"
-            puts "       💡 #{error[:suggestion]}"
+            puts "       ✅ Fix: #{error[:suggestion]}"
           end
         end
 
@@ -199,7 +200,7 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
           missing_type_errors.each do |error|
             puts "     • #{error[:source_file]}:#{error[:line]}"
             puts "       Stream: '#{error[:stream_name]}'"
-            puts "       💡 #{error[:suggestion]}"
+            puts "       ✅ Fix: #{error[:suggestion]}"
           end
         end
 
@@ -209,7 +210,7 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
             puts "     • #{error[:source_file]}:#{error[:line]}"
             puts "       Stream: '#{error[:stream_name]}', type: '#{error[:type]}' → expects #{error[:expected_method]}()"
             puts "       Frontend: #{error[:frontend_file]}"
-            puts "       💡 #{error[:suggestion]}"
+            puts "       ✅ Fix: #{error[:suggestion]}"
           end
         end
 
@@ -369,16 +370,16 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
       end
 
       if violations.any?
-        puts "\n⚠️  Frontend-Backend Architecture Notice (#{violations.length} area(s) for improvement):"
-        puts "   📋 Architecture: Prefer HTML, use Turbo Stream for partial DOM updates when needed"
+        puts "\n❌ Frontend-Backend Architecture Violations (#{violations.length} violation(s) found):"
+        puts "   📋 Architecture: Use HTML, use Turbo Stream for partial DOM updates when needed"
         puts "   🎯 Goal: Reduce frontend complexity and avoid manual DOM manipulation errors\n"
 
         violations.group_by { |v| v[:file] }.each do |file, file_violations|
           puts "   📄 #{file}:"
           file_violations.each do |v|
             puts "      Line #{v[:line]}: #{v[:code]}"
-            puts "      ⚠️  Issue: #{v[:issue]}"
-            puts "      ✅ Suggestion: #{v[:suggestion]}\n"
+            puts "      ❌ Problem: #{v[:issue]}"
+            puts "      ✅ Fix: #{v[:suggestion]}\n"
           end
         end
 
