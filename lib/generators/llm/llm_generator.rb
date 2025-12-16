@@ -94,13 +94,8 @@ class LlmGenerator < Rails::Generators::Base
     say "LLM Generator completed successfully!", :green
 
     say "\n📝 Configuration:"
-    say "  Environment variables added to config/application.yml.example"
-    say "  Configure these in your config/application.yml:"
-    say "    LLM_BASE_URL        - API endpoint (e.g., http://localhost:4000/v1)"
-    say "    LLM_API_KEY         - Your API key"
-    say "    LLM_MODEL           - Model for text generation (e.g., gemini-2.5-flash)"
-    say "    IMAGE_GEN_MODEL     - Model for image generation (e.g., gemini-2.5-flash-image)"
-    say "    IMAGE_GEN_SIZE      - Default image size (e.g., 1024x1024)"
+    say "  ✅ LLM keys auto-configured via CLACKY_* environment variables"
+    say "  Check config/application.yml.example for customization options"
 
     say "\n🚀 Usage:"
     say "\n  1) Text generation with streaming:"
