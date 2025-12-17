@@ -1,4 +1,5 @@
 require_relative '../../lib/asset_helper'
+require_relative '../../lib/lint_helper'
 
 RSpec.configure do |config|
   config.before(:suite) do
@@ -8,28 +9,12 @@ RSpec.configure do |config|
     end
   end
 
-  private
-
-  def run_lint
-    puts "Running lint checks..."
-    output = `npm run lint 2>&1`
-    result = $?.success?
-
-    unless result
-      puts "\n" + "=" * 80
-      puts "Lint failed - Tests aborted"
-      puts "=" * 80
-      puts output
-      puts "=" * 80 + "\n"
-      abort("Lint failed. Fix the errors above and re-run tests.")
-    end
-
-    puts "✅ Lint passed"
-  end
-
   def ensure_assets_compiled
-    # Always run lint before compilation check
-    run_lint
+    # Check and run lint if needed before compilation check
+    if LintHelper.needs_lint?
+      run_lint
+      LintHelper.mark_lint_success
+    end
 
     return unless AssetHelper.needs_compilation?
 
@@ -66,5 +51,24 @@ RSpec.configure do |config|
     end
 
     puts "✅ Assets compiled successfully"
+  end
+
+  private
+
+  def run_lint
+    puts "Running lint checks..."
+    output = `npm run lint 2>&1`
+    result = $?.success?
+
+    unless result
+      puts "\n" + "=" * 80
+      puts "Lint failed - Tests aborted"
+      puts "=" * 80
+      puts output
+      puts "=" * 80 + "\n"
+      abort("Lint failed. Fix the errors above and re-run tests.")
+    end
+
+    puts "✅ Lint passed"
   end
 end
