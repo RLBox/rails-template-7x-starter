@@ -56,6 +56,7 @@
     transition: background-color 0.15s;
     border-radius: 0.375rem;
     margin: 0.125rem 0.25rem;
+    min-height: 2.5rem;
   }
 
   .ts-dropdown .option:hover,
@@ -88,13 +89,18 @@
     background: hsl(var(--color-surface-elevated));
   }
 
+  /* Fix multi-select padding when items are selected */
+  .ts-wrapper.multi.has-items .ts-control {
+    padding: 0.375rem 0.75rem;
+  }
+
   /* Multi-select items (tags) */
   .ts-wrapper.multi .ts-control > div {
     background: hsl(var(--color-primary) / 0.1);
     color: hsl(var(--color-primary));
     border: 1px solid hsl(var(--color-primary) / 0.3);
     border-radius: 0.375rem;
-    padding: 0.25rem 0.5rem;
+    padding: 0.125rem 0.375rem;
     margin: 0.125rem;
     font-size: 0.875rem;
   }

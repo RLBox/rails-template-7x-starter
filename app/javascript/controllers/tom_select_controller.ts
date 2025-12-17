@@ -79,10 +79,8 @@ export default class extends Controller {
         createOnBlur: true
       }),
 
-      // Plugins
-      ...(this.pluginsValue.length > 0 && {
-        plugins: this.buildPlugins()
-      }),
+      // Plugins - auto-enable remove_button for multi-select
+      plugins: this.buildPlugins(element.multiple),
 
       // Keyboard navigation
       closeAfterSelect: !element.multiple,
@@ -165,13 +163,27 @@ export default class extends Controller {
     }
   }
 
-  private buildPlugins(): string[] | Record<string, any> {
+  private buildPlugins(isMultiple: boolean = false): string[] | Record<string, any> {
     const plugins: Record<string, any> = {}
 
+    // Auto-enable remove_button for multi-select
+    if (isMultiple) {
+      plugins['remove_button'] = {
+        title: 'Remove this item',
+        label: '×',
+        className: 'remove'
+      }
+    }
+
+    // Add user-specified plugins
     this.pluginsValue.forEach(plugin => {
       switch (plugin) {
         case 'remove_button':
-          plugins['remove_button'] = { title: 'Remove' }
+          plugins['remove_button'] = {
+            title: 'Remove this item',
+            label: '×',
+            className: 'remove'
+          }
           break
         case 'clear_button':
           plugins['clear_button'] = { title: 'Clear All' }
@@ -184,6 +196,6 @@ export default class extends Controller {
       }
     })
 
-    return plugins
+    return Object.keys(plugins).length > 0 ? plugins : []
   }
 }

@@ -862,6 +862,18 @@ class ErrorHandler {
           return;
         }
 
+        // Allow remove/close buttons (e.g., tom-select remove buttons)
+        const classList = link.className || '';
+        const linkText = (link.textContent || '').trim();
+        if (classList.includes('remove') ||
+            classList.includes('close') ||
+            classList.includes('add') ||
+            linkText === '×' ||
+            linkText === '✕' ||
+            linkText === 'Remove') {
+          return;
+        }
+
         // Report placeholder link error
         this.handleError({
           message: `Clicked placeholder link with href="${href || '(empty)'}" - Use real Rails routes instead`,

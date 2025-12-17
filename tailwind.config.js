@@ -18,7 +18,7 @@ module.exports = {
     { pattern: /^trix/ },
     { pattern: /^attachment/ },
     { pattern: /^form/ },
-    { pattern: /^ts-control/ },
+    { pattern: /^ts-/ },
     { pattern: /^flatpickr/ },
     'dark',  // Dark mode class
   ],
