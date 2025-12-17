@@ -6,9 +6,9 @@ function createToastContainer(position: 'top-right' | 'top-center' | 'top-left' 
     container.id = containerId
 
     const positionClasses = {
-      'top-right': 'fixed top-3 right-4 z-50 flex flex-col gap-2 pointer-events-none',
-      'top-center': 'fixed top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none',
-      'top-left': 'fixed top-3 left-4 z-50 flex flex-col gap-2 pointer-events-none'
+      'top-right': 'fixed top-3 right-4 z-[9999] flex flex-col gap-2 pointer-events-none',
+      'top-center': 'fixed top-3 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none',
+      'top-left': 'fixed top-3 left-4 z-[9999] flex flex-col gap-2 pointer-events-none'
     }
 
     container.className = positionClasses[position]
@@ -20,7 +20,8 @@ function createToastContainer(position: 'top-right' | 'top-center' | 'top-left' 
 function showToast(
   message: string,
   type: 'success' | 'error' | 'info' | 'warning' | 'danger' = 'info',
-  position: 'top-right' | 'top-center' | 'top-left' = 'top-right'
+  position: 'top-right' | 'top-center' | 'top-left' = 'top-right',
+  duration: number = 3000 // 0 means no auto-close
 ): void {
   const container = createToastContainer(position)
 
@@ -63,9 +64,12 @@ function showToast(
     })
   })
 
-  setTimeout(() => {
-    removeToast(toastElement, position)
-  }, 3000)
+  // Auto-close after duration (if duration > 0)
+  if (duration > 0) {
+    setTimeout(() => {
+      removeToast(toastElement, position)
+    }, duration)
+  }
 }
 
 function removeToast(toast: HTMLElement, position: 'top-right' | 'top-center' | 'top-left' = 'top-right'): void {
@@ -88,8 +92,5 @@ function removeToast(toast: HTMLElement, position: 'top-right' | 'top-center' | 
     }
   }, 300)
 }
-
-// Attach to window and export
-window.showToast = showToast
 
 export { showToast }

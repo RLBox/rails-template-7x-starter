@@ -7,6 +7,7 @@ import ClipboardController from "./clipboard_controller"
 import TomSelectController from "./tom_select_controller"
 import FlatpickrController from "./flatpickr_controller"
 import SystemMonitorController from "./system_monitor_controller"
+import FlashController from "./flash_controller"
 
 const application = Application.start()
 
@@ -17,5 +18,6 @@ application.register("clipboard", ClipboardController)
 application.register("tom-select", TomSelectController)
 application.register("flatpickr", FlatpickrController)
 application.register("system-monitor", SystemMonitorController)
+application.register("flash", FlashController)
 
 window.Stimulus = application

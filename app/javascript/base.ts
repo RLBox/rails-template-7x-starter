@@ -9,12 +9,12 @@ import * as ActionCable from "@rails/actioncable"
 // @ts-ignore - @hotwired/turbo-rails has no type definitions, uses @hotwired/turbo types
 import { Turbo } from "@hotwired/turbo-rails"
 import { StreamActions } from "@hotwired/turbo"
+import { showToast } from './toast'
 import './controllers'
 import './clipboard_utils'
 import './sdk_utils'
 import './stimulus_validator'
 import './channels'
-import './toast'
 
 ActiveStorage.start()
 window.ActionCable = ActionCable
@@ -25,6 +25,7 @@ window.Alpine = Alpine
 // Turbo configuration: Enable Drive for full SPA experience
 // Turbo Drive is now enabled by default (replaced Rails-UJS)
 window.Turbo = Turbo
+window.showToast = showToast
 
 // Global function to restore disabled buttons (for ActionCable callbacks)
 window.restoreButtonStates = function(): void {
