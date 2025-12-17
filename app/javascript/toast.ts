@@ -32,9 +32,9 @@ function showToast(
   toastElement.className = `alert-${alertType} pointer-events-auto max-w-md shadow-lg transform transition-all duration-300 ease-out translate-x-0 opacity-100 !py-2 !px-3`
 
   toastElement.innerHTML = `
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2">
       <span class="flex-1">${message}</span>
-      <button class="ml-2 p-1 rounded hover:bg-black/10 transition-colors" aria-label="Close">
+      <button class="p-0.5 -mr-1 rounded hover:bg-black/10 transition-colors" aria-label="Close">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
