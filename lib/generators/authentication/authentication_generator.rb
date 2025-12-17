@@ -416,6 +416,7 @@ class AuthenticationGenerator < Rails::Generators::Base
     say "\n📋 Required Next Steps:", :cyan
     say "1. Run: bundle install && rails db:migrate && touch tmp/restart.txt"
     say "2. Update navigation links in app/views/shared/_nav_links.html.erb"
+    say "   (nav_links renders for ALL users - logged in or not, no current_user check needed)"
 
     say "\n🧩 Available Components:", :cyan
     say "• Navbar:      render 'shared/navbar'"
