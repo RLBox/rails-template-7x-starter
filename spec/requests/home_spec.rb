@@ -30,7 +30,7 @@ RSpec.describe "Home", type: :request do
       total_navigation = nav_count + nav_headers.count
       expect(total_navigation).to be <= 1,
         "Found #{total_navigation} navigation elements (#{nav_count} <nav> + #{nav_headers.count} header). " \
-        "Remove duplicate header from view - use shared/_navbar.html.erb instead."
+        "Remove duplicate header from view as shared/_navbar.html.erb is automatically rendered in the layout."
 
       # Check 2: No demo placeholder links
       bad_links = doc.css('a[href="#"], a[href="#!"], a[href^="javascript:"]')

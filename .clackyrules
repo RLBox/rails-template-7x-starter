@@ -51,8 +51,8 @@ CRITICAL: USE SEMANTIC TOKENS FOR COLORS, GRADIENTS, FONTS, ETC. It's important 
 
 Pay attention to contrast, color, and typography.
 
-### Step 2: REQUIRED - Develop demo view based Design System and user requirements
-Develop a demo view based on the new design system and user requirements, allowing users to quickly see a UI effect. The view should be located at `app/views/shared/demo.html.erb` (Only write body content, The system has already completed route configuration - when there's no home/index.html.erb, the homepage will automatically render this view)
+### Step 2: REQUIRED - Create Static Demo View
+Create a static demo view at `app/views/shared/demo.html.erb` using only HTML and Tailwind classes from the design system. Use hardcoded placeholder content - no models, controllers, or database needed. (Only write body content, The system has already completed route configuration - when there's no home/index.html.erb, the homepage will automatically render this view)
 
 ### Step 3: REQUIRED - Testing visit '/'
 **ALWAYS run the project, then use `curl http://localhost:<PORT>/` to ensure these is no error**
