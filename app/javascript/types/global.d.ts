@@ -4,7 +4,6 @@ import { Application } from "@hotwired/stimulus"
 declare global {
   interface Window {
     Stimulus: Application;
-    Alpine: any;
     ActionCable: any;
     Turbo: any;
     App: {
@@ -44,20 +43,9 @@ declare module '@rails/actioncable' {
   }
 }
 
-// ActiveStorage types  
+// ActiveStorage types
 declare module '@rails/activestorage' {
   export function start(): void;
-}
-
-// AlpineJS types
-declare module 'alpinejs' {
-  interface Alpine {
-    start(): void;
-    data(name: string, callback: () => any): void;
-  }
-
-  const Alpine: Alpine;
-  export default Alpine;
 }
 
 export {};
