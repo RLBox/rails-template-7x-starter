@@ -121,15 +121,23 @@ RSpec.describe "Authenticated Access", type: :request do
       skip "Home page not yet created" unless File.exist?(Rails.root.join(home_index_file))
 
       content = File.read(Rails.root.join(home_index_file))
+      doc = Nokogiri::HTML::DocumentFragment.parse(content)
 
-      # Home page should have data-testid marker
-      expect(content).to match(/data-testid=["']home-page-container["']/),
-        "Home page should have data-testid='home-page-container' marker for fixed navbar"
+      # Find element with data-testid="home-page-container"
+      home_container = doc.at_css('[data-testid="home-page-container"]')
 
-      # Home page container should have top padding to avoid navbar overlay
-      expect(content).to match(/data-testid=["']home-page-container["'][^>]*class=["'][^"']*pt-(?:20|24|28|32)/m),
-        "Home page container with data-testid='home-page-container' should have top padding class (pt-20, pt-24, pt-28, or pt-32) " \
-        "to prevent content being hidden under the fixed navbar"
+      expect(home_container).to be_present,
+        "Home page should have data-testid='home-page-container' marker on the first main section (Hero Section) for fixed navbar"
+
+      # Extract class attribute
+      class_attr = home_container['class'] || ''
+
+      # Check for top padding
+      has_padding = class_attr.match?(/\bpt-(?:20|24|28|32)\b/)
+
+      expect(has_padding).to be_truthy,
+        "The first main section with data-testid='home-page-container' should have top padding class (pt-20, pt-24, pt-28, or pt-32) " \
+        "to prevent content being hidden under the fixed navbar. Add it to the first Hero/Main section, not the outer wrapper."
     end
 <% end -%>
   end

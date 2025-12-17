@@ -1,7 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe LlmStreamJob, type: :job do
-  it 'perform_now does not raise error' do
-    expect { described_class.perform_now }.not_to raise_error
+  it 'perform_now does not raise error with required parameters' do
+    expect {
+      described_class.perform_now(
+        channel_name: 'test_channel',
+        prompt: 'Test prompt',
+        system: 'Test system message'
+      )
+    }.not_to raise_error
   end
 end
