@@ -704,7 +704,33 @@ class ErbAstParser
       end
     end
 
-    # Recursively search child nodes
+    # Handle ternary operator: condition ? "controller-a" : "controller-b"
+    # or: condition ? "controller-a" : ""
+    if node.type == :if
+      # In AST, ternary is represented as :if node with 3 children:
+      # [0] = condition, [1] = true branch, [2] = false branch
+      true_branch = node.children[1]
+      false_branch = node.children[2]
+
+      # Extract controller names from string literals in both branches
+      [true_branch, false_branch].each do |branch|
+        next unless branch
+        if branch.type == :str
+          branch.children[0].split(/\s+/).each do |ctrl|
+            controllers << ctrl.strip unless ctrl.strip.empty?
+          end
+        else
+          # Recursively process non-string branches
+          controllers.concat(extract_controllers_from_ast(branch))
+        end
+      end
+
+      # Don't recursively process :if node's children again to avoid extracting
+      # strings from the condition part (e.g., "home" in controller_name == "home")
+      return controllers
+    end
+
+    # Recursively search child nodes for other node types
     if node.respond_to?(:children)
       node.children.each do |child|
         controllers.concat(extract_controllers_from_ast(child)) if child.is_a?(Parser::AST::Node)

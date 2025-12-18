@@ -101,21 +101,23 @@ RSpec.describe "Authenticated Access", type: :request do
       content = File.read(Rails.root.join(home_index_file))
       doc = Nokogiri::HTML::DocumentFragment.parse(content)
 
-      # Find element with data-testid="home-page-container"
-      home_container = doc.at_css('[data-testid="home-page-container"]')
+      # Find first section as direct child of container
+      first_section = doc.at_css('div > [data-testid="home-first-section"]')
 
-      expect(home_container).to be_present,
-        "Home page should have data-testid='home-page-container' marker on the first main section (Hero Section) for fixed navbar"
+      expect(first_section).to be_present,
+        "Home page needs data-testid='home-first-section' on your first content section (as direct child of a container). " \
+        "Add it to whichever element starts your page content. " \
+        "Example: <div><section data-testid='home-first-section' class='pt-24'>...</section></div>"
 
       # Extract class attribute
-      class_attr = home_container['class'] || ''
+      class_attr = first_section['class'] || ''
 
       # Check for top padding
       has_padding = class_attr.match?(/\bpt-(?:20|24|28|32)\b/)
 
       expect(has_padding).to be_truthy,
-        "The first main section with data-testid='home-page-container' should have top padding class (pt-20, pt-24, pt-28, or pt-32) " \
-        "to prevent content being hidden under the fixed navbar. Add it to the first Hero/Main section, not the outer wrapper."
+        "The first section with data-testid='home-first-section' needs top padding (pt-20, pt-24, pt-28, or pt-32) " \
+        "to prevent content being hidden under the fixed navbar. Add the padding to the same element."
     end
 <% end -%>
   end
