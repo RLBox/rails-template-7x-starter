@@ -17,15 +17,31 @@ RSpec.describe 'Project Conventions Validation', type: :system do
       if receiver && receiver.type == :const && [:create, :create!].include?(method)
         model_name = receiver.children[1].to_s
 
-        # Extract hash parameters
+        # Extract hash parameters (handles both direct hash and array of hashes)
         params = []
         node.children[2..-1].each do |arg|
-          if arg.is_a?(Parser::AST::Node) && arg.type == :hash
+          next unless arg.is_a?(Parser::AST::Node)
+
+          # Handle direct hash argument: Model.create!({...})
+          if arg.type == :hash
             arg.children.each do |pair|
               if pair.type == :pair
                 key = pair.children[0]
                 param_name = key.type == :sym ? key.children[0].to_s : key.children[0]
                 params << param_name
+              end
+            end
+          # Handle array of hashes: Model.create!([{...}, {...}])
+          elsif arg.type == :array
+            arg.children.each do |array_element|
+              if array_element.is_a?(Parser::AST::Node) && array_element.type == :hash
+                array_element.children.each do |pair|
+                  if pair.type == :pair
+                    key = pair.children[0]
+                    param_name = key.type == :sym ? key.children[0].to_s : key.children[0]
+                    params << param_name
+                  end
+                end
               end
             end
           end
@@ -160,7 +176,7 @@ RSpec.describe 'Project Conventions Validation', type: :system do
           end
         end
 
-        puts "\n   💡 Fix: Add 'require \"open-uri\"' at top, then:"
+        puts "\n   💡 Fix:"
         missing_attachments.group_by { |e| e[:model] }.each do |model, errors|
           puts "      #{model}.create!("
           errors.uniq { |e| e[:attachment] }.each do |e|
