@@ -65,7 +65,7 @@ RSpec.describe "Authenticated Access", type: :request do
       check_clacky_todos([navbar_file, user_dropdown_file, nav_links_file])
     end
 
-    it "validates nav_links does not contain current_user checks" do
+    it "validates nav_links does not contain current_user checks or placeholder links" do
       nav_links_file = 'app/views/shared/_nav_links.html.erb'
       nav_links_path = Rails.root.join(nav_links_file)
 
@@ -75,11 +75,21 @@ RSpec.describe "Authenticated Access", type: :request do
 
       content = File.read(nav_links_path)
 
-      # STRICT CHECK: nav_links should NOT contain 'current_user'
-      expect(content).not_to include('current_user'),
-        "nav_links.html.erb should NOT contain 'current_user' checks. " \
+      # Check 1: nav_links should NOT contain 'current_user' or 'Current.user'
+      has_current_user = content.include?('current_user') || content.include?('Current.user')
+      expect(has_current_user).to be_falsey,
+        "nav_links.html.erb should NOT contain 'current_user' or 'Current.user' checks. " \
         "Nav links are PUBLIC navigation links visible to ALL users (logged in or not). " \
         "For user-specific content, use user_dropdown partial instead."
+
+      # Check 2: nav_links should NOT contain placeholder or anchor links
+      doc = Nokogiri::HTML::DocumentFragment.parse(content)
+      bad_links = doc.css('a[href^="#"], a[href^="javascript:"]')
+
+      expect(bad_links).to be_empty,
+        "Found #{bad_links.size} placeholder/anchor link(s) in nav_links. Replace them with real routes:\n" \
+        "  - Static pages: create new page with controller/view/route\n" \
+        "  - Functional links: use existing route helpers"
     end
 <% if @navbar_style == 'floating' || @navbar_style == 'transparent' -%>
 
