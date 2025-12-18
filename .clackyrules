@@ -52,7 +52,7 @@ CRITICAL: USE SEMANTIC TOKENS FOR COLORS, GRADIENTS, FONTS, ETC. It's important 
 Pay attention to contrast, color, and typography.
 
 ### Step 2: REQUIRED - Create Static Demo View
-Create a static demo view at `app/views/shared/demo.html.erb` using only HTML and Tailwind classes from the design system. Use hardcoded placeholder content - no models, controllers, or database needed. (Only write body content, The system has already completed route configuration - when there's no home/index.html.erb, the homepage will automatically render this view)
+Create a static demo view at `app/views/shared/demo.html.erb` using only HTML and Tailwind classes from the design system. Use hardcoded placeholder content - no models, controllers, or database needed. **DO NOT create navbar - the system already has `shared/_navbar.html.erb` which is automatically rendered in the layout.** Only write body content. (The system has already completed route configuration - when there's no home/index.html.erb, the homepage will automatically render this view)
 
 ### Step 3: REQUIRED - Testing visit '/'
 **ALWAYS run the project, then use `curl http://localhost:<PORT>/` to ensure these is no error**

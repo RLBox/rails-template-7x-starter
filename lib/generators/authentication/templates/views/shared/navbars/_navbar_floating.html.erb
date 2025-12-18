@@ -43,11 +43,10 @@ Animation (add these for entrance effects):
 -->
 <!-- DO NOT modify data-controller, data-action, or data-dropdown-target attributes -->
 
-<%# Use fixed positioning on homepage, sticky on other pages for better scroll behavior %>
-<div class="<%= controller_name == 'home' && action_name == 'index' ? 'fixed top-4 px-4' : 'sticky top-0' %> left-0 right-0 z-50">
-  <nav class="<%= controller_name == 'home' && action_name == 'index' ? 'rounded-2xl' : '' %> backdrop-blur-lg bg-surface-elevated/70 border border-border shadow-lg"
-       data-controller="dropdown"
-       data-dropdown-close-on-click-outside-value="false">
+<div data-controller="dropdown" data-dropdown-close-on-click-outside-value="false">
+  <%# Use fixed positioning on homepage, sticky on other pages for better scroll behavior %>
+  <div class="<%= controller_name == 'home' && action_name == 'index' ? 'fixed top-4 px-4' : 'sticky top-0' %> left-0 right-0 z-50">
+    <nav class="<%= controller_name == 'home' && action_name == 'index' ? 'rounded-2xl' : '' %> backdrop-blur-lg bg-surface-elevated/70 border border-border shadow-lg">
     <div class="container-xl mx-auto px-6">
       <div class="flex items-center justify-between h-16">
 
@@ -79,43 +78,44 @@ Animation (add these for entrance effects):
           <%= lucide_icon "menu", class: "w-6 h-6" %>
         </button>
       </div>
+    </div>
+    </nav>
+  </div>
 
-      <!-- Mobile drawer - DO NOT REMOVE this structure -->
-      <div data-dropdown-target="menu" class="hidden fixed inset-0 z-50 md:hidden">
-        <!-- Background overlay -->
-        <div class="fixed inset-0 bg-black/50" data-action="click->dropdown#close"></div>
+  <!-- Mobile drawer - DO NOT REMOVE this structure -->
+  <div data-dropdown-target="menu" class="hidden fixed inset-0 z-[100] md:hidden">
+    <!-- Background overlay -->
+    <div class="fixed inset-0 bg-black/50" data-action="click->dropdown#close"></div>
 
-        <!-- Drawer content -->
-        <div class="fixed right-0 top-0 h-full w-64 bg-surface-elevated shadow-xl overflow-y-auto">
-          <div class="p-4">
-            <!-- Close button -->
-            <button type="button"
-                    data-action="click->dropdown#close"
-                    class="mb-4 p-2 hover:bg-surface rounded-lg transition-colors">
-              <%= lucide_icon "x", class: "w-6 h-6" %>
-            </button>
+    <!-- Drawer content -->
+    <div class="fixed right-0 top-0 h-full w-64 bg-surface-elevated shadow-xl overflow-y-auto">
+      <div class="p-4">
+        <!-- Close button -->
+        <button type="button"
+                data-action="click->dropdown#close"
+                class="mb-4 p-2 hover:bg-surface rounded-lg transition-colors">
+          <%= lucide_icon "x", class: "w-6 h-6" %>
+        </button>
 
-            <!-- Mobile navigation -->
-            <div class="mb-6 flex flex-col space-y-1">
-              <%= render 'shared/nav_links' %>
+        <!-- Mobile navigation -->
+        <div class="mb-6 flex flex-col space-y-1">
+          <%= render 'shared/nav_links' %>
+        </div>
+
+        <!-- Mobile user menu -->
+        <div class="border-t border-gray-300 dark:border-gray-700 pt-4">
+          <% if current_user %>
+            <%= render 'shared/user_dropdown' %>
+          <% else %>
+            <div class="flex flex-col space-y-2">
+              <%= link_to "Sign In", sign_in_path, class: "btn-ghost btn-md w-full" %>
+              <%= link_to "Get Started", sign_up_path, class: "btn-primary btn-md w-full" %>
             </div>
-
-            <!-- Mobile user menu -->
-            <div class="border-t border-border pt-4">
-              <% if current_user %>
-                <%= render 'shared/user_dropdown' %>
-              <% else %>
-                <div class="flex flex-col space-y-2">
-                  <%= link_to "Sign In", sign_in_path, class: "btn-ghost btn-md w-full" %>
-                  <%= link_to "Get Started", sign_up_path, class: "btn-primary btn-md w-full" %>
-                </div>
-              <% end %>
-            </div>
-          </div>
+          <% end %>
         </div>
       </div>
     </div>
-  </nav>
+  </div>
 </div>
 
 <!-- ⚠️ IMPORTANT: This navbar uses fixed positioning on homepage only -->

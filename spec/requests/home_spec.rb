@@ -1,4 +1,6 @@
 require 'rails_helper'
+require 'net/http'
+require 'uri'
 
 # IMPORTANT: Demo File Management in Tests
 # - If app/views/shared/demo.html.erb exists but app/views/home/index.html.erb exists,
@@ -43,6 +45,34 @@ RSpec.describe "Home", type: :request do
       bad_forms = doc.css('form:not([action]), form[action="#"], form[action=""], form[action^="javascript:"]')
       expect(bad_forms).to be_empty,
         "Found #{bad_forms.size} placeholder form(s). Use Rails form helpers (form_with) with real routes."
+
+      # Check 4: Image URLs should not return 404
+      external_images = doc.css('img[src^="http"], img[src^="https"]')
+      broken_images = []
+
+      external_images.each do |img|
+        src = img['src']
+        begin
+          uri = URI.parse(src)
+          response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https', open_timeout: 3, read_timeout: 3) do |http|
+            http.head(uri.path.empty? ? '/' : uri.path)
+          end
+
+          # Only report 404 errors, ignore timeouts and other network issues
+          if response.is_a?(Net::HTTPNotFound)
+            broken_images << src
+          end
+        rescue Timeout::Error, Net::OpenTimeout, Net::ReadTimeout
+          # Ignore timeout errors - network might be slow
+        rescue => e
+          # Ignore other network errors (DNS, connection refused, etc.)
+        end
+      end
+
+      expect(broken_images).to be_empty,
+        "Found #{broken_images.size} image(s) returning 404:\n" +
+        broken_images.map { |src| "  - #{src}" }.join("\n") +
+        "\nUpdate image URLs to use accessible sources (e.g., images.unsplash.com) or local assets."
     end
 
     it "should not have demo.html.erb when home/index.html.erb exists" do

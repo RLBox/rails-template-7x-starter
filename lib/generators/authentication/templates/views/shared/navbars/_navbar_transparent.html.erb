@@ -35,79 +35,80 @@ Position:
 -->
 <!-- DO NOT modify data-controller, data-action, or data-dropdown-target attributes (except to add navbar-scroll) -->
 
-<%# Use fixed positioning on homepage, sticky on other pages for better scroll behavior %>
-<nav class="<%= controller_name == 'home' && action_name == 'index' ? 'fixed top-0 bg-transparent' : 'sticky top-0 bg-surface-elevated shadow-md border-b border-border' %> left-0 right-0 z-50"
-     data-controller="dropdown <%= controller_name == 'home' && action_name == 'index' ? 'navbar-scroll' : '' %>"
-     data-dropdown-close-on-click-outside-value="false">
-  <div class="container-xl mx-auto px-4">
-    <div class="flex items-center justify-between h-16">
+<div data-controller="dropdown" data-dropdown-close-on-click-outside-value="false">
+  <%# Use fixed positioning on homepage, sticky on other pages for better scroll behavior %>
+  <nav class="<%= controller_name == 'home' && action_name == 'index' ? 'fixed top-0 bg-transparent' : 'sticky top-0 bg-surface-elevated shadow-md border-b border-border' %> left-0 right-0 z-50"
+       data-controller="<%= controller_name == 'home' && action_name == 'index' ? 'navbar-scroll' : '' %>">
+    <div class="container-xl mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
 
-      <!-- Logo -->
-      <div class="flex items-center gap-2">
-        <!-- CLACKY_TODO: Customize your logo, Use Rails.application.config.x.appname for appname -->
-        <%%= lucide_icon "sparkles", class: "w-6 h-6 #{controller_name == 'home' && action_name == 'index' ? 'text-gray-900 dark:text-white' : 'text-primary'}" %>
-        <%%= link_to Rails.application.config.x.appname, root_path, class: "text-xl font-bold #{controller_name == 'home' && action_name == 'index' ? 'text-gray-900 dark:text-white' : 'text-primary'}" %>
+        <!-- Logo -->
+        <div class="flex items-center gap-2">
+          <!-- CLACKY_TODO: Customize your logo, Use Rails.application.config.x.appname for appname -->
+          <%%= lucide_icon "sparkles", class: "w-6 h-6 #{controller_name == 'home' && action_name == 'index' ? 'text-gray-900 dark:text-white' : 'text-primary'}" %>
+          <%%= link_to Rails.application.config.x.appname, root_path, class: "text-xl font-bold #{controller_name == 'home' && action_name == 'index' ? 'text-gray-900 dark:text-white' : 'text-primary'}" %>
+        </div>
+
+        <!-- Desktop navigation -->
+        <div class="hidden md:flex items-center space-x-6">
+          <%= render 'shared/nav_links' %>
+        </div>
+
+        <!-- Desktop auth -->
+        <div class="hidden md:flex items-center space-x-4">
+          <% if current_user %>
+            <%= render 'shared/user_dropdown' %>
+          <% else %>
+            <%= link_to "Sign In", sign_in_path, class: "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium" %>
+            <%= link_to "Get Started", sign_up_path, class: "btn-primary btn-sm" %>
+          <% end %>
+        </div>
+
+        <!-- Mobile hamburger - DO NOT REMOVE -->
+        <button type="button"
+                data-action="click->dropdown#toggle"
+                class="md:hidden p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100/10 rounded-lg transition-colors">
+          <%= lucide_icon "menu", class: "w-6 h-6" %>
+        </button>
       </div>
-
-      <!-- Desktop navigation -->
-      <div class="hidden md:flex items-center space-x-6">
-        <%= render 'shared/nav_links' %>
-      </div>
-
-      <!-- Desktop auth -->
-      <div class="hidden md:flex items-center space-x-4">
-        <% if current_user %>
-          <%= render 'shared/user_dropdown' %>
-        <% else %>
-          <%= link_to "Sign In", sign_in_path, class: "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium" %>
-          <%= link_to "Get Started", sign_up_path, class: "btn-primary btn-sm" %>
-        <% end %>
-      </div>
-
-      <!-- Mobile hamburger - DO NOT REMOVE -->
-      <button type="button"
-              data-action="click->dropdown#toggle"
-              class="md:hidden p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100/10 rounded-lg transition-colors">
-        <%= lucide_icon "menu", class: "w-6 h-6" %>
-      </button>
     </div>
+  </nav>
 
-    <!-- Mobile drawer - DO NOT REMOVE this structure -->
-    <div data-dropdown-target="menu" class="hidden fixed inset-0 z-50 md:hidden">
-      <!-- Background overlay -->
-      <div class="fixed inset-0 bg-black/50" data-action="click->dropdown#close"></div>
+  <!-- Mobile drawer - DO NOT REMOVE this structure -->
+  <div data-dropdown-target="menu" class="hidden fixed inset-0 z-[100] md:hidden">
+    <!-- Background overlay -->
+    <div class="fixed inset-0 bg-black/50" data-action="click->dropdown#close"></div>
 
-      <!-- Drawer content -->
-      <div class="fixed right-0 top-0 h-full w-64 bg-surface-elevated shadow-xl overflow-y-auto">
-        <div class="p-4">
-          <!-- Close button -->
-          <button type="button"
-                  data-action="click->dropdown#close"
-                  class="mb-4 p-2 hover:bg-surface rounded-lg transition-colors">
-            <%= lucide_icon "x", class: "w-6 h-6" %>
-          </button>
+    <!-- Drawer content -->
+    <div class="fixed right-0 top-0 h-full w-64 bg-surface-elevated shadow-xl overflow-y-auto">
+      <div class="p-4">
+        <!-- Close button -->
+        <button type="button"
+                data-action="click->dropdown#close"
+                class="mb-4 p-2 hover:bg-surface rounded-lg transition-colors">
+          <%= lucide_icon "x", class: "w-6 h-6" %>
+        </button>
 
-          <!-- Mobile navigation -->
-          <div class="mb-6 flex flex-col space-y-2">
-            <%= render 'shared/nav_links' %>
-          </div>
+        <!-- Mobile navigation -->
+        <div class="mb-6 flex flex-col space-y-2">
+          <%= render 'shared/nav_links' %>
+        </div>
 
-          <!-- Mobile user menu -->
-          <div class="border-t border-border pt-4">
-            <% if current_user %>
-              <%= render 'shared/user_dropdown' %>
-            <% else %>
-              <div class="flex flex-col space-y-2">
-                <%= link_to "Sign In", sign_in_path, class: "btn-ghost btn-md w-full" %>
-                <%= link_to "Get Started", sign_up_path, class: "btn-primary btn-md w-full" %>
-              </div>
-            <% end %>
-          </div>
+        <!-- Mobile user menu -->
+        <div class="border-t border-gray-300 dark:border-gray-700 pt-4">
+          <% if current_user %>
+            <%= render 'shared/user_dropdown' %>
+          <% else %>
+            <div class="flex flex-col space-y-2">
+              <%= link_to "Sign In", sign_in_path, class: "btn-ghost btn-md w-full" %>
+              <%= link_to "Get Started", sign_up_path, class: "btn-primary btn-md w-full" %>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>
   </div>
-</nav>
+</div>
 
 <!-- ⚠️ IMPORTANT: This navbar uses fixed positioning on homepage only -->
 <!-- Homepage (home/index.html.erb): Add data-testid="home-first-section" class="pt-20" to your first content section (as direct child of container) -->
