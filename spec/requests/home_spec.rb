@@ -35,8 +35,9 @@ RSpec.describe "Home", type: :request do
       # Check 2: No demo placeholder links
       bad_links = doc.css('a[href="#"], a[href="#!"], a[href^="javascript:"]')
       expect(bad_links).to be_empty,
-        "Found #{bad_links.size} placeholder link(s): #{bad_links.map { |l| l.to_html.truncate(80) }.join(', ')}. " \
-        "You can reference demo's HTML structure and Tailwind classes, but must replace placeholder links with real Rails routes (e.g., root_path, sign_up_path)."
+        "Found #{bad_links.size} placeholder link(s). Replace them with real routes:\n" \
+        "  - Static pages : create new page with home controller\n" \
+        "  - Functional links: use existing route helpers"
 
       # Check 3: No placeholder forms
       bad_forms = doc.css('form:not([action]), form[action="#"], form[action=""], form[action^="javascript:"]')

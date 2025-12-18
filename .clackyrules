@@ -99,7 +99,7 @@ Do not recreate administrator functionality in User model. Administrator system 
 
 **CRITICAL: Demo File Management**
 - Demo shows good HTML structure and styling - CAN reference sections/layouts/Tailwind classes
-- When creating home/index.html.erb: use real Rails routes and database data, no placeholder links (`href="#"`)
+- When creating home/index.html.erb: no placeholder links (`href="#"`), link to real static pages (create controller/view/route for Features, About, etc.) or use existing routes (sign_in_path, sign_up_path, etc.), use real database data
 - Once home/index.html.erb exists, IMMEDIATELY delete demo.html.erb
 
 Do not generate any fake data that should originally be in the database for users.
