@@ -1,7 +1,33 @@
 import { Controller } from "@hotwired/stimulus"
 
-// SDK Integration Controller
-// Handles SDK availability detection and communication with external development tools
+/**
+ * SDK Integration Controller
+ *
+ * Handles SDK availability detection and communication with external development tools
+ *
+ * Usage:
+ *   <div data-controller="sdk-integration"
+ *        data-sdk-integration-message-value="Help with this page"
+ *        data-sdk-integration-action-value="sendMessage">
+ *     <button data-sdk-integration-target="sdkButton"
+ *             data-action="click->sdk-integration#sendToChatbox"
+ *             style="display: none;">
+ *       Ask AI
+ *     </button>
+ *   </div>
+ *
+ * Targets:
+ *   - sdkButton (optional): Button shown only when SDK is available
+ *
+ * Values:
+ *   - message (String): Message to send to SDK chatbox
+ *   - action (String): SDK action type - "sendMessage" or "sendErrorForFix"
+ *
+ * Actions:
+ *   - sendToChatbox: Send message to SDK chatbox
+ *   - sendErrorToChatbox: Send error to SDK for fixing
+ */
+
 // stimulus-validator: system-controller
 export default class extends Controller<HTMLElement> {
   static targets = [

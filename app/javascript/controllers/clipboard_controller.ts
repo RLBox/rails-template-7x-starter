@@ -1,14 +1,23 @@
 import { Controller } from "@hotwired/stimulus"
 
-/*
+/**
  * Clipboard Controller
  *
+ * Copies text to clipboard with visual feedback
+ *
  * Usage:
- * <div data-controller="clipboard">
- *   <input data-clipboard-target="source" value="text to copy">
- *   <button data-action="click->clipboard#copy">Copy</button>
- * </div>
+ *   <div data-controller="clipboard">
+ *     <input data-clipboard-target="source" value="text to copy">
+ *     <button data-action="click->clipboard#copy">Copy</button>
+ *   </div>
+ *
+ * Targets:
+ *   - source (required): Input element containing text to copy
+ *
+ * Actions:
+ *   - copy: Copy text from source target to clipboard and show feedback
  */
+
 // stimulus-validator: system-controller
 export default class extends Controller<HTMLElement> {
   static targets = ["source"]

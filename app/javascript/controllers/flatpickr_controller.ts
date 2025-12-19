@@ -3,27 +3,43 @@ import flatpickr from "flatpickr"
 import type { Instance } from "flatpickr/dist/types/instance"
 import type { Options } from "flatpickr/dist/types/options"
 
-// Flatpickr Stimulus Controller
-// Enhances text inputs with beautiful date/time picker
-//
-// Usage (Basic):
-//   <%= form.text_field :published_at, data: { controller: "flatpickr" } %>
-//
-// Usage (With Time):
-//   <%= form.text_field :published_at,
-//     data: {
-//       controller: "flatpickr",
-//       flatpickr_enable_time_value: true
-//     }
-//   %>
-//
-// Usage (Date Range):
-//   <%= form.text_field :start_date,
-//     data: {
-//       controller: "flatpickr",
-//       flatpickr_mode_value: "range"
-//     }
-//   %>
+/**
+ * Flatpickr Controller
+ *
+ * Enhances text inputs with date/time picker
+ * Note: Date/datetime form fields automatically use this controller
+ *
+ * Usage:
+ *   <%= form.text_field :published_at,
+ *     data: {
+ *       controller: "flatpickr",
+ *       flatpickr_enable_time_value: true,
+ *       flatpickr_mode_value: "range"
+ *     }
+ *   %>
+ *
+ * Values:
+ *   - enableTime (Boolean, default: false): Enable time picker
+ *   - noCalendar (Boolean, default: false): Hide calendar, show time only
+ *   - mode (String, default: "single"): Selection mode - "single", "multiple", or "range"
+ *   - dateFormat (String): Date format for form submission (auto-detected if not set)
+ *   - altFormat (String): Display format shown to user (auto-detected if not set)
+ *   - minDate (String): Minimum selectable date
+ *   - maxDate (String): Maximum selectable date
+ *   - disable (Array): Array of dates to disable
+ *   - enable (Array): Array of dates to enable (disables all others)
+ *   - inline (Boolean, default: false): Display calendar inline instead of dropdown
+ *   - time24hr (Boolean, default: true): Use 24-hour time format
+ *   - defaultDate (String): Default selected date
+ *   - defaultHour (Number, default: 12): Default hour for time picker
+ *   - defaultMinute (Number, default: 0): Default minute for time picker
+ *
+ * Actions:
+ *   - setDate: Set date programmatically
+ *   - clear: Clear selected date
+ *   - open: Open calendar
+ *   - close: Close calendar
+ */
 
 // stimulus-validator: system-controller
 export default class extends Controller {

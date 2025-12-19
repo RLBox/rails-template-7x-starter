@@ -2,23 +2,35 @@ import { Controller } from "@hotwired/stimulus"
 import TomSelect from "tom-select"
 import type { TomInput, TomSettings, RecursivePartial } from "tom-select/dist/types/types"
 
-// Tom Select Stimulus Controller
-// Enhances native <select> elements with search, multi-select, and AJAX capabilities
-//
-// Usage:
-//   <%= form.select :category_id, options, {}, {
-//     data: { controller: "tom-select" }
-//   } %>
-//
-// With options:
-//   <%= form.select :tags, options, {}, {
-//     data: {
-//       controller: "tom-select",
-//       tom_select_max_items_value: 5,
-//       tom_select_placeholder_value: "Select tags..."
-//     },
-//     multiple: true
-//   } %>
+/**
+ * Tom Select Controller
+ *
+ * Enhances native <select> elements with search, multi-select, and AJAX capabilities
+ * Note: Select form fields automatically use this controller
+ *
+ * Usage:
+ *   <%= form.select :category_id, options, {}, {
+ *     data: {
+ *       controller: "tom-select",
+ *       tom_select_max_items_value: 5,
+ *       tom_select_placeholder_value: "Select tags..."
+ *     },
+ *     multiple: true
+ *   } %>
+ *
+ * Values:
+ *   - placeholder (String): Placeholder text for the select
+ *   - maxItems (Number): Maximum number of items for multi-select
+ *   - searchField (Array, default: ["text"]): Fields to search in
+ *   - allowEmptyOption (Boolean, default: true): Allow empty/null selection
+ *   - create (Boolean, default: false): Allow creating new options
+ *   - plugins (Array, default: []): Tom Select plugins - "remove_button", "clear_button", "dropdown_header"
+ *
+ * Actions:
+ *   - clear: Clear all selections
+ *   - addOption: Add a new option programmatically
+ *   - refresh: Refresh options list
+ */
 
 // stimulus-validator: system-controller
 export default class extends Controller {

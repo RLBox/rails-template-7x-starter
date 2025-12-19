@@ -1,5 +1,30 @@
 import { Controller } from "@hotwired/stimulus"
 
+/**
+ * Theme Controller
+ *
+ * Toggles dark/light theme and persists preference to localStorage
+ *
+ * Usage:
+ *   <div data-controller="theme" data-theme-storage-key-value="page-isdark">
+ *     <button data-action="click->theme#toggle">
+ *       <%= lucide_icon "sun", "data-theme-target": "lightIcon" %>
+ *       <%= lucide_icon "moon", class: "hidden", "data-theme-target": "darkIcon" %>
+ *     </button>
+ *   </div>
+ *
+ * Targets:
+ *   - lightIcon (required): Sun icon shown in light mode
+ *   - darkIcon (required): Moon icon shown in dark mode
+ *
+ * Values:
+ *   - storageKey (String, required): LocalStorage key for theme preference
+ *     Example: "admin-isdark", "home-isdark"
+ *
+ * Actions:
+ *   - toggle: Switch between dark and light theme
+ */
+
 // stimulus-validator: system-controller
 export default class extends Controller<HTMLElement> {
   static targets = ["lightIcon", "darkIcon"]

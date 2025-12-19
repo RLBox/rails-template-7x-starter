@@ -1,6 +1,25 @@
 import { Controller } from "@hotwired/stimulus"
 import { showToast } from "../toast"
 
+/**
+ * Flash Controller
+ *
+ * Displays toast notifications on controller connect
+ * Note: Flash messages from Rails automatically use this controller
+ *
+ * Usage:
+ *   <div data-controller="flash"
+ *        data-flash-message-value="<%= flash[:notice] %>"
+ *        data-flash-type-value="success">
+ *   </div>
+ *
+ * Values:
+ *   - message (String, required): Message text to display
+ *   - type (String, required): Toast type - "success", "error", "warning", "info"
+ *   - position (String, default: "top-center"): Position - "top-right", "top-center", "top-left"
+ *   - duration (Number, default: 3000): Display duration in milliseconds
+ */
+
 // stimulus-validator: system-controller
 export default class extends Controller {
   static values = {
