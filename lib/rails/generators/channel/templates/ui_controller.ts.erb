@@ -17,6 +17,8 @@ export default class extends BaseChannelController {
     // recordId: String
   }
 
+  declare readonly channelNameValue: string
+
   connect(): void {
     console.log("<%= file_name.camelize %> controller connected")
 

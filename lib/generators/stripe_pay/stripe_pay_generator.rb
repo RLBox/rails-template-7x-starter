@@ -342,6 +342,10 @@ class StripePayGenerator < Rails::Generators::Base
     say "="*70, :green
   end
 
+  def create_restart_marker
+    FileUtils.touch('tmp/need_restart')
+  end
+
   private
 
   def add_stripe_config_to_file(file_path, stripe_config)

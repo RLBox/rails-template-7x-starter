@@ -4,6 +4,7 @@ ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 return unless Rails.env.test?
+
 require 'rspec/rails'
 begin
   ActiveRecord::Migration.maintain_test_schema!
@@ -12,6 +13,13 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 # Load support files
 Dir[Rails.root.join('spec', 'support', '**', '*.rb')].sort.each { |f| require f }
+
+# Auto-restart server if generator was run
+if File.exist?('tmp/need_restart')
+  FileUtils.touch('tmp/restart.txt')
+  File.delete('tmp/need_restart')
+  puts "Server restart triggered automatically."
+end
 
 RSpec.configure do |config|
   # If you're not using ActiveRecord, or you'd prefer not to run each of your

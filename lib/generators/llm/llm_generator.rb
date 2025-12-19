@@ -133,6 +133,10 @@ class LlmGenerator < Rails::Generators::Base
     say "  Don't validate role & content yourself - the concern handles it."
   end
 
+  def create_restart_marker
+    FileUtils.touch('tmp/need_restart')
+  end
+
   private
 
   def add_llm_base_config_if_missing(file_path, llm_base_config)

@@ -64,9 +64,6 @@ Create a static demo view at `app/views/shared/demo.html.erb`:
 ### Step 4: Now You Can Create Models and Features
 Only after completing Steps 1-3, you can NOW create ANY models and controllers. If you need authentication/payment/LLM features, check the generators section below.
 
-**CRITICAL: After running `rails g authentication`, `rails g stripe_pay`, or `rails g llm`, you MUST run `touch tmp/restart.txt` after bundle install and db:migrate complete.**
-- **If you are planning tasks with TodoWrite tool, ALWAYS include "Run touch tmp/restart.txt to restart server" as a task item after all installation and migration steps**
-
 ### Step 5: MANDATORY - Before Task Completion
 **CRITICAL: Run `rake test` and ensure ALL tests pass before delivering any feature**
 - This is NON-NEGOTIABLE - never deliver with failing tests

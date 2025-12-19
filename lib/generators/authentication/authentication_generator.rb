@@ -468,6 +468,10 @@ class AuthenticationGenerator < Rails::Generators::Base
     say "\n" + "="*70, :green
   end
 
+  def create_restart_marker
+    FileUtils.touch('tmp/need_restart')
+  end
+
   private
 
   def add_authentication_to_api_base_controller
