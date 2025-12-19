@@ -1,11 +1,8 @@
 module AuthenticationHelpers
   def sign_in_as(user)
-    post sign_in_path, params: {
-      user: {
-        email: user.email,
-        password: user.password
-      }
-    }
+    # Create session directly without password - works with seed data
+    # Use api_sign_in_as for request specs (uses Authorization header)
+    api_sign_in_as(user)
   end
 
   # API authentication - sets Authorization header with session token

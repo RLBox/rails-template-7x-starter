@@ -28,8 +28,6 @@ Restarting project is unnecessary because Rails automatically hot-reloads code c
 - `config/application.yml`
 - `config/appname.txt`
 
-**CRITICAL: If you run `rails g authentication`, `rails g stripe_pay`, or `rails g llm`, you MUST run `touch tmp/restart.txt` at the END after ALL tasks are complete.**
-
 ## MANDATORY PROJECT WORKFLOW - FOLLOW EXACTLY IN THIS ORDER
 
 **STOP! Before creating ANY models or controllers, you MUST complete these steps first:**
@@ -52,13 +50,22 @@ CRITICAL: USE SEMANTIC TOKENS FOR COLORS, GRADIENTS, FONTS, ETC. It's important 
 Pay attention to contrast, color, and typography.
 
 ### Step 2: REQUIRED - Create Static Demo View
-Create a static demo view at `app/views/shared/demo.html.erb` using only HTML and Tailwind classes from the design system. Use hardcoded placeholder content - **DO NOT create ANY models, controllers, or use database at this stage**. Only write body content. (The system has already completed route configuration - when there's no home/index.html.erb, the homepage will automatically render this view)
+Create a static demo view at `app/views/shared/demo.html.erb`:
+- **ONLY use**: HTML + Tailwind classes from design system
+- **NO JavaScript**: No Stimulus controllers, no inline JS, no event handlers
+- **NO backend**: No models, controllers, database, or dynamic data
+- **Hardcoded content**: Use placeholder text and Unsplash images
+- **Body only**: Write only body content (layout already exists)
+- **Auto-routing**: System automatically renders this as homepage when home/index.html.erb doesn't exist
 
 ### Step 3: REQUIRED - Testing visit '/'
 **ALWAYS run the project, then use `curl http://localhost:<PORT>/` to ensure these is no error**
 
 ### Step 4: Now You Can Create Models and Features
 Only after completing Steps 1-3, you can NOW create ANY models and controllers. If you need authentication/payment/LLM features, check the generators section below.
+
+**CRITICAL: After running `rails g authentication`, `rails g stripe_pay`, or `rails g llm`, you MUST run `touch tmp/restart.txt` after bundle install and db:migrate complete.**
+- **If you are planning tasks with TodoWrite tool, ALWAYS include "Run touch tmp/restart.txt to restart server" as a task item after all installation and migration steps**
 
 ### Step 5: MANDATORY - Before Task Completion
 **CRITICAL: Run `rake test` and ensure ALL tests pass before delivering any feature**
@@ -177,9 +184,7 @@ Never write nested form.
 
 ## FRONTEND DEVELOPMENT RULES - STIMULUS + TURBO + TYPESCRIPT
 
-**MANDATORY**: ALL frontend interactions MUST use Stimulus controllers. NO inline JavaScript allowed.
-
-ALWAYS prefer TailwindCSS v3 and Stimulus controllers for UI behavior. NO pure JavaScript or jQuery allowed.
+**MANDATORY**: ALL frontend interactions MUST use Stimulus controllers (read controller header comments first, never guess target/value/action names). NO inline JavaScript, jQuery, or pure JavaScript allowed. ALWAYS prefer TailwindCSS v3 for styling.
 
 **Icons**: NEVER use emojis. Use Lucide icons: `<%= lucide_icon "icon-name", class: "w-5 h-5" %>`.
 
