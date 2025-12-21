@@ -1087,6 +1087,12 @@ class ErrorHandler {
   }
 
   shouldIgnoreError(errorInfo: ErrorInfo): boolean {
+    // Check if error tracking is disabled for this page (e.g., demo page)
+    const disableMetaTag = document.querySelector('meta[name="disable-error-tracking"]');
+    if (disableMetaTag && disableMetaTag.getAttribute('content') === 'true') {
+      return true;
+    }
+
     const ignoredPatterns = [
       // Browser extension errors
       /chrome-extension:/,

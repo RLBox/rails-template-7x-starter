@@ -14,6 +14,7 @@ module HomeDemoConcern
   def check_demo_mode
     if should_render_demo?
       @full_render = true
+      @disable_error_tracking = true # Disable error tracking for demo page
       flash.now[:tips] = 'This is a quick preview version. The actual functionality is under development. Please refresh and try again later'
       render 'shared/demo'
     else

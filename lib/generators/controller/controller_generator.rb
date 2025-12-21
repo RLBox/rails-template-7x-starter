@@ -6,7 +6,7 @@ class ControllerGenerator < Rails::Generators::NamedBase
   class_option :auth, type: :boolean, default: false, desc: "Generate controller with authentication required"
   class_option :single, type: :boolean, default: false, desc: "Generate singular resource (resource instead of resources)"
 
-  # Auto-fix common namespace separator mistakes
+  # Auto-fix common namespace separator mistakes (runs first)
   def normalize_name
     if name.include?(':') && !name.include?('::')
       original_name = name.dup
@@ -17,111 +17,8 @@ class ControllerGenerator < Rails::Generators::NamedBase
     end
   end
 
-  # Check if controller has namespace (e.g., admin::posts, api::v1::posts)
-  def has_namespace?
-    name.include?('::')
-  end
-
-  # Detect if this is an API controller (e.g., api::v1::posts, Api::V1::Posts, API::v1::posts)
-  def is_api_controller?
-    name.downcase.start_with?('api::')
-  end
-
-  # Parse namespace from name (e.g., "api::v1::posts" => ["api", "v1"], "admin::posts" => ["admin"])
-  def namespaces
-    return [] unless has_namespace?
-    parts = name.split('::')
-    parts[0..-2].map(&:underscore)
-  end
-
-  # Get the resource name without namespace (e.g., "api::v1::posts" => "posts", "admin::posts" => "posts")
-  def resource_name_without_namespace
-    return name unless has_namespace?
-    name.split('::').last
-  end
-
-  def check_user_model
-    return unless options[:auth]
-
-    unless File.exist?("app/models/user.rb")
-      say "Error: User model not found.", :red
-      say "Please ensure app/models/user.rb exists before using --auth option.", :yellow
-      say "You can generate it with: rails generate authentication", :blue
-      exit(1)
-    end
-  end
-
-  def check_name_validity
-    # Check for reserved words first (before processing)
-    if %w[controller controllers].include?(name.downcase)
-      say "Error: Cannot generate controller with name '#{name}'.", :red
-      say "This name is reserved. Please choose a different name.", :yellow
-      say "Example: rails generate controller products", :blue
-      exit(1)
-    end
-
-    # Check for empty or invalid names after processing
-    if base_name_without_controller.blank?
-      say "Error: Controller name cannot be empty after processing.", :red
-      say "Usage: rails generate controller NAME [actions]", :yellow
-      say "Example: rails generate controller products", :blue
-      exit(1)
-    end
-
-    # Check for minimum length (at least 2 characters)
-    if base_name_without_controller.length < 2
-      say "Error: Controller name must be at least 2 characters long.", :red
-      say "Single letter controller names can cause naming conflicts.", :yellow
-      say "Example: rails generate controller posts", :blue
-      exit(1)
-    end
-  end
-
-  def check_controller_conflicts
-    return if options[:force_override]
-
-    check_name_validity
-
-    # Special check for home controller
-    if singular_name == 'home' || plural_name == 'home'
-      say "Error: Cannot generate 'home' controller - it already exists in the system.", :red
-      say "💡 To add home page functionality:", :blue
-      say "   Create and edit app/views/home/index.html.erb directly", :blue
-      say "\n⚠️  Important: Write real business logic, do not reference any demo files", :yellow
-      exit(1)
-    end
-
-    if protected_controller_names.include?(plural_name)
-      conflict_reason = case plural_name
-                       when 'tmp', 'tmps'
-                         "as it conflicts with development middleware and temporary file system"
-                       else
-                         "as it conflicts with authentication system"
-                       end
-
-      say "Error: Cannot generate controller for '#{plural_name}' #{conflict_reason}.", :red
-      say "The following controller names are protected:", :yellow
-      protected_controller_names.each { |name| say "  - #{name}", :yellow }
-      say "\nSolutions:", :blue
-      say "1. Choose a different controller name to avoid conflicts", :blue
-      say "2. Use a different name for your controller", :blue
-      exit(1)
-    end
-  end
-
-  def check_single_resource_actions
-    if options[:single] && selected_actions.include?('index')
-      say "Error: Singular resources cannot have 'index' action.", :red
-      say "Singular resources (--single) represent a single resource instance.", :yellow
-      say "Valid actions for singular resources: show, new, edit", :blue
-      say "Remove 'index' from actions or remove --single flag.", :blue
-      exit(1)
-    end
-  end
-
   def generate_controller
-    check_controller_conflicts
-    check_single_resource_actions
+    validate_inputs!
     template "controller.rb.erb", controller_file_path
   end
 
@@ -214,6 +111,125 @@ class ControllerGenerator < Rails::Generators::NamedBase
   end
 
   private
+
+  # Helper methods for namespace and API detection
+  def has_namespace?
+    name.include?('::')
+  end
+
+  def is_api_controller?
+    name.downcase.start_with?('api::')
+  end
+
+  def namespaces
+    return [] unless has_namespace?
+    parts = name.split('::')
+    parts[0..-2].map(&:underscore)
+  end
+
+  def resource_name_without_namespace
+    return name unless has_namespace?
+    name.split('::').last
+  end
+
+  # Validate all inputs before generating files
+  def validate_inputs!
+    return if options[:force_override]
+
+    check_invalid_syntax
+    check_user_model
+    check_name_validity
+    check_controller_conflicts
+    check_single_resource_actions
+  end
+
+  # Check for invalid syntax
+  def check_invalid_syntax
+    if name.include?('+') || actions.any? { |a| a.include?('+') }
+      say "Error: Cannot use '+' in generator. Generate one controller at a time.", :red
+      exit(1)
+    end
+  end
+
+  # Check if User model exists when using --auth
+  def check_user_model
+    return unless options[:auth]
+
+    unless File.exist?("app/models/user.rb")
+      say "Error: --auth requires User model (app/models/user.rb not found).", :red
+      say "\n💡 Solution:", :blue
+      say "  Generate authentication:  rails generate authentication", :blue
+      say "  Remove --auth flag:       rails g controller #{name} #{actions.join(' ')}", :blue
+      exit(1)
+    end
+  end
+
+  # Check controller name validity
+  def check_name_validity
+    # Check for reserved words first (before processing)
+    if %w[controller controllers].include?(name.downcase)
+      say "Error: Cannot generate controller with name '#{name}'.", :red
+      say "This name is reserved. Please choose a different name.", :yellow
+      say "Example: rails generate controller products", :blue
+      exit(1)
+    end
+
+    # Check for empty or invalid names after processing
+    if base_name_without_controller.blank?
+      say "Error: Controller name cannot be empty after processing.", :red
+      say "Usage: rails generate controller NAME [actions]", :yellow
+      say "Example: rails generate controller products", :blue
+      exit(1)
+    end
+
+    # Check for minimum length (at least 2 characters)
+    if base_name_without_controller.length < 2
+      say "Error: Controller name must be at least 2 characters long.", :red
+      say "Single letter controller names can cause naming conflicts.", :yellow
+      say "Example: rails generate controller posts", :blue
+      exit(1)
+    end
+  end
+
+  # Check for controller conflicts with system controllers
+  def check_controller_conflicts
+    # Special check for home controller
+    if singular_name == 'home' || plural_name == 'home'
+      say "Error: Cannot generate 'home' controller - it already exists in the system.", :red
+      say "💡 To add home page functionality:", :blue
+      say "   Create and edit app/views/home/index.html.erb directly", :blue
+      say "\n⚠️  Important: Write real business logic, do not reference any demo files", :yellow
+      exit(1)
+    end
+
+    if protected_controller_names.include?(plural_name)
+      conflict_reason = case plural_name
+                       when 'tmp', 'tmps'
+                         "as it conflicts with development middleware and temporary file system"
+                       else
+                         "as it conflicts with authentication system"
+                       end
+
+      say "Error: Cannot generate controller for '#{plural_name}' #{conflict_reason}.", :red
+      say "The following controller names are protected:", :yellow
+      protected_controller_names.each { |name| say "  - #{name}", :yellow }
+      say "\nSolutions:", :blue
+      say "1. Choose a different controller name to avoid conflicts", :blue
+      say "2. Use a different name for your controller", :blue
+      exit(1)
+    end
+  end
+
+  # Check single resource actions validity
+  def check_single_resource_actions
+    if options[:single] && selected_actions.include?('index')
+      say "Error: --single flag conflicts with 'index' action.", :red
+      say "\n💡 Solution:", :blue
+      say "  Remove --single:  rails g controller #{name} #{actions.join(' ')}", :blue
+      say "  Remove index:     rails g controller #{name} #{(actions - ['index']).join(' ')} --single", :blue
+      exit(1)
+    end
+  end
 
   def base_name_without_controller
     # Remove '_controller' or '_controllers' suffix if present (case insensitive)
