@@ -13,7 +13,7 @@ import consumer from "../channels/consumer"
  *
  *   export default class extends BaseChannelController {
  *     connect() {
- *       this.createSubscription("YourChannel", { session_id: "123" })
+ *       this.createSubscription("YourChannel", { stream_name: "post_123" })
  *     }
  *
  *     protected channelReceived(data: any) {

@@ -166,6 +166,7 @@ module Rails
           say "\n⚠️  Architecture:", :yellow
           say "   - Frontend: Define handleXxx(data) methods to receive messages", :yellow
           say "   - Backend: Broadcast with type field: {type: 'xxx', data: {}}", :yellow
+          say "   - Stream naming: Use underscore format (e.g., 'post_123', 'user_456')", :yellow
           say "   - NO fetch(), NO manual form submission", :yellow
           say "\n"
         end

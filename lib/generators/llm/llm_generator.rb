@@ -104,7 +104,7 @@ class LlmGenerator < Rails::Generators::Base
     say "\n🚀 Usage:"
     say "\n  1) Text generation with streaming:"
     say "     LlmStreamJob.perform_later("
-    say "       chat_id: user.id,"
+    say "       stream_name: 'chat_123',"
     say "       prompt: 'Explain quantum computing',"
     say "       system: 'You are a helpful assistant',"
     say "       images: ['https://example.com/ref.jpg'], # optional"
