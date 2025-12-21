@@ -1,3 +1,5 @@
+require_relative 'herb_stimulus_parser'
+
 # Shared helper methods for Stimulus validation specs
 module StimulusValidationHelpers
   # Parse action string into component parts
@@ -178,26 +180,24 @@ module StimulusValidationHelpers
     type_string.split(/[-_]/).map(&:capitalize).join('')
   end
 
-  # Parse ERB actions from content
+  # Parse ERB actions from content using Herb
   def parse_erb_actions(content, relative_path)
     actions = []
 
-    # Use AST parser to find actions in ERB blocks
-    erb_parser = ErbAstParser.new(content)
-    erb_actions = erb_parser.find_stimulus_actions
+    # Use Herb-based parser to find actions in ERB blocks
+    parser = StimulusValidation::HerbStimulusParser.new(content, relative_path)
+    parser.parse
 
-    erb_actions.each do |erb_action|
-      action_info = erb_action[:match][:parsed_action]
-
+    parser.actions.each do |action_info|
       actions << {
         element: nil, # ERB actions don't have direct DOM elements
-        action: action_info[:action],
+        action: action_info[:action_string],
         event: action_info[:event],
         controller: action_info[:controller],
         method: action_info[:method],
         source: 'erb_ast',
-        line_number: erb_action[:line_number],
-        line_content: action_info[:action]
+        line_number: action_info[:location] ? action_info[:location].start.line : 1,
+        line_content: action_info[:action_string]
       }
     end
 
@@ -205,7 +205,7 @@ module StimulusValidationHelpers
   end
 
   # Check if ERB action is within the controller scope
-  def check_erb_action_scope(action_info, content, relative_path)
+  def check_erb_action_scope(action_info, content, relative_path, herb_parser)
     controller_name = action_info[:controller]
     action_line = action_info[:line_number]
 
@@ -233,29 +233,20 @@ module StimulusValidationHelpers
       end
     end
 
-    # Second, check for ERB controller definitions using AST parsing
-    begin
-      erb_parser = ErbAstParser.new(content)
-      erb_controllers = erb_parser.find_all_controllers
+    # Second, check for ERB controller definitions using herb_parser
+    herb_parser.controllers.each do |controller_info|
+      if controller_info[:controller_name] == controller_name && controller_info[:location]
+        block_start_line = controller_info[:location].start.line
+        # For ERB controllers, consider the scope from start to a reasonable range
+        # This is a simplified approach - we assume controller scope extends reasonably far
+        block_end_line = block_start_line + 100 # Reasonable default
 
-      erb_controllers.each do |controller_info|
-        if controller_info[:controller_name] == controller_name
-          # Get the ERB block and determine its scope
-          block = controller_info[:block]
-          block_start_line = controller_info[:line_number]
-
-          # Find the end of this ERB block, starting from the controller definition line
-          block_end_line = find_erb_block_end_line(content, block, block_start_line)
-
-          controller_scopes << {
-            start: block_start_line,
-            end: block_end_line,
-            line: "ERB controller: #{controller_name}"
-          }
-        end
+        controller_scopes << {
+          start: block_start_line,
+          end: block_end_line,
+          line: "ERB controller: #{controller_name}"
+        }
       end
-    rescue => e
-      # If AST parsing fails, fall back to HTML-only checking
     end
 
     # Check if action line is within any controller scope

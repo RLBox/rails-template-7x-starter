@@ -15,19 +15,8 @@ RSpec.describe 'Stimulus Validation', type: :system do
     pipeline.get_controllers_from_parents(partial_path)
   end
 
-  def contains_controller_in_ast?(node, controller_name)
-    erb_parser = ErbAstParser.new("")
-    erb_parser.send(:contains_controller_in_ast?, node, controller_name)
-  end
-
-  # Collect all controllers from both HTML and ERB sources
-  def collect_all_controllers(content, doc, relative_path)
-    erb_parser = ErbAstParser.new(content)
-    collect_all_controllers_with_parser(content, doc, relative_path, erb_parser)
-  end
-
-  # Collect all controllers using pre-created ERB parser (performance optimization)
-  def collect_all_controllers_with_parser(content, doc, relative_path, erb_parser)
+  # Collect all controllers using pre-created Herb parser (performance optimization)
+  def collect_all_controllers_with_parser(content, doc, relative_path, herb_parser)
     controllers = []
 
     # 1. Collect from static HTML (Nokogiri)
@@ -42,29 +31,21 @@ RSpec.describe 'Stimulus Validation', type: :system do
       end
     end
 
-    # 2. Collect from ERB blocks (reuse AST parser)
-    erb_controllers = erb_parser.find_all_controllers
-    erb_controllers.each do |erb_ctrl|
+    # 2. Collect from ERB blocks (use Herb parser)
+    herb_parser.controllers.each do |controller_info|
       controllers << {
-        controller_name: erb_ctrl[:controller_name],
+        controller_name: controller_info[:controller_name],
         element: nil,
         source: :erb,
-        file: relative_path,
-        erb_info: erb_ctrl
+        file: relative_path
       }
     end
 
     controllers
   end
 
-  # Validate a single controller (works for both HTML and ERB sources)
-  def validate_controller(controller_info, controller_data, content, doc, registration_errors, target_errors, target_scope_errors, value_errors, outlet_errors)
-    erb_parser = ErbAstParser.new(content)
-    validate_controller_with_parser(controller_info, controller_data, content, doc, erb_parser, registration_errors, target_errors, target_scope_errors, value_errors, outlet_errors)
-  end
-
-  # Validate a single controller using pre-created ERB parser (performance optimization)
-  def validate_controller_with_parser(controller_info, controller_data, content, doc, erb_parser, registration_errors, target_errors, target_scope_errors, value_errors, outlet_errors)
+  # Validate a single controller using pre-created Herb parser (performance optimization)
+  def validate_controller_with_parser(controller_info, controller_data, content, doc, herb_parser, registration_errors, target_errors, target_scope_errors, value_errors, outlet_errors)
     controller_name = controller_info[:controller_name]
     element = controller_info[:element]
     source = controller_info[:source]
@@ -92,13 +73,13 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
     # Validate targets (only for HTML controllers with elements)
     if source == :html && element
-      validate_targets(controller_name, element, controller_data, content, doc, erb_parser, relative_path, target_errors, target_scope_errors)
-      validate_values(controller_name, element, controller_data, content, relative_path, value_errors)
+      validate_targets(controller_name, element, controller_data, content, doc, herb_parser, relative_path, target_errors, target_scope_errors)
+      validate_values(controller_name, element, controller_data, content, herb_parser, relative_path, value_errors)
       validate_outlets(controller_name, element, controller_data, doc, relative_path, outlet_errors)
     end
   end
 
-  def validate_targets(controller_name, element, controller_data, content, doc, erb_parser, relative_path, target_errors, target_scope_errors)
+  def validate_targets(controller_name, element, controller_data, content, doc, herb_parser, relative_path, target_errors, target_scope_errors)
     controller_data[controller_name][:targets].each do |target|
       # Skip optional targets
       next if controller_data[controller_name][:optional_targets].include?(target)
@@ -117,10 +98,11 @@ RSpec.describe 'Stimulus Validation', type: :system do
         target_found_in_scope = element.css(target_selector).any?
       end
 
-      # Check ERB blocks (reuse erb_parser)
+      # Check ERB blocks (use herb_parser)
       unless target_found_in_scope
-        erb_targets = erb_parser.find_stimulus_targets(controller_name, target)
-        target_found_in_scope = erb_targets.any?
+        target_found_in_scope = herb_parser.targets.any? do |t|
+          t[:controller] == controller_name && t[:target] == target
+        end
       end
 
       unless target_found_in_scope
@@ -149,7 +131,7 @@ RSpec.describe 'Stimulus Validation', type: :system do
     end
   end
 
-  def validate_values(controller_name, element, controller_data, content, relative_path, value_errors)
+  def validate_values(controller_name, element, controller_data, content, herb_parser, relative_path, value_errors)
     controller_data[controller_name][:values].each do |value_name|
       next if controller_data[controller_name][:values_with_defaults].include?(value_name)
       next if controller_data[controller_name][:values_with_skip].include?(value_name)
@@ -160,8 +142,9 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
       # Check ERB blocks
       unless value_found
-        erb_parser = ErbAstParser.new(content)
-        value_found = erb_parser.find_stimulus_values(controller_name, value_name).any?
+        value_found = herb_parser.values.any? do |v|
+          v[:controller] == controller_name && v[:value] == value_name
+        end
       end
 
       unless value_found
@@ -199,7 +182,9 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
   def validate_outlets(controller_name, element, controller_data, doc, relative_path, outlet_errors)
     controller_data[controller_name][:outlets].each do |outlet_name|
-      outlet_attr = "data-#{controller_name}-#{outlet_name.gsub('_', '-')}-outlet"
+      # Convert camelCase or snake_case to kebab-case (same as values)
+      kebab_outlet_name = outlet_name.gsub(/([a-z])([A-Z])/, '\1-\2').downcase.gsub('_', '-')
+      outlet_attr = "data-#{controller_name}-#{kebab_outlet_name}-outlet"
 
       unless element.has_attribute?(outlet_attr)
         wrong_attr = "#{outlet_attr}-value"
@@ -264,19 +249,20 @@ RSpec.describe 'Stimulus Validation', type: :system do
         content = File.read(view_file)
         relative_path = view_file.sub(Rails.root.to_s + '/', '')
         doc = Nokogiri::HTML::DocumentFragment.parse(content)
-        erb_parser = ErbAstParser.new(content)
+        herb_parser = StimulusValidation::HerbStimulusParser.new(content, relative_path)
+        herb_parser.parse
 
         # Collect all controllers from both HTML and ERB sources
-        all_controllers = collect_all_controllers_with_parser(content, doc, relative_path, erb_parser)
+        all_controllers = collect_all_controllers_with_parser(content, doc, relative_path, herb_parser)
 
-        # Validate each controller using unified logic (reuse erb_parser)
+        # Validate each controller using unified logic (reuse herb_parser)
         all_controllers.each do |controller_info|
           validate_controller_with_parser(
             controller_info,
             controller_data,
             content,
             doc,
-            erb_parser,
+            herb_parser,
             registration_errors,
             target_errors,
             target_scope_errors,
@@ -331,7 +317,7 @@ RSpec.describe 'Stimulus Validation', type: :system do
             controller_scope = false
 
             # Use proper scope checking for ERB actions
-            controller_scope = check_erb_action_scope(action_info, content, relative_path)
+            controller_scope = check_erb_action_scope(action_info, content, relative_path, herb_parser)
 
             # Check parent files for partials
             if !controller_scope && relative_path.include?('_')
@@ -366,7 +352,7 @@ RSpec.describe 'Stimulus Validation', type: :system do
           end
 
           unless controller_scope
-            # Check if controller exists anywhere in the file using AST parsing
+            # Check if controller exists anywhere in the file
             controller_exists_in_file = false
 
             # Check HTML data-controller attributes
@@ -377,22 +363,10 @@ RSpec.describe 'Stimulus Validation', type: :system do
               end
             end
 
-            # Check ERB blocks for controller definitions using AST
+            # Check ERB blocks for controller definitions
             unless controller_exists_in_file
-              erb_parser = ErbAstParser.new(content)
-              erb_parser.instance_variable_get(:@erb_blocks).each do |block|
-                next unless block[:code].include?('data') && block[:code].include?('controller')
-
-                begin
-                  processed_code = erb_parser.send(:preprocess_erb_code, block[:code])
-                  ast = Parser::CurrentRuby.parse(processed_code)
-                  if contains_controller_in_ast?(ast, controller_name)
-                    controller_exists_in_file = true
-                    break
-                  end
-                rescue
-                  # Skip unparseable blocks
-                end
+              controller_exists_in_file = herb_parser.controllers.any? do |c|
+                c[:controller_name] == controller_name
               end
             end
 
@@ -587,7 +561,10 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
       view_files.each do |view_file|
         content = File.read(view_file)
+        relative_path = view_file.sub(Rails.root.to_s + '/', '')
         doc = Nokogiri::HTML::DocumentFragment.parse(content)
+        herb_parser = StimulusValidation::HerbStimulusParser.new(content, relative_path)
+        herb_parser.parse
 
         controller_data.keys.each do |controller|
           # Check HTML data-controller attributes
@@ -595,23 +572,11 @@ RSpec.describe 'Stimulus Validation', type: :system do
             element['data-controller'].split(/\s+/).include?(controller)
           end
 
-          # Check ERB blocks using AST
+          # Check ERB blocks
           found_in_erb = false
           unless found_in_html
-            erb_parser = ErbAstParser.new(content)
-            erb_parser.instance_variable_get(:@erb_blocks).each do |block|
-              next unless block[:code].include?('data') && block[:code].include?('controller')
-
-              begin
-                processed_code = erb_parser.send(:preprocess_erb_code, block[:code])
-                ast = Parser::CurrentRuby.parse(processed_code)
-                if erb_parser.send(:contains_controller_in_ast?, ast, controller)
-                  found_in_erb = true
-                  break
-                end
-              rescue
-                # Skip unparseable blocks
-              end
+            found_in_erb = herb_parser.controllers.any? do |c|
+              c[:controller_name] == controller
             end
           end
 
