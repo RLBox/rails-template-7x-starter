@@ -44,7 +44,6 @@ Position:
 
         <!-- Logo -->
         <div class="flex items-center gap-2">
-          <!-- CLACKY_TODO: Customize your logo, Use Rails.application.config.x.appname for appname -->
           <%%= lucide_icon "sparkles", class: "w-6 h-6 #{controller_name == 'home' && action_name == 'index' ? 'text-gray-900 dark:text-white' : 'text-primary'}" %>
           <%%= link_to Rails.application.config.x.appname, root_path, class: "text-xl font-bold #{controller_name == 'home' && action_name == 'index' ? 'text-gray-900 dark:text-white' : 'text-primary'}" %>
         </div>

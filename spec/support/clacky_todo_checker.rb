@@ -12,13 +12,27 @@ module ClackyTodoChecker
       next unless File.exist?(full_path)
 
       content = File.read(full_path)
+      lines = content.lines
 
-      # Extract CLACKY_TODO and its description
-      content.scan(/CLACKY_TODO:\s*(.+)/) do |match|
-        todos_found << {
-          file: file_path,
-          description: match[0].strip
-        }
+      # Extract CLACKY_TODO and its description with context
+      lines.each_with_index do |line, index|
+        if line =~ /CLACKY_TODO:\s*(.+)/
+          description = $1.strip
+
+          # Get the next 3 lines as hints
+          hints = []
+          (1..3).each do |offset|
+            next_line = lines[index + offset]
+            break if next_line.nil?
+            hints << next_line.rstrip
+          end
+
+          todos_found << {
+            file: file_path,
+            description: description,
+            hints: hints
+          }
+        end
       end
     end
 
@@ -28,7 +42,16 @@ module ClackyTodoChecker
 
     todos_found.each do |todo|
       error_message += "📄 #{todo[:file]}\n"
-      error_message += "   TODO: #{todo[:description]}\n\n"
+      error_message += "   TODO: #{todo[:description]}\n"
+
+      unless todo[:hints].empty?
+        error_message += "   Hints:\n"
+        todo[:hints].each do |hint|
+          error_message += "   #{hint}\n"
+        end
+      end
+
+      error_message += "\n"
     end
 
     error_message += "Please implement the required functionality and remove CLACKY_TODO comments.\n"
