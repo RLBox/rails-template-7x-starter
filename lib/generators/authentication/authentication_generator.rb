@@ -409,8 +409,8 @@ class AuthenticationGenerator < Rails::Generators::Base
     # Special note for fixed navbar styles
     if @navbar_style == 'floating' || @navbar_style == 'transparent'
       say "\n⚠️  Note: #{@navbar_style.capitalize} navbar uses fixed positioning on homepage only", :yellow
-      say "  Add data-testid and padding to homepage container:", :yellow
-      say "  <div data-testid=\"home-page-container\" class=\"pt-28\">", :cyan
+      say "  Add data-testid and padding to homepage first section:", :yellow
+      say "  <section data-testid=\"home-first-section\" class=\"pt-28\">", :cyan
     end
 
     say "\n📋 Required Next Steps:", :cyan
