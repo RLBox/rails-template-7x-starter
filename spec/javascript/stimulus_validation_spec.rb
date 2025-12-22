@@ -21,9 +21,23 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
     # 1. Collect from static HTML (Nokogiri)
     doc.css('[data-controller]').each do |element|
-      element['data-controller'].split(/\s+/).each do |controller_name|
+      controller_attr = element['data-controller']
+
+      # Skip attributes containing ERB tags - these should be handled by Herb parser or are dynamic
+      next if controller_attr.include?('<%') || controller_attr.include?('%>')
+
+      controller_attr.split(/\s+/).each do |controller_name|
+        stripped_name = controller_name.strip
+
+        # Skip empty controller names
+        next if stripped_name.empty?
+
+        # Skip invalid controller names (containing special characters that indicate parsing errors)
+        # Valid controller names should only contain lowercase letters, numbers, and hyphens
+        next if stripped_name.match?(/[<>=%&|?:()'\[\]{}]/)
+
         controllers << {
-          controller_name: controller_name.strip,
+          controller_name: stripped_name,
           element: element,
           source: :html,
           file: relative_path
@@ -606,14 +620,26 @@ RSpec.describe 'Stimulus Validation', type: :system do
 
         doc.css('[data-controller], [data-action]').each do |element|
           if controller_attr = element['data-controller']
+            # Skip attributes containing ERB tags
+            next if controller_attr.include?('<%') || controller_attr.include?('%>')
+
             controller_attr.split(/\s+/).each do |controller|
-              unless controller_data.key?(controller)
-                missing_controllers << controller
+              stripped = controller.strip
+
+              # Skip empty or invalid controller names
+              next if stripped.empty?
+              next if stripped.match?(/[<>=%&|?:()'\[\]{}]/)
+
+              unless controller_data.key?(stripped)
+                missing_controllers << stripped
               end
             end
           end
 
           if action_attr = element['data-action']
+            # Skip attributes containing ERB tags
+            next if action_attr.include?('<%') || action_attr.include?('%>')
+
             # Parse action string using existing method
             parsed_actions = parse_action_string(action_attr)
             parsed_actions.each do |action_info|
