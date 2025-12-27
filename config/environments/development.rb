@@ -77,6 +77,20 @@ Rails.application.configure do
   # Configure GoodJob for development
   config.good_job.execution_mode = :async
 
+  # Filter out GoodJob SQL queries from logs
+  config.after_initialize do
+    ActiveRecord::LogSubscriber.prepend(Module.new do
+      def sql(event)
+        # Skip GoodJob internal queries
+        return if event.payload[:sql] =~ /FROM "good_jobs"/
+        return if event.payload[:sql] =~ /FROM "good_job_processes"/
+        return if event.payload[:sql] =~ /pg_try_advisory_lock/
+
+        super
+      end
+    end)
+  end
+
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true
 

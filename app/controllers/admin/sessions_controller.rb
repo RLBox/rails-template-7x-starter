@@ -6,6 +6,8 @@ class Admin::SessionsController < Admin::BaseController
     @full_render = true
   end
 
+  before_action :check_rate_limit, only: [:create]
+
   def new
     @first_login = first_admin?
   end
@@ -30,6 +32,19 @@ class Admin::SessionsController < Admin::BaseController
   end
 
   private
+
+  def check_rate_limit
+    key = "login_attempts:#{request.ip}"
+    attempts = Rails.cache.read(key).to_i
+
+    if attempts >= 5
+      flash.now[:alert] = 'Too many login attempts. Please wait a moment and try again.'
+      render 'new', status: :too_many_requests
+    else
+      Rails.cache.write(key, attempts + 1, expires_in: 1.minute)
+    end
+  end
+
   def create_first_admin_or_reset_password!
     return unless first_admin?
     admin = Administrator.find_by(name: 'admin')
