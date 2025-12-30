@@ -7,15 +7,23 @@ Dir.chdir(File.expand_path('..', __dir__))
 # Clean up stale server PID
 pid_file = 'tmp/pids/server.pid'
 if File.exist?(pid_file)
-  pid = File.read(pid_file).to_i
-  begin
-    Process.kill(0, pid)
-    puts "Stopping existing server (PID: #{pid})..."
-    Process.kill('TERM', pid)
-    sleep 1
-  rescue Errno::ESRCH, Errno::EPERM
-    # Process doesn't exist or no permission
+  pid_content = File.read(pid_file).strip
+  pid = pid_content.to_i
+
+  # Only attempt to kill if PID is valid (positive integer)
+  if pid > 0
+    begin
+      Process.kill(0, pid)
+      puts "Detected previous server, shutting down..."
+      Process.kill('TERM', pid)
+      sleep 1
+    rescue Errno::ESRCH, Errno::EPERM
+      # Process doesn't exist or no permission
+    end
+  else
+    puts "Cleaning up stale server files..."
   end
+
   File.delete(pid_file) if File.exist?(pid_file)
 end
 
