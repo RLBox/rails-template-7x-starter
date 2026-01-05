@@ -57,7 +57,7 @@ yarn-debug.log*
 
 # Clacky-specific files
 /.1024*
-/!.1024
+!/.1024
 /.breakpoints
 /*rules
-/!.clackyrules
+!/.clackyrules
