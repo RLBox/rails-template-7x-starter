@@ -21,6 +21,10 @@ module.exports = {
     { pattern: /^ts-/ },
     { pattern: /^flatpickr/ },
     'dark',  // Dark mode class
+    {
+      pattern: /^(hidden|inline|block|flex|grid|inline-flex|inline-block)$/,
+      variants: ['sm', 'md', 'lg', 'xl', '2xl']
+    },
   ],
   darkMode: 'class',
   theme: {

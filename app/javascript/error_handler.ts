@@ -482,42 +482,45 @@ class ErrorHandler {
     // Create persistent bottom status bar
     const statusBar = document.createElement('div');
     statusBar.id = 'js-error-status-bar';
-    statusBar.className = 'fixed bottom-0 left-0 right-0 bg-gray-900 text-white z-50 border-t border-gray-700 transition-all duration-300';
+    statusBar.className = 'fixed bottom-0 left-0 right-0 bg-gray-900 text-white z-50 border-t border-gray-700 transition-all duration-300 overflow-x-auto';
     statusBar.style.display = 'none'; // Initially hidden until first error
 
     statusBar.innerHTML = `
-      <div class="flex items-center justify-between px-4 py-2 h-10">
-        <div class="flex items-center space-x-4">
-          <div id="error-summary" class="flex items-center space-x-3 text-sm">
-            <!-- Error counts will be inserted here -->
-          </div>
-          <div id="error-tips" class="relative" style="display: none;">
-            <span class="cursor-help text-gray-500 hover:text-gray-300 transition-colors duration-200 text-sm opacity-60 hover:opacity-100">💡</span>
-            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs
-                      rounded-lg shadow-lg border border-gray-600 whitespace-nowrap opacity-0 pointer-events-none
-                      transition-opacity duration-200 tooltip">
-              Send to chatbox for repair (90% cases) or ignore if browser extension (10% cases)
-              <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4
-                        border-transparent border-t-gray-800"></div>
+      <div>
+        <div class="flex items-center justify-between px-4 py-2 h-10">
+          <div class="flex items-center space-x-4">
+            <div id="error-summary" class="flex items-center space-x-3 text-sm">
+              <!-- Error counts will be inserted here -->
+            </div>
+            <div id="error-tips" class="hidden sm:block relative" style="display: none;">
+              <span class="cursor-help text-gray-500 hover:text-gray-300 transition-colors duration-200 text-sm opacity-60 hover:opacity-100">💡</span>
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs
+                        rounded-lg shadow-lg border border-gray-600 whitespace-nowrap opacity-0 pointer-events-none
+                        transition-opacity duration-200 tooltip">
+                Send to chatbox for repair (90% cases) or ignore if browser extension (10% cases)
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4
+                          border-transparent border-t-gray-800"></div>
+              </div>
             </div>
           </div>
+          <div class="flex items-center space-x-1">
+            <button id="copy-all-errors" class="text-yellow-400 hover:text-yellow-300 text-sm px-2 py-1 rounded" style="display: none;">
+              <span class="hidden sm:inline">Copy Error</span>
+              <span class="sm:hidden">Copy</span>
+            </button>
+            <button id="toggle-errors" class="text-blue-400 hover:text-blue-300 text-sm px-2 py-1 rounded">
+              <span id="toggle-text">Show</span>
+              <span id="toggle-icon">↑</span>
+            </button>
+            <button id="clear-all-errors" class="text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded">
+              Clear
+            </button>
+          </div>
         </div>
-        <div class="flex items-center space-x-2">
-          <button id="copy-all-errors" class="text-yellow-400 hover:text-yellow-300 text-sm px-2 py-1 rounded" style="display: none;">
-            Copy Error
-          </button>
-          <button id="toggle-errors" class="text-blue-400 hover:text-blue-300 text-sm px-2 py-1 rounded">
-            <span id="toggle-text">Show</span>
-            <span id="toggle-icon">↑</span>
-          </button>
-          <button id="clear-all-errors" class="text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded">
-            Clear
-          </button>
-        </div>
-      </div>
-      <div id="error-details" class="border-t border-gray-700 bg-gray-800 max-h-64 overflow-y-auto" style="display: none;">
-        <div id="error-list" class="p-4 space-y-2">
-          <!-- Error list will be inserted here -->
+        <div id="error-details" class="border-t border-gray-700 bg-gray-800 max-h-64 overflow-y-auto" style="display: none;">
+          <div id="error-list" class="p-4 space-y-2">
+            <!-- Error list will be inserted here -->
+          </div>
         </div>
       </div>
     `;
@@ -1181,7 +1184,12 @@ class ErrorHandler {
     }
 
     // Unified error display without type distinction
-    summary.innerHTML = `<span class="text-red-400">🔴 Frontend code error detected (${totalErrors})</span>`;
+    summary.innerHTML = `
+      <span class="text-red-400">
+        <span class="hidden sm:inline">🔴 Frontend code error detected (${totalErrors})</span>
+        <span class="sm:hidden">🔴 Errors found (${totalErrors})</span>
+      </span>
+    `;
     if (copyButton) copyButton.style.display = 'block';
     if (tipsElement) tipsElement.style.display = 'block';
   }
@@ -1202,20 +1210,33 @@ class ErrorHandler {
     const timeStr = new Date(error.timestamp).toLocaleTimeString();
 
     return `
-      <div class="flex items-start justify-between bg-gray-700 rounded p-3 error-item" data-error-id="${error.id}">
-        <div class="flex items-start space-x-3 flex-1">
-          <div class="text-lg">${icon}</div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <span class="font-medium text-sm text-white truncate pr-2">${this.sanitizeMessage(error.message)}</span>
-              <span class="text-xs text-gray-400 whitespace-nowrap mt-1">${timeStr}${countText}</span>
-            </div>
-            <div class="technical-details mt-2 text-xs text-gray-500" style="display: none;">
-              ${this.formatTechnicalDetails(error)}
+      <div class="bg-gray-700 rounded p-3 error-item" data-error-id="${error.id}">
+        <div class="flex items-start justify-between">
+          <div class="flex items-start space-x-3 flex-1 min-w-0">
+            <div class="text-lg">${icon}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-sm text-white truncate pr-2">${this.sanitizeMessage(error.message)}</span>
+                <span class="text-xs text-gray-400 whitespace-nowrap mt-1">${timeStr}${countText}</span>
+              </div>
+              <div class="technical-details mt-2 text-xs text-gray-500" style="display: none;">
+                ${this.formatTechnicalDetails(error)}
+              </div>
             </div>
           </div>
+          <div class="hidden sm:flex items-center space-x-1 ml-3">
+            <button class="copy-error text-blue-400 hover:text-blue-300 px-2 py-1 text-xs rounded" title="Copy error for chatbox">
+              Copy
+            </button>
+            <button class="toggle-details text-gray-400 hover:text-gray-300 px-2 py-1 text-xs rounded" title="Toggle details">
+              Details
+            </button>
+            <button class="close-error text-red-400 hover:text-red-300 px-2 py-1 text-xs rounded" title="Close">
+              ×
+            </button>
+          </div>
         </div>
-        <div class="flex items-center space-x-1 ml-3">
+        <div class="flex sm:hidden items-center justify-end space-x-1 mt-2">
           <button class="copy-error text-blue-400 hover:text-blue-300 px-2 py-1 text-xs rounded" title="Copy error for chatbox">
             Copy
           </button>
@@ -1366,7 +1387,8 @@ class ErrorHandler {
     if (!error) return;
 
     const errorReport = this.generateErrorReport(error);
-    const button = document.querySelector(`[data-error-id="${errorId}"] .copy-error`) as HTMLElement;
+    // Select all copy buttons for this error (both mobile and desktop)
+    const buttons = document.querySelectorAll(`[data-error-id="${errorId}"] .copy-error`);
 
     if (!window.copyToClipboard) {
       this.originalConsoleError('window.copyToClipboard not found');
@@ -1375,16 +1397,19 @@ class ErrorHandler {
     }
 
     window.copyToClipboard(errorReport).then(() => {
-      if (!button) return;
-      // Show success feedback
-      const originalText = button.textContent;
-      button.textContent = 'Copied';
-      button.className = button.className.replace('text-blue-400', 'text-green-400');
+      if (buttons.length === 0) return;
+      // Show success feedback on all buttons
+      buttons.forEach((button) => {
+        const btn = button as HTMLElement;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = 'Copied';
+        btn.className = btn.className.replace('text-blue-400', 'text-green-400');
 
-      setTimeout(() => {
-        button.textContent = originalText;
-        button.className = button.className.replace('text-green-400', 'text-blue-400');
-      }, 2000);
+        setTimeout(() => {
+          btn.innerHTML = originalHTML;
+          btn.className = btn.className.replace('text-green-400', 'text-blue-400');
+        }, 2000);
+      });
     }).catch(err => {
       this.originalConsoleError('Failed to copy error:', err);
       // Fallback: show error details in a modal or alert
@@ -1407,12 +1432,12 @@ class ErrorHandler {
     window.copyToClipboard(allErrorsReport).then(() => {
       if (!button) return;
       // Show success feedback
-      const originalText = button.textContent;
-      button.textContent = 'Copied';
+      const originalHTML = button.innerHTML;
+      button.innerHTML = 'Copied';
       button.className = button.className.replace('text-yellow-400', 'text-green-400');
 
       setTimeout(() => {
-        button.textContent = originalText;
+        button.innerHTML = originalHTML;
         button.className = button.className.replace('text-green-400', 'text-yellow-400');
       }, 2000);
     }).catch(err => {
