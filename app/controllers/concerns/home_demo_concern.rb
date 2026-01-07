@@ -15,7 +15,7 @@ module HomeDemoConcern
     if should_render_demo?
       @full_render = true
       @disable_error_tracking = true # Disable error tracking for demo page
-      flash.now[:tips] = 'This is a quick preview version. The actual functionality is under development. Please refresh and try again later'
+      flash.now[:tips] = 'This is a quick preview version. The actual functionality is under development. Page will auto-refresh when ready'
       render 'shared/demo'
     else
       if !File.exist?(index_template_path)
