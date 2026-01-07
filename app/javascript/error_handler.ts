@@ -482,7 +482,7 @@ class ErrorHandler {
     // Create persistent bottom status bar
     const statusBar = document.createElement('div');
     statusBar.id = 'js-error-status-bar';
-    statusBar.className = 'fixed bottom-0 left-0 right-0 bg-gray-900 text-white z-50 border-t border-gray-700 transition-all duration-300 overflow-x-auto';
+    statusBar.className = 'fixed bottom-0 left-0 right-0 bg-gray-900 text-white z-50 border-t border-gray-700 transition-all duration-300';
     statusBar.style.display = 'none'; // Initially hidden until first error
 
     statusBar.innerHTML = `
@@ -494,10 +494,10 @@ class ErrorHandler {
             </div>
             <div id="error-tips" class="hidden sm:block relative" style="display: none;">
               <span class="cursor-help text-gray-500 hover:text-gray-300 transition-colors duration-200 text-sm opacity-60 hover:opacity-100">💡</span>
-              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-3 py-2 bg-gray-800 text-white text-xs
                         rounded-lg shadow-lg border border-gray-600 whitespace-nowrap opacity-0 pointer-events-none
                         transition-opacity duration-200 tooltip">
-                Send to chatbox for repair (90% cases) or ignore if browser extension (10% cases)
+                Copy errors and send to AI chatbot for quick fixes
                 <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4
                           border-transparent border-t-gray-800"></div>
               </div>
