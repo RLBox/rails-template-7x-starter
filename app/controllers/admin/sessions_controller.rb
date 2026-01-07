@@ -21,6 +21,7 @@ class Admin::SessionsController < Admin::BaseController
       redirect_to admin_root_path
     else
       flash.now[:alert] = 'Username or password is wrong'
+      @first_login = first_admin?
       render 'new', status: :unprocessable_entity
     end
   end
@@ -58,9 +59,7 @@ class Admin::SessionsController < Admin::BaseController
   end
 
   def first_admin?
-    return true unless Administrator.first
-    admin = Administrator.find_by(name: 'admin')
-    return true if admin.nil?
-    return true if admin.first_login
+    return true if Administrator.count.zero?
+    Administrator.exists?(name: 'admin', first_login: true)
   end
 end

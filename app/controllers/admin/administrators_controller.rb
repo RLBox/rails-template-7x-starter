@@ -3,7 +3,7 @@ class Admin::AdministratorsController < Admin::BaseController
   before_action :ensure_super_admin, except: [:index, :show]
 
   def index
-    @administrators = Administrator.page(params[:page]).per(10)
+    @administrators = Administrator.order(created_at: :desc).page(params[:page]).per(10)
   end
 
   def show
@@ -15,6 +15,7 @@ class Admin::AdministratorsController < Admin::BaseController
 
   def create
     @administrator = Administrator.new(administrator_params)
+    @administrator.first_login = false if @administrator.name == 'admin'
 
     if @administrator.save
       redirect_to admin_administrator_path(@administrator), notice: 'Administrator was successfully created.'
@@ -24,6 +25,10 @@ class Admin::AdministratorsController < Admin::BaseController
   end
 
   def edit
+    # Redirect to account edit page if editing self
+    if @administrator == current_admin
+      redirect_to edit_admin_account_path, notice: 'Please use account settings to edit your own profile.'
+    end
   end
 
   def update
