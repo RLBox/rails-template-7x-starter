@@ -32,8 +32,10 @@ module Rails
         unless options[:skip_routes]
           route_content = <<-RUBY
   # PWA routes
-  get '/manifest.json', to: 'pwa#manifest', defaults: { format: :json }
   get '/service-worker.js', to: 'pwa#service_worker', defaults: { format: :js }
+  get '/manifest.json', to: 'pwa#manifest', defaults: { format: :json }
+  get '/pwa/service-worker.js', to: 'pwa#service_worker', defaults: { format: :js } # Compatibility route
+  get '/pwa/manifest.json', to: 'pwa#manifest', defaults: { format: :json } # Compatibility route
           RUBY
 
           inject_into_file "config/routes.rb", route_content, after: "Rails.application.routes.draw do\n"
