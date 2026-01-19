@@ -104,4 +104,24 @@ module ViewOverridesHelper
       super
     end
   end
+
+  # Override lucide_icon to handle missing icons gracefully
+  # If the requested icon doesn't exist, show a default icon instead
+  def lucide_icon(name, **options)
+    icon_name = name.to_s
+    default_icon = 'help-circle'
+
+    begin
+      # Try to render the requested icon
+      super(icon_name, **options)
+    rescue => e
+      # If icon not found, show default icon
+      if e.message.include?('Unknown icon')
+        Rails.logger.warn("Missing lucide icon: #{icon_name}, using fallback: #{default_icon}")
+        super(default_icon, **options)
+      else
+        raise
+      end
+    end
+  end
 end
